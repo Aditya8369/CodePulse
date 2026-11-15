@@ -10,11 +10,28 @@ import { RadarCompareChart } from "@/components/charts/radar-compare-chart";
 import { GithubWrappedBanner } from "@/components/charts/github-wrapped-banner";
 import { RepositoryBubbleChart } from "@/components/charts/repository-bubble-chart";
 import { GlobalRankingMeter } from "@/components/charts/global-ranking-meter";
+import { PrReviewVelocityCard } from "@/components/cards/pr-review-velocity-card";
 import { StaggerContainer, StaggerItem } from "@/components/animations/page-transition";
 import { AnimatedCounter } from "@/components/animations/animated-counter";
 import { AnalyticsExportModal } from "@/components/analytics/analytics-export-modal";
 import { useCurrentUser } from "@/hooks/api/use-auth";
 import { Loader2, BarChart3, TrendingUp, Clock, Calendar, Code, GitCommit, Download } from "lucide-react";
+import { BackToTop } from "@/components/ui/back-to-top";
+import type {
+  CommitActivity,
+  ContributionDay,
+  DeveloperRating,
+  DeveloperStats,
+} from "@/types";
+
+interface AnalyticsStats extends Partial<DeveloperStats> {
+  commitActivity?: CommitActivity[];
+  contributionData?: ContributionDay[];
+}
+
+interface AnalyticsRating extends Partial<DeveloperRating> {
+  growthScore?: number;
+}
 
 export default function AnalyticsPage() {
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
@@ -69,10 +86,14 @@ export default function AnalyticsPage() {
     );
   }
 
-  const stats = (currentUser as any).stats || {};
-  const rating = (currentUser as any).rating || {};
-  const languages = (currentUser as any).languages || [];
-  const repos = (currentUser as any).repositories || [];
+  const userRecord = currentUser as unknown as {
+    stats?: AnalyticsStats;
+    rating?: AnalyticsRating;
+  };
+  const stats: AnalyticsStats = userRecord.stats || {};
+  const rating: AnalyticsRating = userRecord.rating || {};
+  const languages = currentUser.languages || [];
+  const repos = currentUser.repositories || [];
 
   const activeDays = Array.isArray(stats.commitActivity) ? stats.commitActivity.length : 0;
   const avgCommitsPerDay = stats.totalCommits ? (stats.totalCommits / 365) : 0;
@@ -200,6 +221,11 @@ export default function AnalyticsPage() {
           </div>
         </StaggerItem>
 
+        {/* PR & Review Velocity Breakdown (Span 12) */}
+        <StaggerItem className="md:col-span-12">
+          <PrReviewVelocityCard stats={stats} />
+        </StaggerItem>
+
         {/* Commit Activity (Span 12) */}
         <StaggerItem className="md:col-span-12">
           <div className="glass-card rounded-[32px] p-8 border border-white/5 relative overflow-hidden group">
@@ -234,6 +260,9 @@ export default function AnalyticsPage() {
         repos={repos}
         longestStreak={longestStreak}
       />
+
+      {/* Floating Back to Top Button */}
+      <BackToTop className="bottom-20 md:bottom-6" />
     </div>
   );
 }

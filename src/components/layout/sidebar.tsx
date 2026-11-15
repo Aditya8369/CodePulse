@@ -21,7 +21,6 @@ import {
   Search,
   Settings,
   ChevronLeft,
-  ChevronRight,
   LogOut,
   Zap,
   Menu,
@@ -82,7 +81,7 @@ function SidebarLogo({ collapsed }: { collapsed: boolean }) {
         whileTap={{ scale: 0.95 }}
         transition={{ type: "spring", stiffness: 400, damping: 15 }}
       >
-        <Image src="/logo.png" alt="DevBattle Logo" width={36} height={36} className="rounded-xl relative z-10" />
+        <Image src="/logo.png" alt="CodePulse Logo" width={36} height={36} className="rounded-xl relative z-10" />
         <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-purple-500 to-emerald-500 opacity-40 blur-lg" />
       </motion.div>
 
@@ -96,7 +95,7 @@ function SidebarLogo({ collapsed }: { collapsed: boolean }) {
             className="overflow-hidden"
           >
             <span className="gradient-text whitespace-nowrap text-xl font-bold tracking-tight">
-              DevBattle
+              CodePulse
             </span>
           </motion.div>
         )}
@@ -490,6 +489,30 @@ function MobileSidebar() {
           {/* Logo */}
           <div className="flex h-16 items-center px-3">
             <SidebarLogo collapsed={false} />
+          </div>
+
+          {/* Mobile Drawer Command Palette Search Trigger */}
+          <div className="px-3 pb-2">
+            <button
+              id="mobile-drawer-search-trigger"
+              onClick={() => {
+                setOpen(false);
+                document.dispatchEvent(
+                  new KeyboardEvent("keydown", {
+                    key: "k",
+                    metaKey: true,
+                    bubbles: true,
+                  })
+                );
+              }}
+              className="flex w-full items-center gap-2.5 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-sm text-muted-foreground transition-colors hover:border-white/[0.15] hover:bg-white/[0.06] hover:text-foreground"
+            >
+              <Search className="h-4 w-4 text-purple-400" />
+              <span className="flex-1 text-left text-xs">Search repos & battles...</span>
+              <kbd className="rounded border border-white/[0.08] bg-white/[0.04] px-1.5 py-0.5 font-mono text-[10px]">
+                ⌘K
+              </kbd>
+            </button>
           </div>
 
           {/* Navigation */}

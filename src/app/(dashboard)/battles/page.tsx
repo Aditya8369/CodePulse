@@ -8,15 +8,92 @@ import { BattleIntro } from "@/components/battles/battle-intro";
 import { BattleRounds } from "@/components/battles/battle-rounds";
 import { BattleReport } from "@/components/battles/battle-report";
 import { BattleMatchmakingSkeleton } from "@/components/battles/battle-skeleton";
+import { BattleHistoryList, type HistoricalBattle } from "@/components/battles/battle-history-list";
+import { BattleQueueDialog } from "@/components/battles/battle-queue-dialog";
+import { useCurrentUser } from "@/hooks/api/use-auth";
+import { Swords } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 type BattlePhase = "SETUP" | "INTRO" | "ROUNDS" | "REPORT";
 
 export default function BattlesPage() {
+  const { data: currentUser } = useCurrentUser();
   const [phase, setPhase] = useState<BattlePhase>("SETUP");
   const [ghostBattleData, setGhostBattleData] = useState<{ p1: any, p2: any, battleType: string } | null>(null);
   const [setupUsernames, setSetupUsernames] = useState<{p1: string, p2: string, battleType: string} | null>(null);
+  const [initialP1, setInitialP1] = useState("");
+  const [initialP2, setInitialP2] = useState("");
 
   const [isIntroFinished, setIsIntroFinished] = useState(false);
+  const [battleHistory, setBattleHistory] = useState<HistoricalBattle[]>([]);
+  const [isQueueOpen, setIsQueueOpen] = useState(false);
+
+  // Load history from localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("devbattle_battle_history");
+        if (saved) {
+          setBattleHistory(JSON.parse(saved));
+        }
+      } catch (e) {
+        console.error("Failed to load battle history:", e);
+      }
+    }
+  }, []);
+
+  const saveBattleToHistory = (p1: any, p2: any, battleType: string) => {
+    try {
+      const calc = (s: any) =>
+        (s?.totalCommits || 0) * 1 +
+        (s?.totalPRs || 0) * 5 +
+        (s?.totalStars || 0) * 10 +
+        (s?.followers || 0) * 2 +
+        (s?.streak || 0) * 5;
+
+      const p1Score = p1?.score || calc(p1?.stats) || 85;
+      const p2Score = p2?.score || calc(p2?.stats) || 70;
+      const winner = p1Score > p2Score ? "p1" : p1Score < p2Score ? "p2" : "draw";
+      const xpChange = Math.abs(Math.round((p1Score - p2Score) * 0.15)) + 15;
+
+      const newRecord: HistoricalBattle = {
+        id: `battle-${Date.now()}`,
+        player1: p1,
+        player2: p2,
+        battleType,
+        winner,
+        p1Score,
+        p2Score,
+        xpChange,
+        createdAt: new Date().toISOString(),
+      };
+
+      setBattleHistory((prev) => {
+        const updated = [newRecord, ...prev.filter((b) => b.id !== newRecord.id)].slice(0, 20);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("devbattle_battle_history", JSON.stringify(updated));
+        }
+        return updated;
+      });
+    } catch (e) {
+      console.error("Error saving battle history:", e);
+    }
+  };
+
+  // Read URL query parameters (e.g. /battles?p2=<username>)
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const p2 = params.get("p2") || params.get("opponent") || params.get("vs");
+      const p1 = params.get("p1") || currentUser?.username || "code-with-abhi-i5";
+      if (p2) {
+        setInitialP2(p2);
+      }
+      if (p1) {
+        setInitialP1(p1);
+      }
+    }
+  }, [currentUser]);
 
   const startGhostBattle = async (p1: string, p2: string, battleType: string) => {
     setSetupUsernames({ p1, p2, battleType });
@@ -43,6 +120,20 @@ export default function BattlesPage() {
     }
   };
 
+  // Deep-linking / Quick Battle trigger from Command Palette or URL params
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const opponent = params.get("p2") || params.get("opponent") || params.get("vs");
+      const p1 = params.get("p1") || currentUser?.username || "code-with-abhi-i5";
+      const battleType = params.get("type") || "Overall Battle";
+
+      if (opponent) {
+        startGhostBattle(p1, opponent, battleType);
+      }
+    }
+  }, [currentUser]);
+
   const handleIntroComplete = () => {
     setIsIntroFinished(true);
   };
@@ -64,8 +155,38 @@ export default function BattlesPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
+            className="space-y-6"
           >
-            <BattleSetup onStart={startGhostBattle} />
+            <div className="flex justify-end">
+              <Button
+                onClick={() => setIsQueueOpen(true)}
+                className="flex items-center gap-2 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-bold py-2.5 px-5 rounded-2xl shadow-lg"
+              >
+                <Swords className="w-4 h-4" />
+                <span>Quick Matchmaking Queue</span>
+              </Button>
+            </div>
+
+            <BattleSetup
+              onStart={startGhostBattle}
+              initialPlayer1={initialP1}
+              initialPlayer2={initialP2}
+            />
+
+            <BattleHistoryList
+              battles={battleHistory}
+              onReplay={(battle) => {
+                setGhostBattleData({
+                  p1: battle.player1,
+                  p2: battle.player2,
+                  battleType: battle.battleType,
+                });
+                setPhase("REPORT");
+              }}
+              onStartNew={() => {
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+            />
           </motion.div>
         )}
 
@@ -105,7 +226,10 @@ export default function BattlesPage() {
               player1={ghostBattleData.p1} 
               player2={ghostBattleData.p2} 
               battleType={ghostBattleData.battleType}
-              onComplete={() => setPhase("REPORT")} 
+              onComplete={() => {
+                saveBattleToHistory(ghostBattleData.p1, ghostBattleData.p2, ghostBattleData.battleType);
+                setPhase("REPORT");
+              }} 
             />
           </motion.div>
         )}
@@ -131,6 +255,21 @@ export default function BattlesPage() {
         )}
 
       </AnimatePresence>
+
+      {/* Real-time Matchmaking Queue Dialog */}
+      <BattleQueueDialog
+        isOpen={isQueueOpen}
+        onClose={() => setIsQueueOpen(false)}
+        currentUser={currentUser}
+        onMatchFound={(opponent) => {
+          setIsQueueOpen(false);
+          startGhostBattle(
+            currentUser?.username || "currentdev",
+            opponent.username,
+            "overall"
+          );
+        }}
+      />
     </div>
   );
 }
