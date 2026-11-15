@@ -8,10 +8,12 @@ import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
+import { MobileNav } from "@/components/layout/mobile-nav";
 import { DashboardBreadcrumbs } from "@/components/layout/breadcrumbs";
 import { CommandPalette } from "@/components/layout/command-palette";
 import { ShortcutsModal } from "@/components/modals/shortcuts-modal";
 import { PageTransition } from "@/components/animations/page-transition";
+import { SessionTimeoutModal } from "@/components/feedback/session-timeout-modal";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   clearAuthToken,
@@ -126,11 +128,14 @@ export default function DashboardLayout({
         <Topbar onOpenCommandPalette={() => setCommandPaletteOpen(true)} />
 
         {/* Page content */}
-        <main className="flex-1 px-4 py-6 md:px-6 lg:px-8">
+        <main className="flex-1 px-4 pt-6 pb-20 md:px-6 md:py-6 lg:px-8">
           <DashboardBreadcrumbs />
           <PageTransition>{children}</PageTransition>
         </main>
       </motion.div>
+
+      {/* Mobile Bottom Navigation */}
+      <MobileNav />
 
       {/* Command Palette (global overlay) */}
       <CommandPalette
@@ -143,6 +148,8 @@ export default function DashboardLayout({
         isOpen={shortcutsOpen}
         onClose={() => setShortcutsOpen(false)}
       />
+      {/* Session Inactivity Timeout Warning Modal */}
+      <SessionTimeoutModal />
     </div>
   );
 }
