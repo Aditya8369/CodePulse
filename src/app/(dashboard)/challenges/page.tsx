@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { motion } from "motion/react";
 import { StaggerContainer, StaggerItem } from "@/components/animations/page-transition";
 import { ChallengeCard } from "@/components/cards/challenge-card";
@@ -9,6 +9,7 @@ import {
   Target,
   Flame,
   CheckCircle2,
+  Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Challenge } from "@/types";
@@ -20,6 +21,11 @@ import {
   type RawChallenge,
 } from "@/hooks/api/use-challenges";
 import { useCurrentUser } from "@/hooks/api/use-auth";
+import {
+  getCustomChallenges,
+  subscribeToCustomChallenges,
+} from "@/lib/custom-challenges";
+import { CreateCustomChallengeModal } from "@/components/modals/create-custom-challenge-modal";
 
 const statusTabs = [
   { id: "all", label: "All", icon: Target },
@@ -29,6 +35,7 @@ const statusTabs = [
 
 const typeTabs = [
   { id: "all", label: "All Types" },
+  { id: "CUSTOM", label: "Custom" },
   { id: "DAILY", label: "Daily" },
   { id: "WEEKLY", label: "Weekly" },
   { id: "MONTHLY", label: "Monthly" },
@@ -42,10 +49,17 @@ interface FormattedChallenge extends Challenge {
 export default function ChallengesPage() {
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "completed">("all");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const { data: activeChallengesData, isLoading } = useActiveChallenges();
   const { data: currentUser } = useCurrentUser();
   const currentXp: number = currentUser?.rating?.xp ?? 0;
+
+  const customQuests = useSyncExternalStore(
+    subscribeToCustomChallenges,
+    getCustomChallenges,
+    () => []
+  );
 
   // Use API challenges if available, otherwise fallback to rich default challenges
   const baseChallenges: RawChallenge[] =
@@ -54,7 +68,25 @@ export default function ChallengesPage() {
       : DEFAULT_CHALLENGES;
 
   // Connect challenges dynamically to live user statistics
-  const realChallenges: FormattedChallenge[] = baseChallenges.map((c) => {
+  const formattedCustom: FormattedChallenge[] = (customQuests || []).map((c: any) => ({
+    id: c.id,
+    title: c.title,
+    description: c.description,
+    type: (c.type || "daily").toLowerCase() as Challenge["type"],
+    rawType: "CUSTOM",
+    difficulty: (c.difficulty || "medium").toLowerCase() as Challenge["difficulty"],
+    xpReward: c.xpReward || 0,
+    progress: c.progress || 0,
+    target: c.target || 1,
+    isCompleted: !!c.isCompleted,
+    expiresAt: c.expiresAt,
+    createdAt: c.createdAt,
+    icon: c.icon || "Target",
+    category: c.category || "Custom",
+    isCustom: true,
+  }));
+
+  const formattedBase: FormattedChallenge[] = baseChallenges.map((c) => {
     const { progress, isCompleted } = calculateChallengeProgress(c, currentUser);
 
     const mappedDifficulty = (c.difficulty || "medium").toLowerCase() as Challenge["difficulty"];
@@ -75,8 +107,11 @@ export default function ChallengesPage() {
       createdAt: c.createdAt,
       icon: c.icon || "Target",
       category: c.category || "General",
+      isCustom: false,
     };
   });
+
+  const realChallenges: FormattedChallenge[] = [...formattedCustom, ...formattedBase];
 
   // Calculate live counts
   const totalActiveCount = realChallenges.filter((c) => !c.isCompleted).length;
@@ -93,7 +128,7 @@ export default function ChallengesPage() {
   const typeFiltered =
     typeFilter === "all"
       ? realChallenges
-      : realChallenges.filter((c) => c.rawType === typeFilter);
+      : realChallenges.filter((c) => c.rawType === typeFilter || (typeFilter === "CUSTOM" && c.isCustom));
 
   // Filter by Status
   const statusFiltered = typeFiltered.filter((c) => {
@@ -148,14 +183,24 @@ export default function ChallengesPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Target className="w-6 h-6 text-primary" />
-          Challenges
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          Complete challenges to earn XP and level up your developer rating
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <Target className="w-6 h-6 text-primary" />
+            Challenges
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Complete challenges to earn XP and level up your developer rating
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setIsCreateModalOpen(true)}
+          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 text-sm font-semibold transition-all shadow-sm cursor-pointer shrink-0"
+        >
+          <Plus className="w-4 h-4" />
+          <span>+ Create Custom Quest</span>
+        </button>
       </div>
 
       {/* Summary cards connected to live state */}
@@ -312,6 +357,11 @@ export default function ChallengesPage() {
           )}
         </div>
       )}
+
+      <CreateCustomChallengeModal
+        open={isCreateModalOpen}
+        onOpenChange={setIsCreateModalOpen}
+      />
     </div>
   );
 }
