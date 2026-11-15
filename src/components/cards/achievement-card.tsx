@@ -101,16 +101,6 @@ export function AchievementCard({
         rotateY: isHovered ? rotateY : 0,
         transformPerspective: 800,
       }}
-      onClick={onClick}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onClick?.();
-        }
-      }}
-      tabIndex={onClick ? 0 : undefined}
-      role={onClick ? "button" : undefined}
-      aria-label={`Achievement: ${achievement.title}, ${achievement.rarity}`}
       onMouseMove={handleMouseMove}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={handleMouseLeave}
