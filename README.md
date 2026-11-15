@@ -1,13 +1,126 @@
 # ⚔️ CodePulse (DevBattle)
 
 [![Nexus Spring of Code 2026](https://img.shields.io/badge/Nexus_Spring_of_Code-2026_Winter_Edition-blueviolet?style=for-the-badge&logo=github)](https://nsoc.in/)
-[![NSoC'26 Level 1](https://img.shields.io/badge/NSoC'26-Level_1_(3_Pts)-green?style=for-the-badge)](https://nsoc.in/)
-[![NSoC'26 Level 2](https://img.shields.io/badge/NSoC'26-Level_2_(5_Pts)-yellow?style=for-the-badge)](https://nsoc.in/)
-[![NSoC'26 Level 3](https://img.shields.io/badge/NSoC'26-Level_3_(10_Pts)-red?style=for-the-badge)](https://nsoc.in/)
+[![CI Build & Tests](https://img.shields.io/github/actions/workflow/status/code-with-abhi-i5/CodePulse/ci.yml?branch=main&label=CI%20Tests%20%26%20Build&style=for-the-badge&logo=vitest&logoColor=yellow)](https://github.com/code-with-abhi-i5/CodePulse/actions/workflows/ci.yml)
+[![Security Shield](https://img.shields.io/github/actions/workflow/status/code-with-abhi-i5/CodePulse/secret-shield.yml?branch=main&label=Secret%20Shield&style=for-the-badge&logo=securityscorecard&logoColor=green)](https://github.com/code-with-abhi-i5/CodePulse/actions/workflows/secret-shield.yml)
+[![Contributors](https://img.shields.io/github/contributors/code-with-abhi-i5/CodePulse?style=for-the-badge&color=blue&logo=github)](https://github.com/code-with-abhi-i5/CodePulse/graphs/contributors)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=for-the-badge&logo=git)](https://github.com/code-with-abhi-i5/CodePulse/pulls)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
+
+[![NSoC'26 Level 1](https://img.shields.io/badge/NSoC'26-Level_1_(3_Pts)-green?style=flat-square)](https://nsoc.in/)
+[![NSoC'26 Level 2](https://img.shields.io/badge/NSoC'26-Level_2_(5_Pts)-yellow?style=flat-square)](https://nsoc.in/)
+[![NSoC'26 Level 3](https://img.shields.io/badge/NSoC'26-Level_3_(10_Pts)-red?style=flat-square)](https://nsoc.in/)
 
 > 🌟 **Official Participant in Nexus Spring of Code (NSoC / NWoC) 2026 — Winter Edition**  
 > A 45-day open-source program where maintainers and contributors collaborate to build real-world software.  
 > 📖 **Program Timeline:** 19 Oct – 02 Dec 2026 | 🔗 **Official Portal:** [nsoc.in](https://www.nsoc.in/) | 💬 **Community:** [NSoC Discord Server](https://discord.gg/cUDnU9dup)
+
+## 🌟 Hall of Fame & Contributors Wall
+
+A heartfelt thank you to all the amazing developers contributing to **CodePulse** during **Nexus Spring of Code (NSoC'26)**! You are making developer analytics gamified and accessible to everyone. 🎉
+
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+<table>
+  <tr>
+    <td align="center" width="160px">
+      <a href="https://github.com/code-with-abhi-i5">
+        <img src="https://avatars.githubusercontent.com/u/195516410?v=4&s=100" width="80px" style="border-radius: 50%;" alt="code-with-abhi-i5" /><br />
+        <sub><b>@code-with-abhi-i5</b></sub>
+      </a><br />
+      <sub>👑 Maintainer</sub><br />
+      <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=code-with-abhi-i5"><sub>🔨 124 commits</sub></a>
+    </td>
+    <td align="center" width="160px">
+      <a href="https://github.com/Babin123456">
+        <img src="https://avatars.githubusercontent.com/u/265290994?v=4&s=100" width="80px" style="border-radius: 50%;" alt="Babin123456" /><br />
+        <sub><b>@Babin123456</b></sub>
+      </a><br />
+      <sub>💻 Contributor</sub><br />
+      <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=Babin123456"><sub>🔨 43 commits</sub></a>
+    </td>
+    <td align="center" width="160px">
+      <a href="https://github.com/pratikadamas">
+        <img src="https://avatars.githubusercontent.com/u/147491382?v=4&s=100" width="80px" style="border-radius: 50%;" alt="pratikadamas" /><br />
+        <sub><b>@pratikadamas</b></sub>
+      </a><br />
+      <sub>💻 Contributor</sub><br />
+      <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=pratikadamas"><sub>🔨 24 commits</sub></a>
+    </td>
+    <td align="center" width="160px">
+      <a href="https://github.com/Ankit-Kum-ar">
+        <img src="https://avatars.githubusercontent.com/u/111765525?v=4&s=100" width="80px" style="border-radius: 50%;" alt="Ankit-Kum-ar" /><br />
+        <sub><b>@Ankit-Kum-ar</b></sub>
+      </a><br />
+      <sub>💻 Contributor</sub><br />
+      <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=Ankit-Kum-ar"><sub>🔨 5 commits</sub></a>
+    </td>
+    <td align="center" width="160px">
+      <a href="https://github.com/Sarbajit-Sengupta">
+        <img src="https://avatars.githubusercontent.com/u/73594751?v=4&s=100" width="80px" style="border-radius: 50%;" alt="Sarbajit-Sengupta" /><br />
+        <sub><b>@Sarbajit-Sengupta</b></sub>
+      </a><br />
+      <sub>💻 Contributor</sub><br />
+      <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=Sarbajit-Sengupta"><sub>🔨 5 commits</sub></a>
+    </td>
+    <td align="center" width="160px">
+      <a href="https://github.com/bhavyasingh-sa">
+        <img src="https://avatars.githubusercontent.com/u/176571887?v=4&s=100" width="80px" style="border-radius: 50%;" alt="bhavyasingh-sa" /><br />
+        <sub><b>@bhavyasingh-sa</b></sub>
+      </a><br />
+      <sub>💻 Contributor</sub><br />
+      <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=bhavyasingh-sa"><sub>🔨 4 commits</sub></a>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="160px">
+      <a href="https://github.com/nilesh0199">
+        <img src="https://avatars.githubusercontent.com/u/205056958?v=4&s=100" width="80px" style="border-radius: 50%;" alt="nilesh0199" /><br />
+        <sub><b>@nilesh0199</b></sub>
+      </a><br />
+      <sub>💻 Contributor</sub><br />
+      <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=nilesh0199"><sub>🔨 4 commits</sub></a>
+    </td>
+    <td align="center" width="160px">
+      <a href="https://github.com/aush5895">
+        <img src="https://avatars.githubusercontent.com/u/229103100?v=4&s=100" width="80px" style="border-radius: 50%;" alt="aush5895" /><br />
+        <sub><b>@aush5895</b></sub>
+      </a><br />
+      <sub>💻 Contributor</sub><br />
+      <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=aush5895"><sub>🔨 2 commits</sub></a>
+    </td>
+    <td align="center" width="160px">
+      <a href="https://github.com/chanchall26">
+        <img src="https://avatars.githubusercontent.com/u/190047591?v=4&s=100" width="80px" style="border-radius: 50%;" alt="chanchall26" /><br />
+        <sub><b>@chanchall26</b></sub>
+      </a><br />
+      <sub>💻 Contributor</sub><br />
+      <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=chanchall26"><sub>🔨 2 commits</sub></a>
+    </td>
+    <td align="center" width="160px">
+      <a href="https://github.com/tesfa27">
+        <img src="https://avatars.githubusercontent.com/u/120743554?v=4&s=100" width="80px" style="border-radius: 50%;" alt="tesfa27" /><br />
+        <sub><b>@tesfa27</b></sub>
+      </a><br />
+      <sub>💻 Contributor</sub><br />
+      <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=tesfa27"><sub>🔨 1 commits</sub></a>
+    </td>
+    <td align="center" width="160px">
+      <a href="https://github.com/yash-kumawat-0">
+        <img src="https://avatars.githubusercontent.com/u/191586321?v=4&s=100" width="80px" style="border-radius: 50%;" alt="yash-kumawat-0" /><br />
+        <sub><b>@yash-kumawat-0</b></sub>
+      </a><br />
+      <sub>💻 Contributor</sub><br />
+      <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=yash-kumawat-0"><sub>🔨 1 commits</sub></a>
+    </td>
+  </tr>
+</table>
+<!-- markdownlint-restore -->
+<!-- prettier-ignore-end -->
+<!-- ALL-CONTRIBUTORS-LIST:END -->
+
+> 💡 **Want to see your face here?** Check out our [`CONTRIBUTING.md`](./CONTRIBUTING.md), pick an open [NSoC Issue](https://github.com/code-with-abhi-i5/CodePulse/issues), and submit your PR! 🚀
 
 ---
 
@@ -530,6 +643,24 @@ GitHub API → Raw JSON → Process → Score Calculation → Persona Assignment
                                     → Final DevData JSON → Frontend
 ```
 
+### 8.2 Dynamic GitHub Profile SVG Badge Generator
+
+**File:** [`src/app/api/badge/[username]/route.ts`](file:///src/app/api/badge/[username]/route.ts)
+
+**Endpoint:** `GET /api/badge/:username`
+
+**What It Does:**
+1. Fetches developer metrics (Pulse score, global rank, tier/persona, commits, stars, PRs, streak) from the NestJS backend API or GitHub proxy.
+2. Renders an ultra-crisp, dark-themed SVG badge (`495x195`) with rounded corners, glowing gradient borders, a circular score gauge, and a 2x2 stats grid.
+3. Automatically escapes all XML entities (`&`, `<`, `>`, `"`, `'`) to prevent formatting breakage and XSS.
+4. Serves with caching headers: `Cache-Control: public, max-age=3600, s-maxage=7200`.
+5. Gracefully handles non-existent or invalid usernames with an elegant fallback SVG badge (status 200, SVG content-type), ensuring GitHub README embeds (`![CodePulse Badge](...)`) always render cleanly through GitHub Camo without broken image icons.
+
+**Embed in GitHub README:**
+```markdown
+[![CodePulse Badge](https://codepulse.dev/api/badge/your-username)](https://codepulse.dev)
+```
+
 ---
 
 ## 9. Authentication Flow
@@ -682,7 +813,7 @@ CodePulse/
 └── backend/                            # NestJS Backend (separate app)
     ├── .env                            # Backend env vars (DB, JWT, GitHub)
     ├── package.json                    # Backend dependencies
-    ├── docker-compose.yml              # PostgreSQL + Redis containers
+    ├── docker-compose.yml              # PostgreSQL + Redis + Mailpit containers
     ├── nest-cli.json                   # NestJS CLI config
     ├── tsconfig.json                   # Backend TypeScript config
     │
@@ -838,6 +969,7 @@ sequenceDiagram
 |----------|---------|---------|
 | `GITHUB_TOKEN` | `ghp_xxxxxxxxxxxx` | Server-side GitHub API token for the proxy route. Increases rate limit from 60 to 5,000/hour. |
 | `NEXT_PUBLIC_API_URL` | `http://localhost:3001/api/v1` | NestJS backend URL for the Axios client. |
+| `NEXT_PUBLIC_GITHUB_CLIENT_ID` | GitHub OAuth App Client ID | Enables the GitHub sign-in button. |
 
 ### 14.2 Backend (`backend/.env`)
 
@@ -850,6 +982,35 @@ sequenceDiagram
 | `GITHUB_CALLBACK_URL` | `http://localhost:3000/auth/callback` | OAuth redirect URI. |
 | `JWT_SECRET` | `your-secret-key` | Secret key for signing JWT tokens. |
 | `PORT` | `3001` | Backend server port. |
+| `APP_URL` | `http://localhost:3000` | Public frontend URL used to construct password-reset links. |
+| `SMTP_HOST`, `SMTP_PORT` | `localhost`, `1025` | SMTP server used for password-reset emails. Defaults to local Mailpit. |
+| `SMTP_USER`, `SMTP_PASSWORD` | optional | SMTP authentication when required by the provider. |
+| `SMTP_SECURE` | `false` | Enables TLS for SMTP when set to `true`. |
+| `MAIL_FROM` | `DevBattle <noreply@example.com>` | Sender address for reset emails. |
+
+Mailpit captures messages locally; it does **not** deliver them to Gmail or Outlook. To deliver real email, replace the local SMTP values in `backend/.env` with a provider account:
+
+**Gmail** (requires 2-Step Verification and a Google App Password; do not use your normal Google password):
+```env
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=465
+SMTP_SECURE=true
+SMTP_USER=your-sending-address@gmail.com
+SMTP_PASSWORD=your-google-app-password
+MAIL_FROM=DevBattle <your-sending-address@gmail.com>
+```
+
+**Outlook.com / Microsoft 365**:
+```env
+SMTP_HOST=smtp-mail.outlook.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=your-sending-address@outlook.com
+SMTP_PASSWORD=your-mailbox-password-or-provider-app-password
+MAIL_FROM=DevBattle <your-sending-address@outlook.com>
+```
+
+After changing `backend/.env`, restart the backend. `APP_URL` must be a URL recipients can open; `http://localhost:3000` only works for your own machine during local testing. For local testing, keep the Mailpit values and read messages at `http://localhost:8025`. Never commit SMTP credentials.
 
 ---
 
@@ -914,6 +1075,19 @@ git clone https://github.com/code-with-abhi-i5/CodePulse.git
 cd CodePulse
 ```
 
+### Quick Start with Docker (one command)
+Requires Docker with Compose v2. From the repository root:
+```bash
+docker compose -f docker-compose.dev.yml up --build
+# or: sh scripts/dev-setup.sh   (Windows: scripts\dev-setup.bat)
+```
+This starts PostgreSQL 16, Redis 7, Mailpit, the NestJS API and the Next.js app. The backend waits for a healthy database, then runs `prisma migrate deploy` and `prisma db seed` before starting, so the database is ready with no manual steps. Both are idempotent: restarting or re-running `up` will not duplicate data.
+
+- Frontend: http://localhost:3000, API: http://localhost:3001/api/v1, Swagger: http://localhost:3001/api/docs, Mailpit: http://localhost:8025
+- Source is bind-mounted, so edits hot-reload. Optional secrets (`GITHUB_TOKEN`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `JWT_SECRET`) are read from a root `.env`.
+- Stop with `docker compose -f docker-compose.dev.yml down`; add `-v` to also wipe the database.
+- Do not run it together with `backend/docker-compose.yml` (same host ports). The manual steps below are still supported.
+
 ### Step 2: Install Frontend Dependencies
 ```bash
 npm install
@@ -926,10 +1100,12 @@ npm install
 ```
 
 ### Step 4: Configure Environment Variables
+Copy the safe templates with `Copy-Item .env.example .env.local` and `Copy-Item backend/.env.example backend/.env`, then fill in your OAuth app and a unique JWT secret.
 Create `/.env.local` (frontend):
 ```env
 GITHUB_TOKEN=ghp_your_personal_access_token
 NEXT_PUBLIC_API_URL=http://localhost:3001/api/v1
+NEXT_PUBLIC_GITHUB_CLIENT_ID=your_github_oauth_client_id
 ```
 
 Create `/backend/.env` (backend):
@@ -938,26 +1114,53 @@ DATABASE_URL=postgresql://user:password@host:5432/database
 DIRECT_URL=postgresql://user:password@host:5432/database
 GITHUB_CLIENT_ID=your_github_oauth_client_id
 GITHUB_CLIENT_SECRET=your_github_oauth_client_secret
-JWT_SECRET=your_jwt_secret
+JWT_SECRET=generate_a_long_random_secret
 PORT=3001
+APP_URL=http://localhost:3000
+SMTP_HOST=localhost
+SMTP_PORT=1025
+SMTP_SECURE=false
+MAIL_FROM=DevBattle <noreply@example.com>
 ```
 
-### Step 5: Start the Backend
+For local password-reset email testing, the Docker Compose setup includes Mailpit. Open `http://localhost:8025` after starting Docker to view emails. For production, configure SMTP credentials from your email provider and set `SMTP_SECURE` appropriately. Never commit real credentials.
+
+### Step 5: Start PostgreSQL, Redis, and Mailpit
+```bash
+cd backend
+docker compose up -d
+```
+
+### Step 6: Apply the Database Schema
+```bash
+cd backend
+npx prisma generate
+npx prisma db push
+```
+
+### Step 7: Start the Backend
 ```bash
 cd backend
 npm run start:dev        # Starts NestJS on port 3001
 ```
 
-### Step 6: Start the Frontend
+### Step 8: Start the Frontend
 ```bash
 # From root directory
 npm run dev              # Starts Next.js on port 3000
 ```
 
-### Step 7: Open the App
+### Step 9: Open the App
 - **Frontend:** http://localhost:3000
 - **Backend API:** http://localhost:3001/api/v1
 - **Swagger Docs:** http://localhost:3001/api/docs
+
+### Test the Password-Reset Flow
+1. Create an account with email and password at `http://localhost:3000/signup`.
+2. Visit `http://localhost:3000/forgot-password`, enter that email, and submit.
+3. For local Mailpit, open `http://localhost:8025` and click the reset link. For real delivery, configure Gmail/Outlook SMTP above and check the recipient inbox (including Spam/Junk).
+4. Choose a new password, then sign in with it. A reset link expires after 30 minutes and cannot be reused.
+5. Visiting `/dashboard` without a valid session redirects to `/login`.
 
 ---
 

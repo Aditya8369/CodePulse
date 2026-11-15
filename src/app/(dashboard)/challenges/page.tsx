@@ -1,16 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { motion } from "motion/react";
 import { StaggerContainer, StaggerItem } from "@/components/animations/page-transition";
 import { ChallengeCard } from "@/components/cards/challenge-card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Target, Flame, Calendar, Trophy, Sparkles } from "lucide-react";
+import { Target, Flame, Calendar, Trophy, Sparkles, Plus } from "lucide-react";
 
 import { useActiveChallenges } from "@/hooks/api/use-challenges";
+import { useCurrentUser } from "@/hooks/api/use-auth";
+import {
+  getCustomChallenges,
+  subscribeToCustomChallenges,
+} from "@/lib/custom-challenges";
+import { CreateCustomChallengeModal } from "@/components/modals/create-custom-challenge-modal";
 
 const tabs = [
   { id: "all", label: "All", icon: Target },
+  { id: "CUSTOM", label: "Custom", icon: Sparkles },
   { id: "DAILY", label: "Daily", icon: Flame },
   { id: "WEEKLY", label: "Weekly", icon: Calendar },
   { id: "MONTHLY", label: "Monthly", icon: Trophy },
@@ -19,10 +26,19 @@ const tabs = [
 
 export default function ChallengesPage() {
   const [activeTab, setActiveTab] = useState("all");
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const { data: activeChallengesData, isLoading } = useActiveChallenges();
+  const { data: currentUser } = useCurrentUser();
+  const currentXp: number = currentUser?.rating?.xp ?? 0;
+
+  const customQuests = useSyncExternalStore(
+    subscribeToCustomChallenges,
+    getCustomChallenges,
+    () => []
+  );
 
   // Map backend format to frontend format temporarily
-  const realChallenges = (activeChallengesData || []).map((c: any) => ({
+  const backendChallenges = (activeChallengesData || []).map((c: any) => ({
     id: c.id,
     title: c.title,
     description: c.description,
@@ -36,11 +52,16 @@ export default function ChallengesPage() {
     createdAt: c.createdAt,
     icon: c.icon || "Target",
     category: c.category,
+    isCustom: false,
   }));
 
+  const allChallenges = [...customQuests, ...backendChallenges];
+
   const filtered = activeTab === "all"
-    ? realChallenges
-    : realChallenges.filter((c: any) => c.type === activeTab);
+    ? allChallenges
+    : activeTab === "CUSTOM"
+    ? allChallenges.filter((c: any) => c.isCustom)
+    : allChallenges.filter((c: any) => c.type === activeTab || (c.isCustom && c.type.toUpperCase() === activeTab));
 
   const active = filtered.filter((c: any) => !c.isCompleted);
   const completed = filtered.filter((c: any) => c.isCompleted);
@@ -88,23 +109,33 @@ export default function ChallengesPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Target className="w-6 h-6 text-primary" />
-          Challenges
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          Complete challenges to earn XP and level up
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <Target className="w-6 h-6 text-primary" />
+            Challenges
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Complete challenges to earn XP and level up
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setIsCreateModalOpen(true)}
+          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 text-sm font-semibold transition-all shadow-sm cursor-pointer shrink-0"
+        >
+          <Plus className="w-4 h-4" />
+          <span>+ Create Custom Quest</span>
+        </button>
       </div>
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: "Active", value: realChallenges.filter((c: any) => !c.isCompleted).length, color: "text-blue-400" },
-          { label: "Completed", value: realChallenges.filter((c: any) => c.isCompleted).length, color: "text-emerald-400" },
+          { label: "Active", value: allChallenges.filter((c: any) => !c.isCompleted).length, color: "text-blue-400" },
+          { label: "Completed", value: allChallenges.filter((c: any) => c.isCompleted).length, color: "text-emerald-400" },
           { label: "XP Earned", value: "0", color: "text-amber-400" },
-          { label: "Total XP Available", value: realChallenges.reduce((acc: number, c: any) => acc + (c.xpReward || 0), 0), color: "text-purple-400" },
+          { label: "Total XP Available", value: allChallenges.reduce((acc: number, c: any) => acc + (c.xpReward || 0), 0), color: "text-purple-400" },
         ].map((stat, i) => (
           <motion.div
             key={i}
@@ -121,7 +152,10 @@ export default function ChallengesPage() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="bg-white/5 border border-white/10 p-1 rounded-xl">
+        <TabsList
+          className="bg-white/5 border border-white/10 p-1 rounded-xl"
+          aria-label="Filter challenges by type"
+        >
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
@@ -129,8 +163,9 @@ export default function ChallengesPage() {
                 key={tab.id}
                 value={tab.id}
                 className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs gap-1.5"
+                aria-label={`${tab.label} challenges`}
               >
-                <Icon className="w-3.5 h-3.5" />
+                <Icon className="w-3.5 h-3.5" aria-hidden="true" />
                 {tab.label}
               </TabsTrigger>
             );
@@ -138,38 +173,51 @@ export default function ChallengesPage() {
         </TabsList>
       </Tabs>
 
+      {/* Challenge results live region */}
+      <div
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+      >
+        {active.length} active and {completed.length} completed challenges in the {tabs.find(t => t.id === activeTab)?.label} category.
+      </div>
+
       {/* Active challenges */}
       {active.length > 0 && (
-        <div>
+        <section aria-label={`Active ${tabs.find(t => t.id === activeTab)?.label} challenges`}>
           <h2 className="text-lg font-semibold mb-3">Active Challenges</h2>
           <StaggerContainer className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {active.map((challenge) => (
               <StaggerItem key={challenge.id}>
-                <ChallengeCard challenge={challenge} />
+                <ChallengeCard challenge={challenge} currentXp={currentXp} />
               </StaggerItem>
             ))}
           </StaggerContainer>
-        </div>
+        </section>
       )}
 
       {/* Completed */}
       {completed.length > 0 && (
-        <div>
+        <section aria-label={`Completed ${tabs.find(t => t.id === activeTab)?.label} challenges`}>
           <h2 className="text-lg font-semibold mb-3 text-muted-foreground">Completed</h2>
           <StaggerContainer className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {completed.map((challenge) => (
               <StaggerItem key={challenge.id}>
-                <ChallengeCard challenge={challenge} />
+                <ChallengeCard challenge={challenge} currentXp={currentXp} />
               </StaggerItem>
             ))}
           </StaggerContainer>
-        </div>
+        </section>
       )}
 
       {active.length === 0 && completed.length === 0 && (
-        <div className="glass-card rounded-[20px] p-12 text-center border border-white/5 space-y-3">
+        <div
+          role="status"
+          aria-label="No challenges available"
+          className="glass-card rounded-[20px] p-12 text-center border border-white/5 space-y-3"
+        >
           <div className="w-12 h-12 rounded-2xl bg-white/5 mx-auto flex items-center justify-center text-muted-foreground">
-            <Target className="w-6 h-6" />
+            <Target className="w-6 h-6" aria-hidden="true" />
           </div>
           <h3 className="text-base font-semibold">No challenges found</h3>
           <p className="text-sm text-muted-foreground max-w-sm mx-auto">
@@ -177,6 +225,11 @@ export default function ChallengesPage() {
           </p>
         </div>
       )}
+
+      <CreateCustomChallengeModal
+        open={isCreateModalOpen}
+        onOpenChange={setIsCreateModalOpen}
+      />
     </div>
   );
 }

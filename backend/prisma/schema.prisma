@@ -10,10 +10,13 @@ datasource db {
 
 model User {
   id                  String            @id @default(uuid())
-  githubId            String            @unique
+  githubId            String?           @unique
   username            String            @unique
   name                String?
   email               String?
+  authEmail           String?           @unique
+  passwordHash        String?
+  interests           String[]           @default([])
   avatar              String?
   bio                 String?
   location            String?
@@ -25,6 +28,7 @@ model User {
   joinedAt            DateTime          @default(now())
   updatedAt           DateTime          @updatedAt
   deletedAt           DateTime?
+  xpTransactions      XpTransaction[]
   activities          Activity[]
   battlesAsChallenger Battle[]          @relation("BattleChallenger")
   battlesAsOpponent   Battle[]          @relation("BattleOpponent")
@@ -39,8 +43,22 @@ model User {
   achievements        UserAchievement[]
   badges              UserBadge[]
   challenges          UserChallenge[]
+  passwordResetTokens PasswordResetToken[]
 
   @@map("users")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@map("password_reset_tokens")
 }
 
 model Follows {
@@ -68,6 +86,8 @@ model DeveloperRating {
   updatedAt       DateTime @updatedAt
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([overall, tier])
+  @@index([rank])
   @@map("developer_ratings")
 }
 
@@ -98,7 +118,7 @@ model DeveloperStats {
 
 model Repository {
   id            String   @id @default(uuid())
-  githubRepoId  String   @unique
+  githubRepoId  String
   userId        String
   name          String
   fullName      String
@@ -122,6 +142,9 @@ model Repository {
   updatedAt     DateTime @updatedAt
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  archivedAt    DateTime?
+
+  @@unique([userId, githubRepoId])
   @@map("repositories")
 }
 
@@ -241,6 +264,7 @@ model Battle {
 }
 
 model Activity {
+  githubEventId String?
   id          String       @id @default(uuid())
   userId      String
   type        ActivityType
@@ -251,6 +275,7 @@ model Activity {
   createdAt   DateTime     @default(now())
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@unique([userId, githubEventId])
   @@map("activities")
 }
 
@@ -369,4 +394,17 @@ model LeaderboardCache {
   updatedAt   DateTime @updatedAt
 
   @@map("leaderboard_caches")
+}
+
+model XpTransaction {
+  id          String   @id @default(uuid())
+  userId      String
+  amount      Int
+  source      String
+  description String
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("xp_transactions")
 }

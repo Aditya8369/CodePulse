@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useRef, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "motion/react";
@@ -14,7 +14,8 @@ import {
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
-import { mockNotifications } from "@/lib/mock-data";
+import { useNotifications } from "@/hooks/api/use-notifications";
+import { NotificationDropdown } from "@/components/layout/notification-dropdown";
 import { useCurrentUser } from "@/hooks/api/use-auth";
 import { NAV_ITEMS } from "@/lib/constants";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -47,7 +48,7 @@ function useBreadcrumbs() {
   const activeItem = allItems.find((item) => item.href === pathname);
 
   const crumbs: { title: string; href?: string }[] = [
-    { title: "DevBattle", href: "/dashboard" },
+    { title: "CodePulse", href: "/dashboard" },
   ];
 
   if (activeItem) {
@@ -75,19 +76,21 @@ function SearchTrigger({ onOpen }: SearchTriggerProps) {
   return (
     <motion.button
       id="topbar-search-trigger"
+      type="button"
       onClick={onOpen}
+      aria-label="Search dashboard (Press Command K)"
       className={cn(
         "group flex h-9 items-center gap-2 rounded-xl border border-white/[0.06] px-3",
         "bg-white/[0.03] text-muted-foreground transition-colors",
-        "hover:border-white/[0.1] hover:bg-white/[0.06] hover:text-foreground",
+        "hover:border-white/[0.1] hover:bg-white/[0.06] hover:text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40",
         "w-64"
       )}
       whileHover={{ scale: 1.01 }}
       whileTap={{ scale: 0.99 }}
     >
-      <Search className="h-3.5 w-3.5" />
+      <Search className="h-3.5 w-3.5" aria-hidden="true" />
       <span className="flex-1 text-left text-sm">Search...</span>
-      <kbd className="pointer-events-none flex h-5 items-center gap-0.5 rounded-md border border-white/[0.08] bg-white/[0.04] px-1.5 font-mono text-[10px] text-muted-foreground">
+      <kbd className="pointer-events-none flex h-5 items-center gap-0.5 rounded-md border border-white/[0.08] bg-white/[0.04] px-1.5 font-mono text-[10px] text-muted-foreground" aria-hidden="true">
         <Command className="h-2.5 w-2.5" />K
       </kbd>
     </motion.button>
@@ -99,36 +102,81 @@ function SearchTrigger({ onOpen }: SearchTriggerProps) {
 // ===========================
 
 function NotificationBell() {
-  const unreadCount = mockNotifications.filter((n) => !n.isRead).length;
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const { notifications, unreadCount, markAsRead, markAllAsRead } =
+    useNotifications();
+
+  // Close dropdown when clicking outside or pressing Escape
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsOpen(false);
+      }
+    }
+
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("keydown", handleKeyDown);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen]);
 
   return (
-    <motion.button
-      id="topbar-notifications"
-      className={cn(
-        "relative flex h-9 w-9 items-center justify-center rounded-xl",
-        "text-muted-foreground transition-colors",
-        "hover:bg-white/[0.06] hover:text-foreground"
-      )}
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
-      aria-label={`${unreadCount} unread notifications`}
-    >
-      <Bell className="h-[18px] w-[18px]" />
+    <div className="relative" ref={dropdownRef}>
+      <motion.button
+        id="topbar-notifications"
+        onClick={() => setIsOpen((prev) => !prev)}
+        className={cn(
+          "relative flex h-9 w-9 items-center justify-center rounded-xl transition-colors cursor-pointer",
+          isOpen
+            ? "bg-white/[0.08] text-foreground ring-1 ring-primary/40"
+            : "text-muted-foreground hover:bg-white/[0.06] hover:text-foreground"
+        )}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        aria-label={`${unreadCount} unread notifications`}
+        aria-expanded={isOpen}
+      >
+        <Bell className="h-[18px] w-[18px]" />
 
-      {unreadCount > 0 && (
-        <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          className={cn(
-            "absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1",
-            "bg-gradient-to-br from-purple-500 to-blue-500 text-[10px] font-bold text-white",
-            "ring-2 ring-[#070B14]"
-          )}
-        >
-          {unreadCount}
-        </motion.div>
-      )}
-    </motion.button>
+        {unreadCount > 0 && (
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            className={cn(
+              "absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1",
+              "bg-gradient-to-br from-purple-500 to-blue-500 text-[10px] font-bold text-white",
+              "ring-2 ring-[#070B14]"
+            )}
+          >
+            {unreadCount}
+          </motion.div>
+        )}
+      </motion.button>
+
+      <NotificationDropdown
+        isOpen={isOpen}
+        onClose={() => setIsOpen(false)}
+        notifications={notifications}
+        unreadCount={unreadCount}
+        onMarkAsRead={markAsRead}
+        onMarkAllAsRead={markAllAsRead}
+      />
+    </div>
   );
 }
 
@@ -138,11 +186,11 @@ function NotificationBell() {
 
 function ThemeToggle() {
   const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
 
   if (!mounted) {
     return (
