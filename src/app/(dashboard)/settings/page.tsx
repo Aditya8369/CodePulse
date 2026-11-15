@@ -24,12 +24,20 @@ import {
   Check,
   Sliders,
   Sparkles,
+  Volume2,
+  VolumeX,
+  Download,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { GithubIcon } from "@/components/icons/github";
 import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
+import { audioManager } from "@/lib/audio-manager";
 import { useCurrentUser } from "@/hooks/api/use-auth";
+import {
+  buildUserDataExport,
+  downloadUserDataExport,
+} from "@/lib/data-export";
 import {
   useUpdateProfile,
   useUserPreferences,
@@ -65,6 +73,7 @@ const LANDING_TABS = [
 
 export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState("profile");
+  const [isExporting, setIsExporting] = useState(false);
 
   const { theme, setTheme } = useTheme();
   const { data: user, isLoading: isUserLoading } = useCurrentUser();
@@ -78,6 +87,10 @@ export default function SettingsPage() {
     updateNotifications,
     resetToDefaults,
   } = useUserPreferences();
+
+  // Audio settings state
+  const [soundEnabled, setSoundEnabled] = useState(() => audioManager.isEnabled());
+  const [soundVolume, setSoundVolume] = useState(() => Math.round(audioManager.getVolume() * 100));
 
   const handleProfileSave = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -122,6 +135,27 @@ export default function SettingsPage() {
     location: "",
     company: "",
     website: "",
+  };
+
+  const handleExportData = async () => {
+    try {
+      setIsExporting(true);
+      await new Promise((resolve) => setTimeout(resolve, 350));
+
+      const payload = buildUserDataExport({
+        user: displayUser,
+        rating: user?.rating,
+        stats: user?.stats,
+        repositories: user?.repositories,
+      });
+
+      const result = downloadUserDataExport(payload);
+      toast.success(`Account data exported successfully (${result.formattedSize}).`);
+    } catch {
+      toast.error("Failed to export account data. Please try again.");
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const notificationItems: {
@@ -628,6 +662,73 @@ export default function SettingsPage() {
                     })}
                   </div>
                 </div>
+
+                {/* Sound & Audio Effects Section */}
+                <div className="pt-4 border-t border-white/[0.06] space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                        {soundEnabled ? (
+                          <Volume2 className="w-4 h-4 text-emerald-400" />
+                        ) : (
+                          <VolumeX className="w-4 h-4 text-muted-foreground" />
+                        )}
+                        Sound Effects & Victory Chimes
+                      </h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Play celebration audio upon winning dev battles and unlocking achievements
+                      </p>
+                    </div>
+                    <Switch
+                      checked={soundEnabled}
+                      onCheckedChange={(checked) => {
+                        setSoundEnabled(checked);
+                        audioManager.setEnabled(checked);
+                        if (checked) {
+                          audioManager.playPreviewChime();
+                        }
+                        toast.success(`Sound effects ${checked ? "enabled" : "muted"}.`);
+                      }}
+                    />
+                  </div>
+
+                  {soundEnabled && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.04] space-y-3"
+                    >
+                      <div className="flex items-center justify-between text-xs">
+                        <label htmlFor="sound-volume-slider" className="font-medium text-slate-300">
+                          Effects Volume: <span className="font-mono text-emerald-400">{soundVolume}%</span>
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            audioManager.playPreviewChime();
+                            toast.info("Playing audio preview chime...");
+                          }}
+                          className="px-3 py-1 rounded-lg bg-primary/20 hover:bg-primary/30 text-primary text-xs font-semibold border border-primary/30 transition-colors cursor-pointer"
+                        >
+                          Test Audio
+                        </button>
+                      </div>
+                      <input
+                        id="sound-volume-slider"
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={soundVolume}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value, 10);
+                          setSoundVolume(val);
+                          audioManager.setVolume(val / 100);
+                        }}
+                        className="w-full h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-primary"
+                      />
+                    </motion.div>
+                  )}
+                </div>
               </div>
             </motion.div>
           )}
@@ -678,6 +779,29 @@ export default function SettingsPage() {
                       <Switch defaultChecked={item.default} />
                     </div>
                   ))}
+
+                  {/* Account Data Export (GDPR) */}
+                  <div className="pt-4 mt-2 border-t border-white/[0.06] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-medium">Export Account Data</div>
+                      <div className="text-xs text-muted-foreground">
+                        Download your full platform data footprint including profile, stats, and achievements in JSON format.
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleExportData}
+                      disabled={isExporting}
+                      className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-sm font-medium transition-colors cursor-pointer disabled:opacity-50 shrink-0"
+                    >
+                      {isExporting ? (
+                        <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                      ) : (
+                        <Download className="w-4 h-4 text-muted-foreground" />
+                      )}
+                      <span>{isExporting ? "Exporting..." : "Export All My Data"}</span>
+                    </button>
+                  </div>
                 </div>
               </div>
               <div className="glass-card rounded-[20px] p-6">

@@ -30,7 +30,7 @@ A heartfelt thank you to all the amazing developers contributing to **CodePulse*
         <sub><b>@code-with-abhi-i5</b></sub>
       </a><br />
       <sub>👑 Maintainer</sub><br />
-      <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=code-with-abhi-i5"><sub>🔨 79 commits</sub></a>
+      <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=code-with-abhi-i5"><sub>🔨 122 commits</sub></a>
     </td>
     <td align="center" width="160px">
       <a href="https://github.com/Babin123456">
@@ -38,7 +38,7 @@ A heartfelt thank you to all the amazing developers contributing to **CodePulse*
         <sub><b>@Babin123456</b></sub>
       </a><br />
       <sub>💻 Contributor</sub><br />
-      <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=Babin123456"><sub>🔨 19 commits</sub></a>
+      <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=Babin123456"><sub>🔨 43 commits</sub></a>
     </td>
     <td align="center" width="160px">
       <a href="https://github.com/pratikadamas">
@@ -46,7 +46,7 @@ A heartfelt thank you to all the amazing developers contributing to **CodePulse*
         <sub><b>@pratikadamas</b></sub>
       </a><br />
       <sub>💻 Contributor</sub><br />
-      <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=pratikadamas"><sub>🔨 13 commits</sub></a>
+      <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=pratikadamas"><sub>🔨 23 commits</sub></a>
     </td>
     <td align="center" width="160px">
       <a href="https://github.com/Ankit-Kum-ar">
@@ -75,12 +75,28 @@ A heartfelt thank you to all the amazing developers contributing to **CodePulse*
   </tr>
   <tr>
     <td align="center" width="160px">
+      <a href="https://github.com/nilesh0199">
+        <img src="https://avatars.githubusercontent.com/u/205056958?v=4&s=100" width="80px" style="border-radius: 50%;" alt="nilesh0199" /><br />
+        <sub><b>@nilesh0199</b></sub>
+      </a><br />
+      <sub>💻 Contributor</sub><br />
+      <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=nilesh0199"><sub>🔨 4 commits</sub></a>
+    </td>
+    <td align="center" width="160px">
       <a href="https://github.com/aush5895">
         <img src="https://avatars.githubusercontent.com/u/229103100?v=4&s=100" width="80px" style="border-radius: 50%;" alt="aush5895" /><br />
         <sub><b>@aush5895</b></sub>
       </a><br />
       <sub>💻 Contributor</sub><br />
       <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=aush5895"><sub>🔨 2 commits</sub></a>
+    </td>
+    <td align="center" width="160px">
+      <a href="https://github.com/chanchall26">
+        <img src="https://avatars.githubusercontent.com/u/190047591?v=4&s=100" width="80px" style="border-radius: 50%;" alt="chanchall26" /><br />
+        <sub><b>@chanchall26</b></sub>
+      </a><br />
+      <sub>💻 Contributor</sub><br />
+      <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=chanchall26"><sub>🔨 2 commits</sub></a>
     </td>
     <td align="center" width="160px">
       <a href="https://github.com/tesfa27">
@@ -1058,6 +1074,19 @@ graph TB
 git clone https://github.com/code-with-abhi-i5/CodePulse.git
 cd CodePulse
 ```
+
+### Quick Start with Docker (one command)
+Requires Docker with Compose v2. From the repository root:
+```bash
+docker compose -f docker-compose.dev.yml up --build
+# or: sh scripts/dev-setup.sh   (Windows: scripts\dev-setup.bat)
+```
+This starts PostgreSQL 16, Redis 7, Mailpit, the NestJS API and the Next.js app. The backend waits for a healthy database, then runs `prisma migrate deploy` and `prisma db seed` before starting, so the database is ready with no manual steps. Both are idempotent: restarting or re-running `up` will not duplicate data.
+
+- Frontend: http://localhost:3000, API: http://localhost:3001/api/v1, Swagger: http://localhost:3001/api/docs, Mailpit: http://localhost:8025
+- Source is bind-mounted, so edits hot-reload. Optional secrets (`GITHUB_TOKEN`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `JWT_SECRET`) are read from a root `.env`.
+- Stop with `docker compose -f docker-compose.dev.yml down`; add `-v` to also wipe the database.
+- Do not run it together with `backend/docker-compose.yml` (same host ports). The manual steps below are still supported.
 
 ### Step 2: Install Frontend Dependencies
 ```bash
