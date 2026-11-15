@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
+import { Volume2, VolumeX, Swords } from "lucide-react";
 import { BattleSetup } from "@/components/battles/battle-setup";
 import { BattleIntro } from "@/components/battles/battle-intro";
 import { BattleRounds } from "@/components/battles/battle-rounds";
@@ -11,7 +12,6 @@ import { BattleMatchmakingSkeleton } from "@/components/battles/battle-skeleton"
 import { BattleHistoryList, type HistoricalBattle } from "@/components/battles/battle-history-list";
 import { BattleQueueDialog } from "@/components/battles/battle-queue-dialog";
 import { useCurrentUser } from "@/hooks/api/use-auth";
-import { Swords } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 type BattlePhase = "SETUP" | "INTRO" | "ROUNDS" | "REPORT";
@@ -19,11 +19,10 @@ type BattlePhase = "SETUP" | "INTRO" | "ROUNDS" | "REPORT";
 export default function BattlesPage() {
   const { data: currentUser } = useCurrentUser();
   const [phase, setPhase] = useState<BattlePhase>("SETUP");
-  const [ghostBattleData, setGhostBattleData] = useState<{ p1: any, p2: any, battleType: string } | null>(null);
-  const [setupUsernames, setSetupUsernames] = useState<{p1: string, p2: string, battleType: string} | null>(null);
+  const [ghostBattleData, setGhostBattleData] = useState<{ p1: any; p2: any; battleType: string } | null>(null);
+  const [setupUsernames, setSetupUsernames] = useState<{ p1: string; p2: string; battleType: string } | null>(null);
   const [initialP1, setInitialP1] = useState("");
   const [initialP2, setInitialP2] = useState("");
-
   const [isIntroFinished, setIsIntroFinished] = useState(false);
   const [battleHistory, setBattleHistory] = useState<HistoricalBattle[]>([]);
   const [isQueueOpen, setIsQueueOpen] = useState(false);
@@ -95,15 +94,37 @@ export default function BattlesPage() {
     }
   }, [currentUser]);
 
-  const startGhostBattle = async (p1: string, p2: string, battleType: string) => {
+  // Global sound effects mute toggle
+  const [isMuted, setIsMuted] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("devbattle_sound_muted") === "true";
+    }
+    return false;
+  });
+
+  const toggleMute = useCallback(() => {
+    setIsMuted((prev) => {
+      const next = !prev;
+      if (typeof window !== "undefined") {
+        localStorage.setItem("devbattle_sound_muted", String(next));
+      }
+      toast(next ? "Sound effects muted" : "Sound effects enabled", {
+        icon: next ? "🔇" : "🔊",
+        duration: 2000,
+      });
+      return next;
+    });
+  }, []);
+
+  const startGhostBattle = useCallback(async (p1: string, p2: string, battleType: string) => {
     setSetupUsernames({ p1, p2, battleType });
     setIsIntroFinished(false);
     setPhase("INTRO");
-    
+
     try {
       const [res1, res2] = await Promise.all([
         fetch(`/api/github/developer?username=${p1}`),
-        fetch(`/api/github/developer?username=${p2}`)
+        fetch(`/api/github/developer?username=${p2}`),
       ]);
 
       if (!res1.ok || !res2.ok) {
@@ -118,7 +139,7 @@ export default function BattlesPage() {
       toast.error(err.message || "Failed to initiate battle.");
       setPhase("SETUP");
     }
-  };
+  }, []);
 
   // Deep-linking / Quick Battle trigger from Command Palette or URL params
   useEffect(() => {
@@ -138,6 +159,21 @@ export default function BattlesPage() {
     setIsIntroFinished(true);
   };
 
+  // Support shared battle links: /battles?p1=user1&p2=user2
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const p1 = params.get("p1");
+      const p2 = params.get("p2");
+      if (p1 && p2 && phase === "SETUP") {
+        toast.info(`Loading shared battle: ${p1} vs ${p2}`, {
+          description: "Initiating live developer metrics comparison...",
+        });
+        startGhostBattle(p1, p2, "Overall Battle");
+      }
+    }
+  }, [startGhostBattle]);
+
   // Transition to ROUNDS only when BOTH intro animation finished AND data loaded
   useEffect(() => {
     if (phase === "INTRO" && isIntroFinished && ghostBattleData) {
@@ -147,8 +183,44 @@ export default function BattlesPage() {
 
   return (
     <div className="w-full relative min-h-[calc(100vh-80px)]">
+      {/* Top Battle Header with Global Controls */}
+      <div className="w-full flex items-center justify-between pb-6 border-b border-border/40 mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+            <Swords className="w-4 h-4" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
+              DevBattle Arena
+            </h1>
+            <p className="text-xs text-muted-foreground">
+              1v1 Head-to-Head Developer Face-Off
+            </p>
+          </div>
+        </div>
+
+        {/* Global Sound Effects Mute Toggle Button */}
+        <button
+          onClick={toggleMute}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-border bg-card/60 backdrop-blur-md hover:bg-accent text-xs font-medium transition-all shadow-sm active:scale-95"
+          title={isMuted ? "Sound effects currently muted (click to unmute)" : "Sound effects enabled (click to mute)"}
+          aria-label={isMuted ? "Sound effects muted" : "Sound effects enabled"}
+        >
+          {isMuted ? (
+            <>
+              <VolumeX className="w-4 h-4 text-muted-foreground" />
+              <span className="text-muted-foreground hidden sm:inline">Muted</span>
+            </>
+          ) : (
+            <>
+              <Volume2 className="w-4 h-4 text-emerald-400" />
+              <span className="text-foreground hidden sm:inline">Sound On</span>
+            </>
+          )}
+        </button>
+      </div>
+
       <AnimatePresence mode="wait">
-        
         {phase === "SETUP" && (
           <motion.div
             key="setup"
@@ -191,7 +263,7 @@ export default function BattlesPage() {
         )}
 
         {phase === "INTRO" && setupUsernames && !isIntroFinished && (
-          <BattleIntro 
+          <BattleIntro
             key="intro"
             p1Username={setupUsernames.p1}
             p2Username={setupUsernames.p2}
@@ -222,14 +294,14 @@ export default function BattlesPage() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, y: -50 }}
           >
-            <BattleRounds 
-              player1={ghostBattleData.p1} 
-              player2={ghostBattleData.p2} 
+            <BattleRounds
+              player1={ghostBattleData.p1}
+              player2={ghostBattleData.p2}
               battleType={ghostBattleData.battleType}
               onComplete={() => {
                 saveBattleToHistory(ghostBattleData.p1, ghostBattleData.p2, ghostBattleData.battleType);
                 setPhase("REPORT");
-              }} 
+              }}
             />
           </motion.div>
         )}
@@ -241,10 +313,12 @@ export default function BattlesPage() {
             animate={{ opacity: 1, y: 0 }}
             className="pt-4"
           >
-            <BattleReport 
+            <BattleReport
               player1={ghostBattleData.p1}
               player2={ghostBattleData.p2}
               battleType={ghostBattleData.battleType}
+              isMuted={isMuted}
+              onToggleMute={toggleMute}
               onRematch={() => {
                 setGhostBattleData(null);
                 setSetupUsernames(null);
@@ -253,7 +327,6 @@ export default function BattlesPage() {
             />
           </motion.div>
         )}
-
       </AnimatePresence>
 
       {/* Real-time Matchmaking Queue Dialog */}
@@ -273,4 +346,3 @@ export default function BattlesPage() {
     </div>
   );
 }
-
