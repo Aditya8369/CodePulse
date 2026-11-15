@@ -12,7 +12,6 @@ import { BattleMatchmakingSkeleton } from "@/components/battles/battle-skeleton"
 import { BattleHistoryList, type HistoricalBattle } from "@/components/battles/battle-history-list";
 import { BattleQueueDialog } from "@/components/battles/battle-queue-dialog";
 import { useCurrentUser } from "@/hooks/api/use-auth";
-import { Swords } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 type BattlePhase = "SETUP" | "INTRO" | "ROUNDS" | "REPORT";
