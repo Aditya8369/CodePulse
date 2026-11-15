@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { motion } from "motion/react";
 import { CommitActivityChart } from "@/components/charts/commit-activity-chart";
 import { ContributionHeatmap } from "@/components/charts/contribution-heatmap";
 import { LanguageDistribution } from "@/components/charts/language-distribution";
@@ -11,8 +13,9 @@ import { GlobalRankingMeter } from "@/components/charts/global-ranking-meter";
 import { PrReviewVelocityCard } from "@/components/cards/pr-review-velocity-card";
 import { StaggerContainer, StaggerItem } from "@/components/animations/page-transition";
 import { AnimatedCounter } from "@/components/animations/animated-counter";
+import { AnalyticsExportModal } from "@/components/analytics/analytics-export-modal";
 import { useCurrentUser } from "@/hooks/api/use-auth";
-import { Loader2, BarChart3, TrendingUp, Clock, Calendar, Code, GitCommit } from "lucide-react";
+import { Loader2, BarChart3, TrendingUp, Clock, Calendar, Code, GitCommit, Download } from "lucide-react";
 import { BackToTop } from "@/components/ui/back-to-top";
 import type {
   CommitActivity,
@@ -31,6 +34,7 @@ interface AnalyticsRating extends Partial<DeveloperRating> {
 }
 
 export default function AnalyticsPage() {
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const { data: currentUser, isLoading } = useCurrentUser();
 
   if (isLoading) {
@@ -129,7 +133,7 @@ export default function AnalyticsPage() {
 
   return (
     <div className="space-y-8 pb-12">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl sm:text-4xl font-black tracking-tight flex items-center gap-3">
             <BarChart3 className="w-8 h-8 text-primary" />
@@ -141,6 +145,14 @@ export default function AnalyticsPage() {
             A comprehensive, Next-Level deep dive into your developer journey.
           </p>
         </div>
+
+        <button
+          onClick={() => setIsExportModalOpen(true)}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white shadow-lg shadow-purple-500/20 hover:shadow-purple-500/30 transition-all active:scale-95 cursor-pointer shrink-0"
+        >
+          <Download className="w-4 h-4" />
+          Export Report
+        </button>
       </div>
 
       <StaggerContainer className="grid grid-cols-1 md:grid-cols-12 gap-6 auto-rows-[minmax(180px,_auto)]">
@@ -236,6 +248,18 @@ export default function AnalyticsPage() {
         </StaggerItem>
 
       </StaggerContainer>
+
+      {/* Analytics Report Export Modal */}
+      <AnalyticsExportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        currentUser={currentUser}
+        stats={stats}
+        rating={rating}
+        languages={languages}
+        repos={repos}
+        longestStreak={longestStreak}
+      />
 
       {/* Floating Back to Top Button */}
       <BackToTop className="bottom-20 md:bottom-6" />
