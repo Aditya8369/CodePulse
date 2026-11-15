@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { Providers } from "./providers";
 import "./globals.css";
@@ -15,13 +15,36 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 });
 
+export const viewport: Viewport = {
+  themeColor: "#020617",
+  width: "device-width",
+  initialScale: 1,
+};
+
 export const metadata: Metadata = {
   title: {
-    template: "%s | DevBattle",
-    default: "DevBattle — GitHub Developer Analytics & Gamification Platform",
+    template: "%s | CodePulse",
+    default: "CodePulse — GitHub Developer Analytics & Gamification Platform",
   },
   description:
     "The ultimate platform for GitHub developer analytics, comparison, gamification, and leaderboards. Track your coding journey, compete with friends, and level up your development skills.",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "CodePulse",
+  },
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/favicon-dark.svg", type: "image/svg+xml" },
+      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
   keywords: [
     "GitHub",
     "developer analytics",
@@ -31,17 +54,17 @@ export const metadata: Metadata = {
     "leaderboard",
     "coding challenges",
   ],
-  authors: [{ name: "DevBattle" }],
+  authors: [{ name: "CodePulse" }],
   openGraph: {
-    title: "DevBattle — GitHub Developer Analytics & Gamification",
+    title: "CodePulse — GitHub Developer Analytics & Gamification",
     description:
       "Track, compare, and gamify your GitHub development journey. The most beautiful developer analytics platform.",
     type: "website",
-    siteName: "DevBattle",
+    siteName: "CodePulse",
   },
   twitter: {
     card: "summary_large_image",
-    title: "DevBattle — GitHub Developer Analytics & Gamification",
+    title: "CodePulse — GitHub Developer Analytics & Gamification",
     description:
       "Track, compare, and gamify your GitHub development journey.",
   },

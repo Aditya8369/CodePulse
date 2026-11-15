@@ -1,12 +1,32 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import { useInView } from "react-intersection-observer";
 import { useLeaderboardInfinite, useUserProfileSearch } from "@/hooks/api/use-leaderboard";
+import { useCurrentUser } from "@/hooks/api/use-auth";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Trophy, Search, Loader2, Users, Flag, Star, GitFork, BookOpen, Clock } from "lucide-react";
+import {
+  Trophy,
+  Search,
+  Loader2,
+  Users,
+  Flag,
+  Globe,
+  Star,
+  GitFork,
+  BookOpen,
+  Clock,
+  Swords,
+  BarChart3,
+  ExternalLink,
+  X,
+  UserPlus,
+  UserCheck,
+} from "lucide-react";
 import { LeaderboardRowSkeleton, LeaderboardTableSkeleton } from "@/components/leaderboard/leaderboard-skeleton";
+import { useFollowStatus } from "@/hooks/api/use-friends";
 
 const GithubIcon = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" className={className}>
@@ -17,8 +37,92 @@ import { cn } from "@/lib/utils";
 
 type LeaderboardCategory = "global" | "india" | "friends";
 
+function FollowButton({
+  targetId,
+  targetUsername,
+  initialFollowers = 0,
+}: {
+  targetId: string;
+  targetUsername: string;
+  initialFollowers?: number;
+}) {
+  const { isFollowing, follow, unfollow, isPending } = useFollowStatus(targetId, targetUsername);
+  const [optimisticFollowing, setOptimisticFollowing] = useState(isFollowing);
+  const [followerOffset, setFollowerOffset] = useState(0);
+
+  useEffect(() => {
+    setOptimisticFollowing(isFollowing);
+  }, [isFollowing]);
+
+  const handleToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (optimisticFollowing) {
+      setOptimisticFollowing(false);
+      setFollowerOffset((prev) => prev - 1);
+      unfollow(targetId);
+    } else {
+      setOptimisticFollowing(true);
+      setFollowerOffset((prev) => prev + 1);
+      follow(targetId);
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-end gap-1.5">
+      <button
+        type="button"
+        onClick={handleToggle}
+        disabled={isPending}
+        className={cn(
+          "inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer shadow-sm",
+          optimisticFollowing
+            ? "bg-white/10 hover:bg-red-500/10 text-white hover:text-red-400 border border-white/10 hover:border-red-500/20"
+            : "bg-primary hover:bg-primary/90 text-primary-foreground shadow-primary/20"
+        )}
+      >
+        {optimisticFollowing ? (
+          <>
+            <UserCheck className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Following</span>
+          </>
+        ) : (
+          <>
+            <UserPlus className="w-3.5 h-3.5" />
+            <span>Follow</span>
+          </>
+        )}
+      </button>
+      <span className="text-[11px] text-muted-foreground font-mono">
+        {Math.max(0, initialFollowers + followerOffset).toLocaleString()} followers
+      </span>
+    </div>
+  );
+}
+const CATEGORY_META: Record<
+  LeaderboardCategory,
+  { title: string; description: string; icon: any }
+> = {
+  global: {
+    title: "Global Developer Rankings",
+    description: "Discover top developers, innovators, and open source contributors worldwide.",
+    icon: Globe,
+  },
+  india: {
+    title: "India Rankings",
+    description: "Top open-source contributors and active developers across India.",
+    icon: Flag,
+  },
+  friends: {
+    title: "Friends Rankings",
+    description: "Compete with your GitHub network and see who ranks at the top.",
+    icon: Users,
+  },
+};
+
 export default function LeaderboardPage() {
-  const [activeTab, setActiveTab] = useState<LeaderboardCategory>("friends");
+  const router = useRouter();
+  const { data: currentUser } = useCurrentUser();
+  const [activeTab, setActiveTab] = useState<LeaderboardCategory>("global");
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
@@ -61,35 +165,73 @@ export default function LeaderboardPage() {
     ? [] 
     : users;
 
+  const ActiveIcon = CATEGORY_META[activeTab].icon;
+
   return (
     <div className="space-y-8 pb-20">
       {/* Header */}
       <div className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-white/5 py-6 px-2 -mx-2">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 max-w-6xl mx-auto">
-          <div>
-            <h1 className="text-3xl font-extrabold flex items-center gap-3 bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">
-              <Users className="w-8 h-8 text-primary" />
-              Friends Rankings
-            </h1>
-            <p className="text-muted-foreground mt-2">
-              Compete with your GitHub network and see who ranks at the top.
-            </p>
-          </div>
-          
-          <div className="flex items-center gap-4">
-            <div className="relative group">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground transition-colors group-focus-within:text-primary" aria-hidden="true" />
-              <input
-                type="text"
-                placeholder="Search username..."
-                value={searchQuery}
-                aria-label="Search developer by GitHub username"
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 w-full sm:w-64 transition-all"
-              />
+        <div className="flex flex-col gap-6 max-w-6xl mx-auto">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div>
+              <h1 className="text-3xl font-extrabold flex items-center gap-3 bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">
+                <ActiveIcon className="w-8 h-8 text-primary" />
+                {CATEGORY_META[activeTab].title}
+              </h1>
+              <p className="text-muted-foreground mt-2">
+                {CATEGORY_META[activeTab].description}
+              </p>
             </div>
+            
+            <div className="flex items-center gap-4">
+              <div className="relative group">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground transition-colors group-focus-within:text-primary" aria-hidden="true" />
+                <input
+                  type="text"
+                  placeholder="Search username..."
+                  value={searchQuery}
+                  aria-label="Search developer by GitHub username"
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 pr-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 w-full sm:w-64 transition-all"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Category Tabs */}
+          <Tabs
+            value={activeTab}
+            onValueChange={(val) => {
+              setActiveTab(val as LeaderboardCategory);
+              setSearchQuery("");
+            }}
+            aria-label="Filter leaderboard category"
+          >
+            <TabsList className="bg-white/[0.03] border border-white/5 p-1 rounded-2xl h-auto gap-1">
+              <TabsTrigger
+                value="global"
+                className="rounded-xl px-4 py-2 text-xs font-semibold gap-2 data-active:bg-primary data-active:text-white transition-all cursor-pointer"
+              >
+                <Globe className="w-4 h-4" />
+                <span>Global</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="india"
+                className="rounded-xl px-4 py-2 text-xs font-semibold gap-2 data-active:bg-primary data-active:text-white transition-all cursor-pointer"
+              >
+                <Flag className="w-4 h-4" />
+                <span>India</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="friends"
+                className="rounded-xl px-4 py-2 text-xs font-semibold gap-2 data-active:bg-primary data-active:text-white transition-all cursor-pointer"
+              >
+                <Users className="w-4 h-4" />
+                <span>Friends</span>
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
-      </div>
       </div>
 
       {/* Main Content */}
@@ -204,7 +346,7 @@ export default function LeaderboardPage() {
         )}
       </div>
 
-      {/* Profile Modal Placeholder */}
+      {/* Profile Modal with Quick Action Triggers */}
       {selectedUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedUser(null)}>
           <motion.div 
@@ -214,20 +356,65 @@ export default function LeaderboardPage() {
             onClick={(e) => e.stopPropagation()}
             className="w-full max-w-lg bg-[#09090b] border border-white/10 rounded-3xl overflow-hidden shadow-2xl relative"
           >
+            {/* Modal Close Button */}
+            <button
+              type="button"
+              onClick={() => setSelectedUser(null)}
+              className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-black/40 hover:bg-black/70 border border-white/10 flex items-center justify-center text-white/70 hover:text-white transition-colors cursor-pointer"
+              aria-label="Close modal"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
             <div className="h-32 bg-gradient-to-br from-primary/20 to-primary/5 relative">
               <div className="absolute -bottom-12 left-6">
                 <img 
                   src={(selectedUser as any).avatarUrl || `https://github.com/${(selectedUser as any).username}.png`} 
+                  alt={(selectedUser as any).username}
                   className="w-24 h-24 rounded-2xl border-4 border-[#09090b] bg-background object-cover"
                 />
               </div>
             </div>
             
             <div className="pt-16 p-6">
-              <h2 className="text-2xl font-bold">{(selectedUser as any).name || (selectedUser as any).username}</h2>
-              <p className="text-muted-foreground flex items-center gap-1.5 mt-1">
-                <GithubIcon className="w-4 h-4" /> @{(selectedUser as any).username}
-              </p>
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h2 className="text-2xl font-bold">{(selectedUser as any).name || (selectedUser as any).username}</h2>
+                  <div className="flex items-center gap-2 mt-1">
+                    <p className="text-muted-foreground flex items-center gap-1.5 text-sm">
+                      <GithubIcon className="w-4 h-4" /> @{(selectedUser as any).username}
+                    </p>
+                    <a
+                      href={`https://github.com/${(selectedUser as any).username}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`Open GitHub profile for @${(selectedUser as any).username} in a new tab`}
+                      className="text-muted-foreground/60 hover:text-white transition-colors"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  </div>
+                </div>
+
+                {/* Follow / Unfollow User Action Button */}
+                {(() => {
+                  const currentUsername = (currentUser?.username || "code-with-abhi-i5").toLowerCase();
+                  const targetUsername = ((selectedUser as any)?.username || "").toLowerCase();
+                  const targetId = (selectedUser as any)?.id || (selectedUser as any)?.username;
+                  const isCurrentUser = targetUsername === currentUsername;
+
+                  if (isCurrentUser) return null;
+
+                  return (
+                    <FollowButton
+                      targetId={targetId}
+                      targetUsername={(selectedUser as any)?.username}
+                      initialFollowers={(selectedUser as any)?.followers || 0}
+                    />
+                  );
+                })()}
+              </div>
 
               {(selectedUser as any).bio && (
                 <p className="mt-4 text-sm leading-relaxed text-white/80">{(selectedUser as any).bio}</p>
@@ -257,15 +444,65 @@ export default function LeaderboardPage() {
                 </div>
               </div>
               
-              <div className="mt-6 flex justify-end">
+              {/* Quick Action Triggers: Challenge & Compare */}
+              {(() => {
+                const currentUsername = (currentUser?.username || "code-with-abhi-i5").toLowerCase();
+                const targetUsername = ((selectedUser as any)?.username || "").toLowerCase();
+                const isCurrentUser = targetUsername === currentUsername;
+
+                if (isCurrentUser) {
+                  return (
+                    <div className="mt-6 py-2.5 px-4 rounded-xl bg-primary/10 border border-primary/20 text-xs text-primary font-medium text-center">
+                      This is your profile
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-6">
+                    <button
+                      type="button"
+                      id="challenge-developer-btn"
+                      onClick={() => {
+                        const target = (selectedUser as any).username;
+                        setSelectedUser(null);
+                        router.push(`/battles?p2=${encodeURIComponent(target)}`);
+                      }}
+                      className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-semibold text-sm transition-all shadow-lg shadow-purple-500/10 cursor-pointer"
+                    >
+                      <Swords className="w-4 h-4" />
+                      Challenge to Battle
+                    </button>
+
+                    <button
+                      type="button"
+                      id="compare-developer-btn"
+                      onClick={() => {
+                        const target = (selectedUser as any).username;
+                        const me = currentUser?.username || "code-with-abhi-i5";
+                        setSelectedUser(null);
+                        router.push(
+                          `/compare?user1=${encodeURIComponent(me)}&user2=${encodeURIComponent(target)}&dev1=${encodeURIComponent(me)}&dev2=${encodeURIComponent(target)}`
+                        );
+                      }}
+                      className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-white font-semibold text-sm transition-all cursor-pointer"
+                    >
+                      <BarChart3 className="w-4 h-4 text-blue-400" />
+                      Compare with Me
+                    </button>
+                  </div>
+                );
+              })()}
+
+              <div className="mt-4 flex justify-end">
                 <a 
                   href={`https://github.com/${(selectedUser as any).username}`}
                   target="_blank"
                   rel="noreferrer"
                   aria-label={`View GitHub profile for ${(selectedUser as any).username} in a new tab`}
-                  className="px-4 py-2 bg-white text-black font-semibold rounded-lg hover:bg-white/90 transition-colors text-sm flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-white/50"
+                  className="px-4 py-2 bg-white/10 text-white hover:bg-white/15 font-medium rounded-lg transition-colors text-xs flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-white/50"
                 >
-                  <GithubIcon className="w-4 h-4" />
+                  <GithubIcon className="w-3.5 h-3.5" />
                   View GitHub Profile
                 </a>
               </div>
