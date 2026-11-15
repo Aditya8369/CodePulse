@@ -12,6 +12,16 @@ export class SyncService {
     private readonly github: GithubService,
   ) {}
 
+  async syncUser(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+    if (!user || !user.githubAccessToken) {
+      return;
+    }
+    return this.syncUserData(user.id, user.username, user.githubAccessToken);
+  }
+
   async syncUserData(userId: string, username: string, accessToken: string) {
     this.logger.log(`Starting GitHub sync for ${username}`);
     const githubData = await this.github.fetchUserData(username, accessToken);

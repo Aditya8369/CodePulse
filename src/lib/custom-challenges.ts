@@ -133,21 +133,37 @@ export function createCustomChallengeObject(input: CustomQuestInput): CustomChal
   };
 }
 
+const EMPTY_CHALLENGES: CustomChallenge[] = [];
+let cachedCustomChallenges: CustomChallenge[] | null = null;
+let lastRawStorageValue: string | null = null;
+
 /**
  * Retrieves all stored custom challenges from localStorage.
  * Filters out invalid entries and disallows challenges with corrupted expiry dates.
  */
 export function getCustomChallenges(): CustomChallenge[] {
-  if (typeof window === "undefined") return [];
+  if (typeof window === "undefined") return EMPTY_CHALLENGES;
 
   try {
     const raw = window.localStorage.getItem(CUSTOM_CHALLENGES_STORAGE_KEY);
-    if (!raw) return [];
+    if (!raw) {
+      cachedCustomChallenges = EMPTY_CHALLENGES;
+      lastRawStorageValue = null;
+      return EMPTY_CHALLENGES;
+    }
+
+    if (raw === lastRawStorageValue && cachedCustomChallenges !== null) {
+      return cachedCustomChallenges;
+    }
 
     const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
+    if (!Array.isArray(parsed)) {
+      cachedCustomChallenges = EMPTY_CHALLENGES;
+      lastRawStorageValue = raw;
+      return EMPTY_CHALLENGES;
+    }
 
-    return parsed.filter((item): item is CustomChallenge => {
+    cachedCustomChallenges = parsed.filter((item): item is CustomChallenge => {
       if (!item || typeof item !== "object") return false;
       const c = item as Partial<CustomChallenge>;
       return (
@@ -158,8 +174,11 @@ export function getCustomChallenges(): CustomChallenge[] {
         c.isCustom === true
       );
     });
+    lastRawStorageValue = raw;
+    return cachedCustomChallenges;
   } catch {
-    return [];
+    cachedCustomChallenges = EMPTY_CHALLENGES;
+    return EMPTY_CHALLENGES;
   }
 }
 
