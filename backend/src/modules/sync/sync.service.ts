@@ -16,10 +16,11 @@ export class SyncService {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
     });
-    if (!user || !user.githubAccessToken) {
+    if (!user) {
       return;
     }
-    return this.syncUserData(user.id, user.username, user.githubAccessToken);
+    const token = (user as any).githubAccessToken || process.env.GITHUB_TOKEN || '';
+    return this.syncUserData(user.id, user.username, token);
   }
 
   async syncUserData(userId: string, username: string, accessToken: string) {
