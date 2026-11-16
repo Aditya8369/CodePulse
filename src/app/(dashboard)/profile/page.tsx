@@ -12,14 +12,19 @@ import { formatNumber } from "@/lib/utils";
 import { useCurrentUser } from "@/hooks/api/use-auth";
 import { GithubIcon } from "@/components/icons/github";
 import {
-  MapPin, Building, Globe, Calendar, Star, GitFork, Users, GitCommit,
-  GitPullRequest, Eye, Flame, Code, ExternalLink, Crown, QrCode, Shield,
+  MapPin, Building, Globe, Calendar, Star, GitFork, GitCommit,
+  GitPullRequest, Eye, Flame, Code, ExternalLink, Crown, QrCode, Shield, Share2,
 } from "lucide-react";
 import { ProfileQrModal } from "@/components/modals/profile-qr-modal";
 import { ProfileBadgeModal } from "@/components/modals/profile-badge-modal";
+import { ProfileShareModal } from "@/components/modals/profile-share-modal";
+import type { Badge } from "@/types";
 
 export default function ProfilePage() {
   const { data: user, isLoading } = useCurrentUser();
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+  const [isBadgeModalOpen, setIsBadgeModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -84,13 +89,13 @@ export default function ProfilePage() {
   const stats = user.stats || { totalCommits: 0, totalPRs: 0, totalReviews: 0, totalStars: 0, streak: 0, totalRepos: 0, followers: 0, following: 0 };
   
   // Map badges structure
-  const displayBadges = user.badges?.map((b: any) => b.badge || b) || [];
+  const displayBadges = (user.badges as Array<Badge | { badge: Badge }> | undefined)?.map((badge) =>
+    "badge" in badge ? badge.badge : badge,
+  ) || [];
   const displayRepos = user.repositories || [];
   const displayActivities = user.activities || [];
   const displayLanguages = user.languages || [];
   const contributionData = user.stats?.contributionData || [];
-  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
-  const [isBadgeModalOpen, setIsBadgeModalOpen] = useState(false);
 
   return (
     <div className="space-y-6">
@@ -141,7 +146,7 @@ export default function ProfilePage() {
                   <GithubIcon className="w-3.5 h-3.5" />GitHub Profile
                 </a>
               )}
-              {user.socialLinks && Array.isArray(user.socialLinks) && user.socialLinks.map((link: any, idx: number) => {
+              {user.socialLinks && Array.isArray(user.socialLinks) && user.socialLinks.map((link, idx) => {
                 let displayUrl = link.url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
                 if (displayUrl.length > 25) displayUrl = displayUrl.substring(0, 25) + '...';
                 return (
@@ -157,6 +162,14 @@ export default function ProfilePage() {
               >
                 <QrCode className="w-3.5 h-3.5 text-purple-400" />
                 Share QR
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsShareModalOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium transition-all"
+              >
+                <Share2 className="w-3.5 h-3.5 text-blue-400" aria-hidden="true" />
+                Share Profile
               </button>
               <button
                 onClick={() => setIsBadgeModalOpen(true)}
@@ -225,6 +238,12 @@ export default function ProfilePage() {
         user={user}
       />
 
+      <ProfileShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        user={user}
+      />
+
       <ProfileBadgeModal
         isOpen={isBadgeModalOpen}
         onClose={() => setIsBadgeModalOpen(false)}
@@ -236,7 +255,7 @@ export default function ProfilePage() {
         <div className="glass-card rounded-[20px] p-6">
           <h2 className="text-lg font-semibold mb-4">Badges</h2>
           <div className="flex flex-wrap gap-3">
-            {displayBadges.map((badge: any) => (
+            {displayBadges.map((badge) => (
               <motion.div
                 key={badge.id}
                 whileHover={{ scale: 1.05 }}
@@ -266,7 +285,7 @@ export default function ProfilePage() {
         <div>
           <h2 className="text-lg font-semibold mb-4">Pinned Repositories</h2>
           <StaggerContainer className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {displayRepos.slice(0, 4).map((repo: any) => (
+            {displayRepos.slice(0, 4).map((repo) => (
               <StaggerItem key={repo.id}>
                 <motion.div
                   whileHover={{ scale: 1.01, y: -2 }}
