@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ExternalLink, GitFork, GitPullRequest, Star } from "lucide-react";
+import { RepoHealthScorecard } from "@/components/repositories/repo-health-scorecard";
+import type { RepositoryHealth } from "@/lib/repository-health";
 
 interface Inspection {
   fullName: string;
@@ -14,12 +16,7 @@ interface Inspection {
   openPullRequests: number | null;
   languages: Array<{ language: string; bytes: number; percentage: number; color: string }>;
   punchcard: Array<[number, number, number]> | null;
-  health: {
-    hasReadme: boolean | null;
-    hasLicense: boolean;
-    openIssues: number | null;
-    closedIssues: number | null;
-  };
+  health: RepositoryHealth;
   branches: string[];
 }
 
@@ -111,14 +108,7 @@ export function RepositoryInspectorModal({ fullName, open, onClose }: {
                     </div>
                   ))}
                 </div>
-                <div>
-                  <h3 className="mb-2 font-semibold">Repository health</h3>
-                  <ul className="space-y-1 text-sm text-slate-300">
-                    <li>README: {inspection.health.hasReadme === null ? "Unavailable" : inspection.health.hasReadme ? "Present" : "Not found"}</li>
-                    <li>License: {inspection.health.hasLicense ? "Detected" : "Not found"}</li>
-                    <li>Open issues: {inspection.health.openIssues ?? "Unavailable"}; closed issues: {inspection.health.closedIssues ?? "Unavailable"}</li>
-                  </ul>
-                </div>
+                <RepoHealthScorecard inspection={inspection} />
                 <div>
                   <h3 className="mb-2 font-semibold">Branches</h3>
                   {inspection.branches.length ? (

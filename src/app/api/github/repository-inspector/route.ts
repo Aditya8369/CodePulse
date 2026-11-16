@@ -50,7 +50,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Private repository inspection is unavailable." }, { status: 403 });
     }
 
-    const [languagesResponse, punchcardResponse, readmeResponse, openIssues, closedIssues, pullsResponse, branchesResponse] =
+    const [languagesResponse, punchcardResponse, readmeResponse, openIssues, closedIssues, pullsResponse, branchesResponse, contributingResponse, workflowsResponse, commitsResponse] =
       await Promise.all([
         githubFetch(`${repoPath}/languages`),
         githubFetch(`${repoPath}/stats/punch_card`),
@@ -59,6 +59,9 @@ export async function GET(request: Request) {
         issueCount(fullName, "closed"),
         githubFetch(`${repoPath}/pulls?state=open&per_page=1`),
         githubFetch(`${repoPath}/branches?per_page=10`),
+        githubFetch(`${repoPath}/contents/CONTRIBUTING.md`),
+        githubFetch(`${repoPath}/contents/.github/workflows`),
+        githubFetch(`${repoPath}/commits?per_page=1`),
       ]);
 
     const languageBytes: Record<string, number> = languagesResponse.ok ? await languagesResponse.json() : {};
@@ -76,6 +79,12 @@ export async function GET(request: Request) {
     const punchcard = punchcardResponse.status === 200 ? await punchcardResponse.json() : null;
     const pulls = pullsResponse.ok ? await pullsResponse.json() : null;
     const branches = branchesResponse.ok ? await branchesResponse.json() : null;
+    const workflows = workflowsResponse.ok ? await workflowsResponse.json() : null;
+    const commits = commitsResponse.ok ? await commitsResponse.json() : null;
+    // GitHub also supports contribution guidelines inside .github/.
+    const contributing = contributingResponse.status === 404
+      ? await githubFetch(`${repoPath}/contents/.github/CONTRIBUTING.md`)
+      : contributingResponse;
 
     return NextResponse.json({
       fullName: repository.full_name,
@@ -92,6 +101,9 @@ export async function GET(request: Request) {
         hasLicense: Boolean(repository.license),
         openIssues,
         closedIssues,
+        hasContributing: contributing.status === 200 ? true : contributing.status === 404 ? false : null,
+        hasCi: Array.isArray(workflows) ? workflows.some((file: { name?: string }) => /\.ya?ml$/i.test(file.name || "")) : workflowsResponse.status === 404 ? false : null,
+        lastCommitAt: Array.isArray(commits) ? commits[0]?.commit?.committer?.date || commits[0]?.commit?.author?.date || "" : null,
       },
       branches: Array.isArray(branches) ? branches.map((branch: { name: string }) => branch.name) : [],
     });

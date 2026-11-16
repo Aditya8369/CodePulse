@@ -24,6 +24,9 @@ describe("repository inspector API", () => {
       if (url.pathname.endsWith("/languages")) return Response.json({ TypeScript: 300, CSS: 100 });
       if (url.pathname.endsWith("/stats/punch_card")) return new Response(null, { status: 202 });
       if (url.pathname.endsWith("/readme")) return new Response(null, { status: 404 });
+      if (url.pathname.endsWith("/CONTRIBUTING.md")) return new Response(null, { status: 404 });
+      if (url.pathname.endsWith("/.github/workflows")) return Response.json([{ name: "test.yml" }]);
+      if (url.pathname.endsWith("/commits")) return Response.json([{ commit: { committer: { date: "2026-11-01T00:00:00Z" } } }]);
       if (url.pathname.endsWith("/pulls")) return Response.json([{}], {
         headers: { link: '<https://api.github.com/repos/owner/project/pulls?state=open&per_page=1&page=4>; rel="last"' },
       });
@@ -46,6 +49,9 @@ describe("repository inspector API", () => {
     ]);
     expect(data.punchcard).toBeNull();
     expect(data.openPullRequests).toBe(4);
-    expect(data.health).toEqual({ hasReadme: false, hasLicense: true, openIssues: 2, closedIssues: 8 });
+    expect(data.health).toEqual({
+      hasReadme: false, hasLicense: true, openIssues: 2, closedIssues: 8,
+      hasContributing: false, hasCi: true, lastCommitAt: "2026-11-01T00:00:00Z",
+    });
   });
 });

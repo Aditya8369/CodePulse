@@ -11,6 +11,7 @@ import { useCurrentUser } from "@/hooks/api/use-auth";
 import type { Repository } from "@/types";
 import { RepoStarGrowthChart } from "@/components/charts/repo-star-growth-chart";
 import { RepoCloneDropdown } from "@/components/repositories/repo-clone-dropdown";
+import { RepoHealthScorecard } from "@/components/repositories/repo-health-scorecard";
 import {
   Tooltip,
   TooltipTrigger,
@@ -377,6 +378,8 @@ export default function RepositoryDeepAnalysisPage() {
           </div>
         </div>
       </motion.div>
+
+      <RepoHealthScorecard fullName={repo.fullName || repo.url?.replace("https://github.com/", "")} />
 
       {/* ─── Tab Selector ─── */}
       <div className="flex gap-2 bg-white/[0.02] p-1.5 rounded-2xl border border-white/5 w-fit">
