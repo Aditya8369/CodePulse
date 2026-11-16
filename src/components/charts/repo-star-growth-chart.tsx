@@ -176,8 +176,8 @@ export function RepoStarGrowthChart({ repo, className }: RepoStarGrowthChartProp
             </div>
 
             {/* Pill 3: Milestone */}
-            <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-xs font-semibold text-emerald-300">
-              <Target className="w-3.5 h-3.5 text-emerald-400" />
+            <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-card border border-[var(--chart-positive)] text-xs font-semibold text-[var(--chart-positive)]">
+              <Target className="w-3.5 h-3.5" />
               <span>{formatNumber(currentStars)}/{formatNumber(nextMilestone)} Stars (Est. in {daysToMilestone}d)</span>
             </div>
           </div>

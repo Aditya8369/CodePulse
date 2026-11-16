@@ -231,7 +231,7 @@ export function BattleReport({
             <div className="flex items-center gap-2">
               <h2 className="text-2xl font-bold">{player1.name}</h2>
               {p1Wins && (
-                <span className="px-2.5 py-0.5 rounded-full bg-amber-400/20 text-amber-400 border border-amber-400/30 text-xs font-black">
+                <span className="px-2.5 py-0.5 rounded-full bg-card text-[var(--status-success)] border border-[var(--status-success)] text-xs font-black">
                   WINNER
                 </span>
               )}
@@ -274,7 +274,7 @@ export function BattleReport({
             <div className="flex items-center gap-2">
               <h2 className="text-2xl font-bold">{player2.name}</h2>
               {!p1Wins && (
-                <span className="px-2.5 py-0.5 rounded-full bg-amber-400/20 text-amber-400 border border-amber-400/30 text-xs font-black">
+                <span className="px-2.5 py-0.5 rounded-full bg-card text-[var(--status-success)] border border-[var(--status-success)] text-xs font-black">
                   WINNER
                 </span>
               )}
@@ -289,7 +289,7 @@ export function BattleReport({
       {/* 5. Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <SummaryCard icon={Trophy} label="Winner" value={winner.name} color="text-amber-400" />
-        <SummaryCard icon={TrendingUp} label="Biggest Advantage" value={biggestAdvantage} color="text-emerald-400" />
+        <SummaryCard icon={TrendingUp} label="Biggest Advantage" value={biggestAdvantage} color="text-[var(--status-success)]" />
         <SummaryCard
           icon={Activity}
           label="Most Active"
@@ -308,13 +308,13 @@ export function BattleReport({
           </div>
           <p className="text-muted-foreground leading-relaxed">{aiAnalysis}</p>
           <div className="mt-6 grid grid-cols-2 gap-4">
-            <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-              <div className="text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-1">Key Strength</div>
-              <div className="font-medium text-emerald-100">{biggestAdvantage}</div>
+            <div className="p-4 rounded-xl bg-card border border-[var(--status-success)]">
+              <div className="text-xs font-semibold text-[var(--status-success)] uppercase tracking-wider mb-1">Key Strength</div>
+              <div className="font-medium text-foreground">{biggestAdvantage}</div>
             </div>
-            <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/20">
-              <div className="text-xs font-semibold text-destructive uppercase tracking-wider mb-1">Critical Weakness</div>
-              <div className="font-medium text-red-100">Community Engagement</div>
+            <div className="p-4 rounded-xl bg-card border border-[var(--status-danger)]">
+              <div className="text-xs font-semibold text-[var(--status-danger)] uppercase tracking-wider mb-1">Critical Weakness</div>
+              <div className="font-medium text-foreground">Community Engagement</div>
             </div>
           </div>
         </div>
