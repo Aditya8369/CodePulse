@@ -1,6 +1,7 @@
-import { Controller, Get, Param } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Controller, Get, Param, Query, Request, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AnalyticsService } from './analytics.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('analytics')
 @Controller('analytics')
@@ -17,5 +18,17 @@ export class AnalyticsController {
   @ApiOperation({ summary: 'Get aggregated analytics for a specific user' })
   async getUserAnalytics(@Param('username') username: string) {
     return this.analyticsService.getUserAnalytics(username);
+  }
+
+  @Get('repository/:repositoryId/commit-punchcard')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get a repository commit punchcard in a requested timezone' })
+  async getRepositoryCommitPunchcard(
+    @Request() req: { user: { id: string } },
+    @Param('repositoryId') repositoryId: string,
+    @Query('timezone') timezone = 'UTC',
+  ) {
+    return this.analyticsService.getRepositoryCommitPunchcard(req.user.id, repositoryId, timezone);
   }
 }
