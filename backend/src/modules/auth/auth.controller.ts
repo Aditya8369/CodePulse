@@ -4,16 +4,20 @@ import {
   HttpCode,
   HttpStatus,
   Post,
+  Req,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
+import type { Request } from 'express';
 import { AuthService } from './auth.service';
 import {
   AuthResponseDto,
   EmailPasswordDto,
   ForgotPasswordDto,
   GitHubLoginDto,
+  LogoutDto,
+  RefreshTokenDto,
   RegisterDto,
   ResetPasswordDto,
 } from './dto/auth.dto';
@@ -53,6 +57,44 @@ export class AuthController {
       loginDto.email,
       loginDto.password,
     );
+  }
+
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Rotate and refresh JWT access token using a valid refresh token' })
+  @ApiResponse({
+    status: 200,
+    description: 'Fresh access token and rotated refresh token issued',
+    type: AuthResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'Invalid, reused, or expired refresh token' })
+  async refresh(
+    @Body() refreshDto: RefreshTokenDto,
+  ): Promise<AuthResponseDto> {
+    return this.authService.refreshAccessToken(
+      refreshDto.refreshToken,
+      refreshDto.deviceFingerprint,
+    );
+  }
+
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Revoke and blacklist refresh token family and access token' })
+  @ApiResponse({
+    status: 200,
+    description: 'Successfully logged out and token family blacklisted',
+  })
+  async logout(
+    @Body() logoutDto: LogoutDto,
+    @Req() req: Request,
+  ): Promise<{ message: string }> {
+    const authHeader = req.headers['authorization'];
+    const accessToken =
+      typeof authHeader === 'string' && authHeader.startsWith('Bearer ')
+        ? authHeader.slice(7).trim()
+        : undefined;
+    return this.authService.logout(logoutDto.refreshToken, accessToken);
   }
 
   @Post('forgot-password')
