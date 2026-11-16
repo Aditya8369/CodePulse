@@ -19,6 +19,7 @@ import { ProfileQrModal } from "@/components/modals/profile-qr-modal";
 import { ProfileBadgeModal } from "@/components/modals/profile-badge-modal";
 import { ProfileShareModal } from "@/components/modals/profile-share-modal";
 import { SocialLinksManager } from "@/components/profile/social-links-manager";
+import { StatusBadgeEditorModal } from "@/components/profile/status-badge-editor";
 import type { Badge } from "@/types";
 
 export default function ProfilePage() {
@@ -132,6 +133,7 @@ export default function ProfilePage() {
               )}
             </div>
             <p className="text-muted-foreground mb-1">@{user.username}</p>
+            <StatusBadgeEditorModal key={user.id} userId={user.id} />
             {user.bio && <p className="text-sm text-muted-foreground mb-4 max-w-xl">{user.bio}</p>}
             <SocialLinksManager key={user.id} userId={user.id} initialLinks={Array.isArray(user.socialLinks) ? user.socialLinks : []} />
 

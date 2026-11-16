@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
-import { motion, AnimatePresence } from "motion/react";
-import { Keyboard, X, Command, Compass, Layout, Sliders } from "lucide-react";
+import { Keyboard, X, Compass, Sliders, type LucideIcon } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 
 interface ShortcutsModalProps {
   isOpen: boolean;
@@ -16,7 +15,7 @@ interface ShortcutItem {
 
 interface ShortcutCategory {
   title: string;
-  icon: any;
+  icon: LucideIcon;
   shortcuts: ShortcutItem[];
 }
 
@@ -30,16 +29,9 @@ const SHORTCUT_CATEGORIES: ShortcutCategory[] = [
       { keys: ["G", "then", "A"], description: "Navigate to Analytics" },
       { keys: ["G", "then", "L"], description: "Navigate to Leaderboard" },
       { keys: ["G", "then", "B"], description: "Navigate to Battles" },
+      { keys: ["G", "then", "C"], description: "Navigate to Challenges" },
+      { keys: ["G", "then", "P"], description: "Navigate to Profile" },
       { keys: ["G", "then", "S"], description: "Navigate to Settings" },
-    ],
-  },
-  {
-    title: "Interface & Controls",
-    icon: Layout,
-    shortcuts: [
-      { keys: ["Ctrl / ⌘", "B"], description: "Toggle Desktop Sidebar collapse" },
-      { keys: ["Ctrl / ⌘", "Shift", "L"], description: "Toggle Dark / Light theme" },
-      { keys: ["Alt", "S"], description: "Swap developers in Compare view" },
     ],
   },
   {
@@ -47,40 +39,18 @@ const SHORTCUT_CATEGORIES: ShortcutCategory[] = [
     icon: Sliders,
     shortcuts: [
       { keys: ["?"], description: "Show this Keyboard Shortcuts Guide" },
-      { keys: ["Esc"], description: "Close active modal, drawer, or palette" },
+      { keys: ["Esc"], description: "Close this guide" },
     ],
   },
 ];
 
 export function ShortcutsModal({ isOpen, onClose }: ShortcutsModalProps) {
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onClose();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
-
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-          onClick={onClose}
-        >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 15 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 15 }}
-            onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-2xl rounded-3xl bg-[#09090b] border border-white/10 shadow-2xl overflow-hidden relative"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="shortcuts-modal-title"
-          >
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent
+        showCloseButton={false}
+        className="w-full max-w-2xl sm:max-w-2xl rounded-3xl bg-[#09090b] border border-white/10 shadow-2xl overflow-hidden p-0 gap-0 text-white"
+      >
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-white/[0.06] bg-white/[0.02]">
               <div className="flex items-center gap-3">
@@ -88,12 +58,12 @@ export function ShortcutsModal({ isOpen, onClose }: ShortcutsModalProps) {
                   <Keyboard className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 id="shortcuts-modal-title" className="text-lg font-bold text-white">
+                  <DialogTitle className="text-lg font-bold text-white">
                     Keyboard Shortcuts
-                  </h2>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Power-user navigation and interface commands
-                  </p>
+                  </DialogTitle>
+                  <DialogDescription className="text-xs text-muted-foreground mt-0.5">
+                    Available navigation and help commands
+                  </DialogDescription>
                 </div>
               </div>
               <button
@@ -145,12 +115,10 @@ export function ShortcutsModal({ isOpen, onClose }: ShortcutsModalProps) {
 
             {/* Footer tip */}
             <div className="p-4 border-t border-white/[0.06] bg-white/[0.02] flex items-center justify-between text-xs text-muted-foreground">
-              <span>Press <kbd className="px-1.5 py-0.5 rounded border border-white/10 bg-white/5 font-mono text-[10px]">?</kbd> anytime to open this cheatsheet</span>
+              <span>Press <kbd className="px-1.5 py-0.5 rounded border border-white/10 bg-white/5 font-mono text-[10px]">?</kbd> outside text fields to open this guide</span>
               <span>Press <kbd className="px-1.5 py-0.5 rounded border border-white/10 bg-white/5 font-mono text-[10px]">Esc</kbd> to dismiss</span>
             </div>
-          </motion.div>
-        </div>
-      )}
-    </AnimatePresence>
+      </DialogContent>
+    </Dialog>
   );
 }
