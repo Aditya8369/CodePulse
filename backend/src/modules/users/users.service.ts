@@ -12,6 +12,9 @@ export class UsersService {
       include: {
         rating: true,
         stats: true,
+        languages: true,
+        repositories: true,
+        activities: { orderBy: { createdAt: 'desc' }, take: 20 },
       },
     });
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "motion/react";
+import { useQuery } from "@tanstack/react-query";
 import { CommitActivityChart } from "@/components/charts/commit-activity-chart";
 import { ContributionHeatmap } from "@/components/charts/contribution-heatmap";
 import { LanguageDistribution } from "@/components/charts/language-distribution";
@@ -14,6 +14,9 @@ import { PrReviewVelocityCard } from "@/components/cards/pr-review-velocity-card
 import { StaggerContainer, StaggerItem } from "@/components/animations/page-transition";
 import { AnimatedCounter } from "@/components/animations/animated-counter";
 import { AnalyticsExportModal } from "@/components/analytics/analytics-export-modal";
+import { ProductivityGauge } from "@/components/analytics/productivity-gauge";
+import { calculateProductivity, type ProductivityBattle } from "@/lib/productivity-calculator";
+import { apiClient, extractData } from "@/lib/api-client";
 import { useCurrentUser } from "@/hooks/api/use-auth";
 import { Loader2, BarChart3, TrendingUp, Clock, Calendar, Code, GitCommit, Download } from "lucide-react";
 import { BackToTop } from "@/components/ui/back-to-top";
@@ -36,6 +39,15 @@ interface AnalyticsRating extends Partial<DeveloperRating> {
 export default function AnalyticsPage() {
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const { data: currentUser, isLoading } = useCurrentUser();
+  const { data: battles } = useQuery({
+    queryKey: ["battles", "user", currentUser?.id],
+    enabled: Boolean(currentUser?.id),
+    queryFn: async (): Promise<ProductivityBattle[]> => {
+      const response = await apiClient.get(`/battles/user/${currentUser!.id}`);
+      return extractData<ProductivityBattle[]>(response);
+    },
+    retry: false,
+  });
 
   if (isLoading) {
     return (
@@ -94,6 +106,15 @@ export default function AnalyticsPage() {
   const rating: AnalyticsRating = userRecord.rating || {};
   const languages = currentUser.languages || [];
   const repos = currentUser.repositories || [];
+  const productivity = calculateProductivity({
+    userId: currentUser.id,
+    commitActivity: stats.commitActivity,
+    contributionData: stats.contributionData,
+    activities: currentUser.activities,
+    battles,
+    xp: rating.xp,
+    languages,
+  });
 
   const activeDays = Array.isArray(stats.commitActivity) ? stats.commitActivity.length : 0;
   const avgCommitsPerDay = stats.totalCommits ? (stats.totalCommits / 365) : 0;
@@ -160,6 +181,10 @@ export default function AnalyticsPage() {
         {/* Banner (Full Width) */}
         <StaggerItem className="md:col-span-12">
           <GithubWrappedBanner stats={stats} languages={languages} />
+        </StaggerItem>
+
+        <StaggerItem className="md:col-span-12">
+          <ProductivityGauge result={productivity} />
         </StaggerItem>
 
         {/* Global Ranking (Span 4) */}
