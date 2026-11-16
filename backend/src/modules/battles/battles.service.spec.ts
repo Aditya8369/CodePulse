@@ -1,9 +1,9 @@
-import { describe, it, expect, beforeEach } from 'vitest';
 import { BattlesService } from './battles.service';
+import { PrismaService } from '../../prisma/prisma.service';
 
 describe('BattlesService - ELO Rating Engine (#87)', () => {
   let battlesService: BattlesService;
-  const mockPrisma: any = {};
+  const mockPrisma = {} as PrismaService;
 
   beforeEach(() => {
     battlesService = new BattlesService(mockPrisma);
@@ -27,7 +27,11 @@ describe('BattlesService - ELO Rating Engine (#87)', () => {
     const underdogWinnerRating = 1000;
     const titanLoserRating = 1400;
 
-    const outcome = battlesService.calculateElo(underdogWinnerRating, titanLoserRating, 32);
+    const outcome = battlesService.calculateElo(
+      underdogWinnerRating,
+      titanLoserRating,
+      32,
+    );
 
     // Winner was predicted to lose heavily (~9% chance), so delta should be significantly higher (> 25 pts)
     expect(outcome.winnerDelta).toBeGreaterThanOrEqual(28);
@@ -40,7 +44,11 @@ describe('BattlesService - ELO Rating Engine (#87)', () => {
     const favoriteWinnerRating = 1500;
     const underdogLoserRating = 1100;
 
-    const outcome = battlesService.calculateElo(favoriteWinnerRating, underdogLoserRating, 32);
+    const outcome = battlesService.calculateElo(
+      favoriteWinnerRating,
+      underdogLoserRating,
+      32,
+    );
 
     // Guaranteed minimum winner gain of at least 8 pts
     expect(outcome.winnerDelta).toBeGreaterThanOrEqual(8);
@@ -52,7 +60,11 @@ describe('BattlesService - ELO Rating Engine (#87)', () => {
     const winnerRating = 1200;
     const beginnerLoserRating = 105;
 
-    const outcome = battlesService.calculateElo(winnerRating, beginnerLoserRating, 32);
+    const outcome = battlesService.calculateElo(
+      winnerRating,
+      beginnerLoserRating,
+      32,
+    );
     expect(outcome.loserRating).toBeGreaterThanOrEqual(100);
   });
 });

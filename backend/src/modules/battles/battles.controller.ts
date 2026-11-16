@@ -7,15 +7,35 @@ import {
   Param,
   Query,
   BadRequestException,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { BattlesService } from './battles.service';
 import { CreateBattleDto, UpdateBattleStatusDto } from './dto/battles.dto';
+import { SeasonResetService } from './season-reset.service';
 
 @ApiTags('battles')
 @Controller('battles')
 export class BattlesController {
-  constructor(private readonly battlesService: BattlesService) {}
+  constructor(
+    private readonly battlesService: BattlesService,
+    private readonly seasonReset: SeasonResetService,
+  ) {}
+
+  @Get('season/leaderboard')
+  @ApiOperation({
+    summary: 'Competitive rankings (hide MMR during placements)',
+  })
+  async getSeasonLeaderboard() {
+    await this.seasonReset.rolloverIfDue();
+    return this.seasonReset.getLeaderboard();
+  }
+
+  @Get('season/history/:number')
+  @ApiOperation({ summary: 'Archived standings for a completed season' })
+  getSeasonHistory(@Param('number', ParseIntPipe) number: number) {
+    return this.seasonReset.getArchive(number);
+  }
 
   @Get('active')
   @ApiOperation({ summary: 'Get all active global battles' })

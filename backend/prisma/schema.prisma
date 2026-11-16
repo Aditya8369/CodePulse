@@ -34,6 +34,7 @@ model User {
   battlesAsOpponent   Battle[]          @relation("BattleOpponent")
   wonBattles          Battle[]          @relation("BattleWinner")
   rating              DeveloperRating?
+  battleRating        BattleRating?
   stats               DeveloperStats?
   following           Follows[]         @relation("follower")
   followers           Follows[]         @relation("following")
@@ -106,6 +107,46 @@ model DeveloperRating {
   @@index([overall, tier])
   @@index([rank])
   @@map("developer_ratings")
+}
+
+/// Competitive MMR is independent of the GitHub activity score in DeveloperRating.
+model BattleRating {
+  userId                    String   @id
+  elo                       Float    @default(1200)
+  placementMatchesRemaining Int      @default(0)
+  seasonNumber              Int      @default(1)
+  updatedAt                 DateTime @updatedAt
+  user                      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([seasonNumber, elo])
+  @@map("battle_ratings")
+}
+
+model BattleSeason {
+  number    Int       @id
+  startedAt DateTime
+  endsAt    DateTime
+  closedAt  DateTime?
+  standings SeasonArchive[]
+
+  @@map("battle_seasons")
+}
+
+/// Snapshot names and ratings so Hall of Fame entries survive profile deletion.
+model SeasonArchive {
+  id          String       @id @default(uuid())
+  seasonNumber Int
+  playerId    String
+  username    String
+  finalElo    Float
+  rank        Int
+  tier        Tier
+  archivedAt  DateTime     @default(now())
+  season      BattleSeason @relation(fields: [seasonNumber], references: [number])
+
+  @@unique([seasonNumber, playerId])
+  @@index([seasonNumber, rank])
+  @@map("season_archives")
 }
 
 model DeveloperStats {

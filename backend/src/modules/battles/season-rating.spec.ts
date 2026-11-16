@@ -17,7 +17,9 @@ describe('season rating rules', () => {
 
   it('rejects invalid ratings before a season reset writes them', () => {
     expect(() => compressSeasonRating(Number.NaN)).toThrow(RangeError);
-    expect(() => compressSeasonRating(1200, Number.POSITIVE_INFINITY)).toThrow(RangeError);
+    expect(() => compressSeasonRating(1200, Number.POSITIVE_INFINITY)).toThrow(
+      RangeError,
+    );
   });
 
   it('uses a triple K-factor for five placements and reveals Elo after the fifth', () => {
