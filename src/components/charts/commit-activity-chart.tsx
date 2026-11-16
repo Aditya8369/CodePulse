@@ -281,9 +281,9 @@ export function CommitActivityChart({ className, data = [] }: CommitActivityChar
         </div>
         <div className="text-center sm:text-left border-x border-white/[0.06] px-3">
           <span className="text-[11px] text-muted-foreground uppercase tracking-wider flex items-center justify-center sm:justify-start gap-1">
-            <TrendingUp className="w-3 h-3 text-emerald-400" /> Avg / Day
+            <TrendingUp className="w-3 h-3 text-[var(--chart-positive)]" /> Avg / Day
           </span>
-          <div className="text-lg font-bold text-emerald-400 mt-0.5">{metrics.avgPerDay}</div>
+          <div className="text-lg font-bold text-[var(--chart-positive)] mt-0.5">{metrics.avgPerDay}</div>
         </div>
         <div className="text-center sm:text-left">
           <span className="text-[11px] text-muted-foreground uppercase tracking-wider flex items-center justify-center sm:justify-start gap-1">

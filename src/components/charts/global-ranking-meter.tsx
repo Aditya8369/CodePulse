@@ -85,7 +85,7 @@ export function GlobalRankingMeter({ stats, rating }: GlobalRankingMeterProps) {
       </div>
 
       <div className="text-center relative z-10 w-full mt-auto">
-        <div className="flex items-center justify-center gap-2 text-sm text-emerald-400 font-medium bg-emerald-400/10 py-1.5 px-3 rounded-full w-fit mx-auto">
+        <div className="flex items-center justify-center gap-2 text-sm text-[var(--chart-positive)] font-medium bg-card py-1.5 px-3 rounded-full w-fit mx-auto">
           <TrendingUp className="w-4 h-4" />
           <span>Ahead of {formatNumber(stats?.totalCommits ? Math.floor(stats.totalCommits * 3.14) : 0)} devs</span>
         </div>
