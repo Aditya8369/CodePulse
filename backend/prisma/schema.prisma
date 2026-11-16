@@ -376,6 +376,8 @@ enum ActivityType {
   FORK
   ACHIEVEMENT
   LEVEL_UP
+  BATTLE
+  CHALLENGE
 }
 
 model GithubUser {

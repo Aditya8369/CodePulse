@@ -199,7 +199,7 @@ export interface Notification {
 
 export interface Activity {
   id: string;
-  type: "commit" | "pull_request" | "issue" | "review" | "star" | "fork" | "achievement" | "level_up";
+  type: "commit" | "pull_request" | "issue" | "review" | "star" | "fork" | "achievement" | "level_up" | "battle" | "challenge";
   title: string;
   description: string;
   repository?: string;

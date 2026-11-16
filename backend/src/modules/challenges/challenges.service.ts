@@ -89,6 +89,16 @@ export class ChallengesService {
             message: `You completed the "${challenge.title}" challenge and earned ${challenge.xpReward} XP.`,
           },
         });
+
+        await this.prisma.activity.create({
+          data: {
+            userId,
+            type: 'CHALLENGE',
+            title: `Completed ${challenge.title}`,
+            description: `Earned ${challenge.xpReward} XP for completing a challenge.`,
+            metadata: { challengeId: challenge.id },
+          },
+        });
       }
     }
   }
