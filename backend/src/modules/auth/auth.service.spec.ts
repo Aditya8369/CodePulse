@@ -4,22 +4,40 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { SyncService } from '../sync/sync.service';
+import { TokenBlacklistService } from './token-blacklist.service';
 import { randomBytes, scryptSync } from 'crypto';
+import { UnauthorizedException } from '@nestjs/common';
 
 describe('AuthService', () => {
   let service: AuthService;
+  let blacklistService: TokenBlacklistService;
+
   const prismaMock = {
     user: {
       findUnique: jest.fn(),
       create: jest.fn(),
     },
+    refreshToken: {
+      create: jest.fn(),
+      findUnique: jest.fn(),
+      update: jest.fn(),
+      updateMany: jest.fn(),
+    },
+    $transaction: jest.fn(),
   };
+
   const configMock = {
-    get: jest.fn(),
+    get: jest.fn((key: string) => {
+      if (key === 'REDIS_HOST') return 'localhost';
+      if (key === 'REDIS_PORT') return '6379';
+      return null;
+    }),
   };
+
   const jwtMock = {
     sign: jest.fn().mockReturnValue('signed-jwt'),
   };
+
   const syncMock = {
     syncUserData: jest.fn(),
   };
@@ -29,6 +47,7 @@ describe('AuthService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
+        TokenBlacklistService,
         {
           provide: PrismaService,
           useValue: prismaMock,
@@ -49,13 +68,14 @@ describe('AuthService', () => {
     }).compile();
 
     service = module.get<AuthService>(AuthService);
+    blacklistService = module.get<TokenBlacklistService>(TokenBlacklistService);
   });
 
   it('should be defined', () => {
     expect(service).toBeDefined();
   });
 
-  it('registers email accounts and returns a JWT', async () => {
+  it('registers email accounts and returns an accessToken, refreshToken, and expiresIn', async () => {
     const user = {
       id: 'user-id',
       githubId: null,
@@ -66,6 +86,7 @@ describe('AuthService', () => {
     };
     prismaMock.user.findUnique.mockResolvedValue(null);
     prismaMock.user.create.mockResolvedValue(user);
+    prismaMock.refreshToken.create.mockResolvedValue({ id: 'rt-id' });
 
     const response = await service.register({
       name: 'Developer',
@@ -76,7 +97,16 @@ describe('AuthService', () => {
 
     expect(prismaMock.user.create).toHaveBeenCalledTimes(1);
     expect(response.accessToken).toBe('signed-jwt');
+    expect(response.refreshToken).toBeDefined();
+    expect(response.expiresIn).toBe(900);
     expect(jwtMock.sign).toHaveBeenCalled();
+    expect(prismaMock.refreshToken.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          userId: 'user-id',
+        }),
+      }),
+    );
 
     const salt = randomBytes(16).toString('hex');
     prismaMock.user.findUnique.mockResolvedValue({
@@ -85,10 +115,113 @@ describe('AuthService', () => {
     });
     await expect(
       service.authenticateWithPassword('dev@example.com', 'secure-password'),
-    ).resolves.toMatchObject({ accessToken: 'signed-jwt' });
+    ).resolves.toMatchObject({
+      accessToken: 'signed-jwt',
+      expiresIn: 900,
+    });
     await expect(
       service.authenticateWithPassword('dev@example.com', 'wrong-password'),
     ).rejects.toThrow('Invalid email or password.');
+  });
+
+  it('rotates refresh token and issues a fresh pair for valid token', async () => {
+    const rawRefreshToken = 'valid-refresh-token-1234567890abcdef1234567890';
+    const user = {
+      id: 'user-id-1',
+      githubId: null,
+      username: 'testuser',
+      name: 'Test User',
+      email: 'test@example.com',
+    };
+    const tokenRecord = {
+      id: 'record-id-1',
+      userId: user.id,
+      familyId: 'family-123',
+      tokenHash: blacklistService.hashToken(rawRefreshToken),
+      deviceFingerprint: 'desktop-chrome',
+      expiresAt: new Date(Date.now() + 100000),
+      revokedAt: null,
+      user,
+    };
+
+    prismaMock.refreshToken.findUnique.mockResolvedValue(tokenRecord);
+    prismaMock.refreshToken.update.mockResolvedValue({ ...tokenRecord, revokedAt: new Date() });
+    prismaMock.refreshToken.create.mockResolvedValue({ id: 'new-record-id' });
+
+    const result = await service.refreshAccessToken(rawRefreshToken, 'desktop-chrome');
+
+    expect(result.accessToken).toBe('signed-jwt');
+    expect(result.refreshToken).toBeDefined();
+    expect(result.refreshToken).not.toBe(rawRefreshToken);
+    expect(prismaMock.refreshToken.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'record-id-1' },
+      }),
+    );
+    expect(prismaMock.refreshToken.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          familyId: 'family-123',
+          userId: user.id,
+        }),
+      }),
+    );
+  });
+
+  it('detects refresh token reuse and revokes the entire token family (replay attack defense)', async () => {
+    const reusedToken = 'already-used-refresh-token-12345';
+    const user = {
+      id: 'user-id-1',
+      githubId: null,
+      username: 'testuser',
+      name: 'Test User',
+      email: 'test@example.com',
+    };
+    const alreadyRevokedRecord = {
+      id: 'record-id-1',
+      userId: user.id,
+      familyId: 'compromised-family-456',
+      tokenHash: blacklistService.hashToken(reusedToken),
+      expiresAt: new Date(Date.now() + 100000),
+      revokedAt: new Date(Date.now() - 5000), // Already revoked!
+      user,
+    };
+
+    prismaMock.refreshToken.findUnique.mockResolvedValue(alreadyRevokedRecord);
+    prismaMock.refreshToken.updateMany.mockResolvedValue({ count: 2 });
+
+    await expect(service.refreshAccessToken(reusedToken)).rejects.toThrow(
+      UnauthorizedException,
+    );
+    expect(prismaMock.refreshToken.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { familyId: 'compromised-family-456' },
+      }),
+    );
+    expect(await blacklistService.isFamilyBlacklisted('compromised-family-456')).toBe(true);
+  });
+
+  it('logs out and blacklists token family in Redis and database', async () => {
+    const rawRefreshToken = 'logout-refresh-token-999';
+    const tokenRecord = {
+      id: 'record-id-999',
+      userId: 'user-id-999',
+      familyId: 'family-to-logout',
+      tokenHash: blacklistService.hashToken(rawRefreshToken),
+    };
+
+    prismaMock.refreshToken.findUnique.mockResolvedValue(tokenRecord);
+    prismaMock.refreshToken.updateMany.mockResolvedValue({ count: 1 });
+
+    const res = await service.logout(rawRefreshToken, 'sample-access-token');
+
+    expect(res).toEqual({ message: 'Successfully logged out' });
+    expect(prismaMock.refreshToken.updateMany).toHaveBeenCalledWith({
+      where: { familyId: 'family-to-logout' },
+      data: expect.objectContaining({ revokedAt: expect.any(Date) }),
+    });
+    expect(await blacklistService.isFamilyBlacklisted('family-to-logout')).toBe(true);
+    expect(await blacklistService.isTokenBlacklisted('sample-access-token')).toBe(true);
   });
 
   it('does not disclose or issue a reset for an unregistered email', async () => {

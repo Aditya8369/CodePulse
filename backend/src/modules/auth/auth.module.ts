@@ -10,7 +10,8 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
-
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { TokenBlacklistService } from './token-blacklist.service';
 import { SyncModule } from '../sync/sync.module';
 
 @Module({
@@ -24,14 +25,14 @@ import { SyncModule } from '../sync/sync.module';
         secret: configService.getOrThrow<string>('JWT_SECRET'),
         signOptions: {
           expiresIn: (configService.get<string>('JWT_EXPIRATION') ||
-            '7d') as JwtSignOptions['expiresIn'],
+            '15m') as JwtSignOptions['expiresIn'],
         },
       }),
       inject: [ConfigService],
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
-  exports: [AuthService, JwtStrategy, PassportModule],
+  providers: [AuthService, JwtStrategy, JwtAuthGuard, TokenBlacklistService],
+  exports: [AuthService, JwtStrategy, JwtAuthGuard, TokenBlacklistService, PassportModule],
 })
 export class AuthModule {}
