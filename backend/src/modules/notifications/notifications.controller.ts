@@ -1,7 +1,8 @@
-import { Controller, Get, Put, Param, Sse, MessageEvent } from '@nestjs/common';
+import { Controller, Get, Patch, Param, Sse, MessageEvent, UseGuards, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Observable, interval, map } from 'rxjs';
 import { NotificationsService } from './notifications.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('notifications')
 @Controller('notifications')
@@ -9,11 +10,11 @@ export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
   @Get()
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get current user notifications' })
-  async getMyNotifications() {
-    const mockUserId = '123';
-    return this.notificationsService.getUserNotifications(mockUserId);
+  async getMyNotifications(@Request() req: { user: { id: string } }) {
+    return this.notificationsService.getUserNotifications(req.user.id);
   }
 
   @Sse('stream')
@@ -30,18 +31,19 @@ export class NotificationsController {
     );
   }
 
-  @Put(':id/read')
+  @Patch(':id/read')
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Mark a notification as read' })
-  async markAsRead(@Param('id') id: string) {
-    return this.notificationsService.markAsRead(id);
+  async markAsRead(@Request() req: { user: { id: string } }, @Param('id') id: string) {
+    return this.notificationsService.markAsRead(req.user.id, id);
   }
 
-  @Put('read-all')
+  @Patch('read-all')
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Mark all notifications as read for current user' })
-  async markAllAsRead() {
-    const mockUserId = '123';
-    return this.notificationsService.markAllAsRead(mockUserId);
+  async markAllAsRead(@Request() req: { user: { id: string } }) {
+    return this.notificationsService.markAllAsRead(req.user.id);
   }
 }

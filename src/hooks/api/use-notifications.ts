@@ -1,61 +1,76 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { mockNotifications } from "@/lib/mock-data";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { apiClient, extractData } from "@/lib/api-client";
+import { useCurrentUser, useHasAuthToken } from "@/hooks/api/use-auth";
 import type { Notification } from "@/types";
 
-const STORAGE_KEY = "codepulse_notifications";
+type BackendNotification = Omit<Notification, "type"> & { type: string };
+const notificationTypes = new Set<Notification["type"]>([
+  "achievement", "challenge", "battle", "friend", "system", "level_up",
+]);
+
+function normalizeNotification(item: BackendNotification): Notification {
+  const type = item.type.toLowerCase() as Notification["type"];
+  return { ...item, type: notificationTypes.has(type) ? type : "system" };
+}
 
 export function useNotifications() {
-  const [notifications, setNotifications] = useState<Notification[]>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-          return JSON.parse(stored);
-        }
-      } catch (e) {
-        console.error("Failed to parse notifications from localStorage", e);
-      }
-    }
-    return mockNotifications;
+  const queryClient = useQueryClient();
+  const hasBackendToken = useHasAuthToken();
+  const { data: currentUser } = useCurrentUser();
+  const queryKey = ["notifications", currentUser?.id] as const;
+
+  const { data: notifications = [] } = useQuery({
+    queryKey,
+    enabled: hasBackendToken && Boolean(currentUser?.id),
+    queryFn: async () => {
+      const response = await apiClient.get("/notifications");
+      return extractData<BackendNotification[]>(response).map(normalizeNotification);
+    },
+    retry: false,
+    refetchInterval: 60_000,
   });
 
-  // Persist to localStorage on state changes
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(notifications));
-    } catch (e) {
-      console.error("Failed to save notifications to localStorage", e);
-    }
-  }, [notifications]);
+  const markOne = useMutation({
+    mutationFn: (id: string) => apiClient.patch(`/notifications/${encodeURIComponent(id)}/read`),
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey });
+      const previous = queryClient.getQueryData<Notification[]>(queryKey);
+      queryClient.setQueryData<Notification[]>(queryKey, (items = []) =>
+        items.map((item) => item.id === id ? { ...item, isRead: true } : item),
+      );
+      return { previous };
+    },
+    onError: (_error, _id, context) => {
+      queryClient.setQueryData(queryKey, context?.previous);
+      toast.error("Could not mark notification as read");
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey }),
+  });
 
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
-
-  const markAsRead = useCallback((id: string) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
-    );
-  }, []);
-
-  const markAllAsRead = useCallback(() => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-  }, []);
-
-  const clearAll = useCallback(() => {
-    setNotifications([]);
-  }, []);
-
-  const removeNotification = useCallback((id: string) => {
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
-  }, []);
+  const markAll = useMutation({
+    mutationFn: () => apiClient.patch("/notifications/read-all"),
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey });
+      const previous = queryClient.getQueryData<Notification[]>(queryKey);
+      queryClient.setQueryData<Notification[]>(queryKey, (items = []) =>
+        items.map((item) => ({ ...item, isRead: true })),
+      );
+      return { previous };
+    },
+    onError: (_error, _variables, context) => {
+      queryClient.setQueryData(queryKey, context?.previous);
+      toast.error("Could not mark notifications as read");
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey }),
+  });
 
   return {
     notifications,
-    unreadCount,
-    markAsRead,
-    markAllAsRead,
-    clearAll,
-    removeNotification,
+    unreadCount: notifications.filter((item) => !item.isRead).length,
+    markAsRead: (id: string) => markOne.mutate(id),
+    markAllAsRead: () => markAll.mutate(),
   };
 }
