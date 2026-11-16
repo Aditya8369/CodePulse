@@ -177,6 +177,7 @@ describe('differential GitHub sync', () => {
       'test-token',
       100,
       true,
+      true,
     );
     expect(f.tx.$queryRaw).toHaveBeenCalledTimes(2);
   });

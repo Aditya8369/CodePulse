@@ -39,6 +39,7 @@ export class SyncService {
       accessToken,
       100,
       true,
+      true,
     );
     if (
       !Array.isArray(githubEvents) ||

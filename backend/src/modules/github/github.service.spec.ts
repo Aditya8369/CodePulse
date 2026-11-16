@@ -54,6 +54,20 @@ describe('GithubService', () => {
     jest.clearAllMocks();
   });
 
+  it('includes private events only for authenticated sync requests', async () => {
+    mockedAxios.get.mockResolvedValue({ data: [] });
+    await service.fetchUserEvents('testuser', 'user-token', 100, true, true);
+    expect(mockedAxios.get).toHaveBeenCalledWith(
+      'https://api.github.com/users/testuser/events',
+      expect.objectContaining({ headers: expect.objectContaining({ Authorization: 'Bearer user-token' }) }),
+    );
+    await service.fetchUserEvents('testuser', undefined, 30, true, true);
+    expect(mockedAxios.get).toHaveBeenLastCalledWith(
+      'https://api.github.com/users/testuser/events/public',
+      expect.any(Object),
+    );
+  });
+
   describe('Caching Strategy', () => {
     const username = 'testuser';
 

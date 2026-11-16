@@ -262,13 +262,11 @@ export class GithubService {
     }
   }
 
-  /**
-   * Fetches public user activity events from GitHub REST API.
-   */
-  async fetchUserEvents(username: string, accessToken?: string, limit: number = 30, strict: boolean = false) {
+  /** Fetches user activity events, including private events for the authenticated user when requested. */
+  async fetchUserEvents(username: string, accessToken?: string, limit: number = 30, strict: boolean = false, includePrivate: boolean = false) {
     try {
       const response = await axios.get(
-        `https://api.github.com/users/${username}/events/public`,
+        `https://api.github.com/users/${username}/events${includePrivate && accessToken ? '' : '/public'}`,
         {
           headers: this.getHeaders(accessToken),
           params: { per_page: limit },
