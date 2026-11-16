@@ -298,6 +298,7 @@ export default function BattlesPage() {
               player1={ghostBattleData.p1}
               player2={ghostBattleData.p2}
               battleType={ghostBattleData.battleType}
+              isMuted={isMuted}
               onComplete={() => {
                 saveBattleToHistory(ghostBattleData.p1, ghostBattleData.p2, ghostBattleData.battleType);
                 setPhase("REPORT");
