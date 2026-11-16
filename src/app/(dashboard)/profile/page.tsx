@@ -18,6 +18,7 @@ import {
 import { ProfileQrModal } from "@/components/modals/profile-qr-modal";
 import { ProfileBadgeModal } from "@/components/modals/profile-badge-modal";
 import { ProfileShareModal } from "@/components/modals/profile-share-modal";
+import { SocialLinksManager } from "@/components/profile/social-links-manager";
 import type { Badge } from "@/types";
 
 export default function ProfilePage() {
@@ -132,6 +133,7 @@ export default function ProfilePage() {
             </div>
             <p className="text-muted-foreground mb-1">@{user.username}</p>
             {user.bio && <p className="text-sm text-muted-foreground mb-4 max-w-xl">{user.bio}</p>}
+            <SocialLinksManager key={user.id} userId={user.id} initialLinks={Array.isArray(user.socialLinks) ? user.socialLinks : []} />
 
             <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
               {user.location && <span className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5" />{user.location}</span>}
@@ -146,15 +148,6 @@ export default function ProfilePage() {
                   <GithubIcon className="w-3.5 h-3.5" />GitHub Profile
                 </a>
               )}
-              {user.socialLinks && Array.isArray(user.socialLinks) && user.socialLinks.map((link, idx) => {
-                let displayUrl = link.url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
-                if (displayUrl.length > 25) displayUrl = displayUrl.substring(0, 25) + '...';
-                return (
-                  <a key={idx} href={link.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-blue-400 transition-colors">
-                    <ExternalLink className="w-3.5 h-3.5" />{displayUrl}
-                  </a>
-                );
-              })}
               <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" />Joined {joinedDate}</span>
               <button
                 onClick={() => setIsQrModalOpen(true)}
