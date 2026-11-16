@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Param, Sse, MessageEvent, UseGuards, Request } from '@nestjs/common';
+import { BadRequestException, Controller, Get, Patch, Param, Sse, MessageEvent, UseGuards, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Observable, interval, map } from 'rxjs';
 import { NotificationsService } from './notifications.service';
@@ -45,5 +45,15 @@ export class NotificationsController {
   @ApiOperation({ summary: 'Mark all notifications as read for current user' })
   async markAllAsRead(@Request() req: { user: { id: string } }) {
     return this.notificationsService.markAllAsRead(req.user.id);
+  }
+
+  @Patch('read-category/:category')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Mark one notification category as read for current user' })
+  async markCategoryAsRead(@Request() req: { user: { id: string } }, @Param('category') category: string) {
+    const result = await this.notificationsService.markCategoryAsRead(req.user.id, category);
+    if (result === null) throw new BadRequestException('Unknown notification category');
+    return result;
   }
 }

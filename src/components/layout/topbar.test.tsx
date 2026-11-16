@@ -27,6 +27,7 @@ vi.mock("@/hooks/api/use-notifications", () => ({
     unreadCount: 0,
     markAsRead: vi.fn(),
     markAllAsRead: vi.fn(),
+    markCategoryAsRead: vi.fn(),
   }),
 }));
 

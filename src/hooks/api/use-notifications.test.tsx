@@ -60,4 +60,18 @@ describe("useNotifications", () => {
     await waitFor(() => expect(toastError).toHaveBeenCalled());
     await waitFor(() => expect(result.current.unreadCount).toBe(1));
   });
+
+  it("optimistically marks only the selected category and calls its endpoint", async () => {
+    get.mockResolvedValue({ data: { data: [notification, { ...notification, id: "notice-2", type: "SYSTEM" }] } });
+    patch.mockImplementationOnce(async () => {
+      get.mockResolvedValue({ data: { data: [{ ...notification, isRead: true }, { ...notification, id: "notice-2", type: "SYSTEM" }] } });
+      return { data: { data: { count: 1 } } };
+    });
+    const { result } = setup();
+    await waitFor(() => expect(result.current.unreadCount).toBe(2));
+    act(() => result.current.markCategoryAsRead("battles"));
+    await waitFor(() => expect(patch).toHaveBeenCalledWith("/notifications/read-category/battles"));
+    await waitFor(() => expect(result.current.unreadCount).toBe(1));
+    expect(result.current.notifications.find((item) => item.id === "notice-2")?.isRead).toBe(false);
+  });
 });
