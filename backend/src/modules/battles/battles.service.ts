@@ -21,15 +21,17 @@ export class BattlesService {
   public calculateElo(
     winnerRating: number,
     loserRating: number,
-    kFactor = 32
+    kFactor = 32,
   ): EloOutcome {
     // Expected score formula: EA = 1 / (1 + 10^((RB - RA) / 400))
-    const expectedWinner = 1 / (1 + Math.pow(10, (loserRating - winnerRating) / 400));
-    const expectedLoser = 1 / (1 + Math.pow(10, (winnerRating - loserRating) / 400));
+    const expectedWinner =
+      1 / (1 + Math.pow(10, (loserRating - winnerRating) / 400));
+    const expectedLoser =
+      1 / (1 + Math.pow(10, (winnerRating - loserRating) / 400));
 
     // Underdog multiplier gives an extra proportionate reward if a lower-rated player defeats a titan
     let winnerDelta = Math.round(kFactor * (1 - expectedWinner));
-    let loserDelta = Math.round(kFactor * (0 - expectedLoser));
+    const loserDelta = Math.round(kFactor * (0 - expectedLoser));
 
     // Ensure winner always gains at least 8 ELO and loser loses at most proportional points
     winnerDelta = Math.max(8, winnerDelta);
@@ -71,6 +73,79 @@ export class BattlesService {
     });
   }
 
+  async getHeadToHead(username1: string, username2: string) {
+    const users = await this.prisma.user.findMany({
+      where: {
+        OR: [username1, username2].map((username) => ({
+          username: { equals: username, mode: 'insensitive' as const },
+        })),
+      },
+      select: { id: true, username: true },
+    });
+    const first = users.find(
+      (user) => user.username.toLowerCase() === username1.toLowerCase(),
+    );
+    const second = users.find(
+      (user) => user.username.toLowerCase() === username2.toLowerCase(),
+    );
+    if (!first || !second) {
+      return {
+        user1Wins: 0,
+        user2Wins: 0,
+        draws: 0,
+        totalMatches: 0,
+        latest: null,
+      };
+    }
+
+    const matches = await this.prisma.battle.findMany({
+      where: {
+        status: 'COMPLETED',
+        OR: [
+          { challengerId: first.id, opponentId: second.id },
+          { challengerId: second.id, opponentId: first.id },
+        ],
+      },
+      select: {
+        challengerId: true,
+        winnerId: true,
+        startedAt: true,
+        category: true,
+        challengerScore: true,
+        opponentScore: true,
+      },
+      orderBy: { startedAt: 'desc' },
+    });
+
+    const latest = matches[0];
+    return {
+      user1Wins: matches.filter((match) => match.winnerId === first.id).length,
+      user2Wins: matches.filter((match) => match.winnerId === second.id).length,
+      draws: matches.filter((match) => !match.winnerId).length,
+      totalMatches: matches.length,
+      latest: latest
+        ? {
+            date: latest.startedAt,
+            category: latest.category,
+            user1Score:
+              latest.challengerId === first.id
+                ? latest.challengerScore
+                : latest.opponentScore,
+            user2Score:
+              latest.challengerId === first.id
+                ? latest.opponentScore
+                : latest.challengerScore,
+            winner:
+              latest.winnerId === first.id
+                ? username1
+                : latest.winnerId === second.id
+                  ? username2
+                  : null,
+          }
+        : null,
+    };
+  }
+
   async createBattle(dto: CreateBattleDto) {
     return this.prisma.battle.create({
       data: {
@@ -101,7 +176,9 @@ export class BattlesService {
     if (dto.status === 'COMPLETED' && dto.winnerId) {
       const winnerId = dto.winnerId;
       const loserId =
-        winnerId === battle.challengerId ? battle.opponentId : battle.challengerId;
+        winnerId === battle.challengerId
+          ? battle.opponentId
+          : battle.challengerId;
 
       const [winnerRatingRec, loserRatingRec] = await Promise.all([
         this.prisma.developerRating.findUnique({ where: { userId: winnerId } }),
@@ -111,7 +188,10 @@ export class BattlesService {
       const initialWinnerRating = winnerRatingRec?.overall || 1200;
       const initialLoserRating = loserRatingRec?.overall || 1200;
 
-      const eloOutcome = this.calculateElo(initialWinnerRating, initialLoserRating);
+      const eloOutcome = this.calculateElo(
+        initialWinnerRating,
+        initialLoserRating,
+      );
 
       // Execute all rating, XP, activity, and battle status updates atomically in a Prisma Transaction
       return this.prisma.$transaction(async (tx) => {
