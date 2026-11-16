@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import {
   Trophy,
@@ -47,6 +47,11 @@ export function BattleReport({
 }: BattleReportProps) {
   const [internalMuted, setInternalMuted] = useState(initialIsMuted);
   const [copied, setCopied] = useState(false);
+  const reportHeadingRef = useRef<HTMLHeadingElement>(null);
+
+  useEffect(() => {
+    reportHeadingRef.current?.focus();
+  }, []);
 
   // Sync mute state if parent passes it
   useEffect(() => {
@@ -161,14 +166,18 @@ export function BattleReport({
 
         {/* Header Controls: Status Badge + Sound Toggle + Replay */}
         <div className="flex items-center justify-between mb-8">
-          <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-bold">
+          <h2 ref={reportHeadingRef} tabIndex={-1} aria-describedby="battle-result-announcement" className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
             <Trophy className="w-4 h-4 text-amber-400" /> Battle Completed
-          </span>
+          </h2>
+          <div id="battle-result-announcement" role="status" aria-live="polite" className="sr-only">
+            {winner.name} won against {loser.name}, {winnerScore} to {loserScore}.
+          </div>
 
           <div className="flex items-center gap-2">
             <button
               onClick={handleToggleMute}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border bg-background/60 hover:bg-accent text-xs font-medium transition-colors"
+              aria-pressed={internalMuted}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border bg-background/60 hover:bg-accent text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               title={internalMuted ? "Unmute sound effects" : "Mute sound effects"}
               aria-label={internalMuted ? "Unmute sound effects" : "Mute sound effects"}
             >
@@ -187,7 +196,7 @@ export function BattleReport({
 
             <button
               onClick={handleCelebrateAgain}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-amber-500/20 bg-amber-500/10 hover:bg-amber-500/20 text-xs font-semibold text-amber-400 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-amber-500/20 bg-amber-500/10 hover:bg-amber-500/20 text-xs font-semibold text-amber-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               title="Trigger victory celebration again"
             >
               <Sparkles className="w-3.5 h-3.5" />
@@ -372,7 +381,7 @@ export function BattleReport({
       <div className="flex flex-wrap items-center justify-center gap-4 pt-4 pb-8">
         <button
           onClick={handleShare}
-          className="px-6 py-3 rounded-xl bg-primary text-primary-foreground hover:opacity-90 font-bold flex items-center gap-2 transition-all shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98]"
+          className="px-6 py-3 rounded-xl bg-primary text-primary-foreground hover:opacity-90 font-bold flex items-center gap-2 transition-all shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           aria-label="Share Battle Result"
         >
           {copied ? <Check className="w-4 h-4 text-emerald-300" /> : <Share2 className="w-4 h-4" />}
@@ -381,7 +390,7 @@ export function BattleReport({
 
         <button
           onClick={handleCelebrateAgain}
-          className="px-5 py-3 rounded-xl bg-card border border-border hover:bg-accent font-medium flex items-center gap-2 transition-colors hover:scale-[1.02] active:scale-[0.98]"
+          className="px-5 py-3 rounded-xl bg-card border border-border hover:bg-accent font-medium flex items-center gap-2 transition-colors hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           title="Re-run victory confetti and sound effects"
         >
           <Sparkles className="w-4 h-4 text-amber-400" />
@@ -390,7 +399,7 @@ export function BattleReport({
 
         <button
           onClick={onRematch}
-          className="px-8 py-3 rounded-xl bg-secondary text-secondary-foreground hover:bg-secondary/80 font-bold transition-all hover:scale-[1.02] active:scale-[0.98]"
+          className="px-8 py-3 rounded-xl bg-secondary text-secondary-foreground hover:bg-secondary/80 font-bold transition-all hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
           Rematch
         </button>
