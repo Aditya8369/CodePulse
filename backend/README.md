@@ -101,6 +101,16 @@ npm test
 npm run test:cov
 ```
 
+### Slow Prisma queries
+
+`PrismaService` emits a structured Nest warning when a query takes longer than
+`SLOW_QUERY_THRESHOLD_MS` (200 ms by default). Fast queries produce no query log.
+The warning includes the SQL, duration, threshold, and parameter count. Parameter
+values are redacted because they can contain credentials or personal data. In
+production, forward Nest warnings from stdout to your log aggregator and filter
+for `slow_prisma_query`. Run the focused regression test with
+`npx jest src/prisma/prisma.service.spec.ts --runInBand`.
+
 ## 📚 API Documentation (Swagger)
 
 When the server is running, the interactive OpenAPI/Swagger documentation is available at:
