@@ -235,7 +235,7 @@ export default function AnalyticsPage() {
 
         {/* Repository Bubble Chart (Span 8) */}
         <StaggerItem className="md:col-span-8 min-h-[400px]">
-          <RepositoryBubbleChart repos={repos} />
+          <RepositoryBubbleChart repos={repos} owner={currentUser.username} />
         </StaggerItem>
 
         {/* Language Distribution (Span 4) */}
