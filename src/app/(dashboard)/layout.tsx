@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import axios from "axios";
@@ -15,6 +15,7 @@ import { ShortcutsModal } from "@/components/modals/shortcuts-modal";
 import { PageTransition } from "@/components/animations/page-transition";
 import { SessionTimeoutModal } from "@/components/feedback/session-timeout-modal";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useShortcuts } from "@/hooks/use-shortcuts";
 import {
   clearAuthToken,
   useCurrentUser,
@@ -33,26 +34,11 @@ export default function DashboardLayout({
   const hasToken = useHasAuthToken();
   const { data: user, isLoading, isError, error, refetch } = useCurrentUser();
 
-  // Global '?' key listener for Keyboard Shortcuts Guide
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const activeEl = document.activeElement;
-      const isInput =
-        activeEl instanceof HTMLInputElement ||
-        activeEl instanceof HTMLTextAreaElement ||
-        (activeEl instanceof HTMLElement && activeEl.isContentEditable);
-
-      if (isInput) return;
-
-      if (e.key === "?" && !e.ctrlKey && !e.metaKey && !e.altKey) {
-        e.preventDefault();
-        setShortcutsOpen((prev) => !prev);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  const showShortcuts = useCallback(() => setShortcutsOpen(true), []);
+  useShortcuts({
+    onShowHelp: showShortcuts,
+    disabled: shortcutsOpen || commandPaletteOpen,
+  });
 
   useEffect(() => {
     if (!hasToken) {
