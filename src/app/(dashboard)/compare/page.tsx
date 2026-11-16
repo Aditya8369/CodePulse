@@ -3,7 +3,10 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "motion/react";
+import { useQuery } from "@tanstack/react-query";
 import { RadarCompareChart } from "@/components/charts/radar-compare-chart";
+import { HeadToHeadCard, type HeadToHeadData } from "@/components/compare/head-to-head-card";
+import { apiClient, extractData } from "@/lib/api-client";
 import { useCurrentUser } from "@/hooks/api/use-auth";
 import { 
   Swords, Search, Trophy, CalendarDays, MapPin, Calendar, GitBranch, Star, Users, Flame,
@@ -61,6 +64,16 @@ function CompareDashboard() {
   
   const [dev1, setDev1] = useState<DevData | null>(null);
   const [dev2, setDev2] = useState<DevData | null>(null);
+  const headToHead = useQuery({
+    queryKey: ["battles", "head-to-head", dev1?.username, dev2?.username],
+    enabled: !!dev1 && !!dev2 && dev1.username.toLowerCase() !== dev2.username.toLowerCase(),
+    queryFn: async () => {
+      const response = await apiClient.get(`/battles/head-to-head?user1=${encodeURIComponent(dev1!.username)}&user2=${encodeURIComponent(dev2!.username)}`);
+      return extractData<HeadToHeadData>(response);
+    },
+    staleTime: 60_000,
+    retry: false,
+  });
   
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -643,6 +656,14 @@ function CompareDashboard() {
                   </div>
                   <ProfileCard dev={dev2} isWinner={winner?.id === dev2.id} />
                 </div>
+
+                <HeadToHeadCard
+                  first={dev1}
+                  second={dev2}
+                  history={headToHead.data}
+                  isLoading={headToHead.isPending && headToHead.fetchStatus !== "idle"}
+                  hasError={headToHead.isError}
+                />
 
                 <div>
                   <h2 className="text-xs text-[#A1A1AA] uppercase tracking-widest font-medium mb-4">Stats Showdown</h2>

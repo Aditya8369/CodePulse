@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Put, Body, Param, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Body,
+  Param,
+  Query,
+  BadRequestException,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { BattlesService } from './battles.service';
 import { CreateBattleDto, UpdateBattleStatusDto } from './dto/battles.dto';
@@ -12,6 +21,28 @@ export class BattlesController {
   @ApiOperation({ summary: 'Get all active global battles' })
   async getActiveBattles() {
     return this.battlesService.getActiveBattles();
+  }
+
+  @Get('head-to-head')
+  @ApiOperation({
+    summary: 'Get completed head-to-head battles for two GitHub usernames',
+  })
+  async getHeadToHead(
+    @Query('user1') user1?: string,
+    @Query('user2') user2?: string,
+  ) {
+    const validUsername = (value?: string) =>
+      !!value && /^[a-z\d](?:[a-z\d-]{0,37}[a-z\d])?$/i.test(value);
+    if (
+      !validUsername(user1) ||
+      !validUsername(user2) ||
+      user1!.toLowerCase() === user2!.toLowerCase()
+    ) {
+      throw new BadRequestException(
+        'Two distinct GitHub usernames are required',
+      );
+    }
+    return this.battlesService.getHeadToHead(user1!, user2!);
   }
 
   @Get('user/:userId')
@@ -29,8 +60,14 @@ export class BattlesController {
 
   @Put(':id/status')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Update battle status (e.g., mark as completed and declare winner)' })
-  async updateBattleStatus(@Param('id') id: string, @Body() dto: UpdateBattleStatusDto) {
+  @ApiOperation({
+    summary:
+      'Update battle status (e.g., mark as completed and declare winner)',
+  })
+  async updateBattleStatus(
+    @Param('id') id: string,
+    @Body() dto: UpdateBattleStatusDto,
+  ) {
     return this.battlesService.updateBattleStatus(id, dto);
   }
 }
