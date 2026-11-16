@@ -93,6 +93,10 @@ export class BattlesService {
       throw new NotFoundException(`Battle ${battleId} not found`);
     }
 
+    if (battle.status === 'COMPLETED' && dto.status === 'COMPLETED') {
+      return battle;
+    }
+
     // If a winner is declared and status is COMPLETED, atomically update ELO and XP
     if (dto.status === 'COMPLETED' && dto.winnerId) {
       const winnerId = dto.winnerId;
@@ -180,6 +184,33 @@ export class BattlesService {
             },
           });
         }
+
+        const winnerName =
+          winnerId === battle.challengerId
+            ? battle.challenger.username
+            : battle.opponent.username;
+        const loserName =
+          loserId === battle.challengerId
+            ? battle.challenger.username
+            : battle.opponent.username;
+        await tx.activity.createMany({
+          data: [
+            {
+              userId: winnerId,
+              type: 'BATTLE',
+              title: 'Won a DevBattle',
+              description: `Defeated ${loserName} in a DevBattle match.`,
+              metadata: { battleId, outcome: 'win' },
+            },
+            {
+              userId: loserId,
+              type: 'BATTLE',
+              title: 'Completed a DevBattle',
+              description: `Played against ${winnerName} in a DevBattle match.`,
+              metadata: { battleId, outcome: 'loss' },
+            },
+          ],
+        });
 
         // 4. Update Battle Status to COMPLETED
         return tx.battle.update({

@@ -3,99 +3,72 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { ActivityTimeline } from "./activity-timeline";
 import type { Activity } from "@/types";
 
-const mockActivities: Activity[] = [
-  {
-    id: "act-1",
-    type: "commit",
-    title: "Pushed 3 commits",
-    description: "Refactored auth module",
-    repository: "codepulse",
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "act-2",
-    type: "pull_request",
-    title: "Opened PR #45",
-    description: "Added activity timeline filters",
-    repository: "codepulse",
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "act-3",
-    type: "issue",
-    title: "Created Issue #95",
-    description: "Add activity type filter pills",
-    repository: "codepulse",
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "act-4",
-    type: "achievement",
-    title: "Unlocked Achievement",
-    description: "Completed 50 challenges",
-    createdAt: new Date().toISOString(),
-  },
+const today = new Date().toISOString();
+const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+const activities: Activity[] = [
+  { id: "battle", type: "battle", title: "Won a battle", description: "Against Alex", createdAt: today },
+  { id: "challenge", type: "challenge", title: "Finished daily challenge", description: "Three commits", createdAt: today },
+  { id: "achievement", type: "achievement", title: "Unlocked badge", description: "First win", createdAt: yesterday },
+  { id: "commit", type: "commit", title: "Pushed commits", description: "Refactored auth module", repository: "codepulse", createdAt: yesterday },
+  { id: "pr", type: "pull_request", title: "Opened PR", description: "Improved timeline", repository: "another-repo", createdAt: yesterday },
+  { id: "issue", type: "issue", title: "Opened issue", description: "Fix search", createdAt: yesterday },
 ];
 
 describe("ActivityTimeline", () => {
-  it("renders Recent Activity title and all filter pills with count badges", () => {
-    render(<ActivityTimeline activities={mockActivities} />);
+  it("filters battle, challenge, and GitHub events while exposing pressed state", async () => {
+    render(<ActivityTimeline activities={activities} />);
 
-    expect(screen.getByText("Recent Activity")).toBeDefined();
-    expect(screen.getByText("All")).toBeDefined();
-    expect(screen.getByText("Commits")).toBeDefined();
-    expect(screen.getByText("PRs")).toBeDefined();
-    expect(screen.getByText("Issues")).toBeDefined();
-    expect(screen.getByText("Achievements")).toBeDefined();
+    fireEvent.click(screen.getByRole("button", { name: /Battles/ }));
+    expect(screen.getByText("Won a battle")).toBeDefined();
+    await waitFor(() => expect(screen.queryByText("Finished daily challenge")).toBeNull());
+    expect(screen.getByRole("button", { name: /Battles/ }).getAttribute("aria-pressed")).toBe("true");
 
-    // Count badges
-    expect(screen.getByText("4")).toBeDefined(); // All
-    expect(screen.getAllByText("1").length).toBeGreaterThanOrEqual(4); // Commits, PRs, Issues, Achievements
+    fireEvent.click(screen.getByRole("button", { name: /Challenges/ }));
+    expect(screen.getByText("Finished daily challenge")).toBeDefined();
+    await waitFor(() => expect(screen.queryByText("Won a battle")).toBeNull());
+
+    fireEvent.click(screen.getByRole("button", { name: /GitHub Commits & PRs/ }));
+    expect(screen.getByText("Pushed commits")).toBeDefined();
+    expect(screen.getByText("Opened PR")).toBeDefined();
+    await waitFor(() => expect(screen.queryByText("Opened issue")).toBeNull());
   });
 
-  it("filters activities when clicking on a category pill", async () => {
-    render(<ActivityTimeline activities={mockActivities} />);
+  it("searches repository and description and shows an empty state", async () => {
+    render(<ActivityTimeline activities={activities} />);
+    const search = screen.getByRole("searchbox", { name: "Search activities" });
 
-    // Initially all activities are displayed
-    expect(screen.getByText("Pushed 3 commits")).toBeDefined();
-    expect(screen.getByText("Opened PR #45")).toBeDefined();
-    expect(screen.getByText("Created Issue #95")).toBeDefined();
-    expect(screen.getByText("Unlocked Achievement")).toBeDefined();
+    fireEvent.change(search, { target: { value: "CODEPULSE" } });
+    expect(screen.getByText("Pushed commits")).toBeDefined();
+    await waitFor(() => expect(screen.queryByText("Opened PR")).toBeNull());
 
-    // Click on Commits filter pill
-    const commitsPill = screen.getByText("Commits").closest("button");
-    expect(commitsPill).toBeDefined();
-    fireEvent.click(commitsPill!);
+    fireEvent.change(search, { target: { value: "improved timeline" } });
+    expect(screen.getByText("Opened PR")).toBeDefined();
+    await waitFor(() => expect(screen.queryByText("Pushed commits")).toBeNull());
 
-    // Only commit activity should remain displayed after exit animation completes
-    await waitFor(() => {
-      expect(screen.getByText("Pushed 3 commits")).toBeDefined();
-      expect(screen.queryByText("Opened PR #45")).toBeNull();
-      expect(screen.queryByText("Created Issue #95")).toBeNull();
-      expect(screen.queryByText("Unlocked Achievement")).toBeNull();
-    });
+    fireEvent.change(search, { target: { value: "no matches" } });
+    expect(screen.getByText("No matching activities found")).toBeDefined();
   });
 
-  it("displays an empty state placeholder when a category has 0 events", () => {
-    // Only commits
-    const onlyCommits: Activity[] = [
-      {
-        id: "act-1",
-        type: "commit",
-        title: "Pushed 3 commits",
-        description: "Refactored auth module",
-        repository: "codepulse",
-        createdAt: new Date().toISOString(),
-      },
-    ];
+  it("groups dates and loads more ten at a time, resetting on filter change", async () => {
+    const many = Array.from({ length: 12 }, (_, index): Activity => ({
+      id: `commit-${index}`,
+      type: "commit",
+      title: `Commit ${index}`,
+      description: "Commit description",
+      createdAt: index < 6 ? today : yesterday,
+    }));
+    render(<ActivityTimeline activities={many} maxItems={10} />);
 
-    render(<ActivityTimeline activities={onlyCommits} />);
+    expect(screen.getByText("Today")).toBeDefined();
+    expect(screen.getByText("Yesterday")).toBeDefined();
+    expect(screen.queryByText("Commit 11")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /Load More/ }));
+    expect(screen.getByText("Commit 11")).toBeDefined();
+    expect(screen.queryByRole("button", { name: /Load More/ })).toBeNull();
 
-    // Click on PRs filter pill
-    const prsPill = screen.getByText("PRs").closest("button");
-    fireEvent.click(prsPill!);
-
-    // Empty state should appear
-    expect(screen.getByText(/No prs activities found/i)).toBeDefined();
+    fireEvent.click(screen.getByText("Commits").closest("button")!);
+    await waitFor(() => expect(screen.queryByText("Commit 11")).toBeNull());
+    expect(screen.getByRole("button", { name: /Load More/ })).toBeDefined();
   });
 });

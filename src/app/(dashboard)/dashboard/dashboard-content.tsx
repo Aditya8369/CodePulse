@@ -260,7 +260,7 @@ export function DashboardContent() {
 
       {/* 5. Activity Radar (Timeline) */}
       <div className="glass-card rounded-[32px] p-8 border border-white/5 relative overflow-hidden group">
-        <ActivityTimeline activities={(currentUser as any).activities || []} maxItems={8} />
+        <ActivityTimeline activities={(currentUser as any).activities || []} maxItems={10} />
       </div>
     </div>
   );
