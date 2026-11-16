@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { apiClient, extractData } from "@/lib/api-client";
 import { useCurrentUser, useHasAuthToken } from "@/hooks/api/use-auth";
 import type { Notification } from "@/types";
+import { categoryForNotification, type NotificationCategory } from "@/lib/notification-categories";
 
 type BackendNotification = Omit<Notification, "type"> & { type: string };
 const notificationTypes = new Set<Notification["type"]>([
@@ -67,10 +68,30 @@ export function useNotifications() {
     onSettled: () => queryClient.invalidateQueries({ queryKey }),
   });
 
+  const markCategory = useMutation({
+    mutationFn: (category: Exclude<NotificationCategory, "all">) =>
+      apiClient.patch(`/notifications/read-category/${category}`),
+    onMutate: async (category) => {
+      await queryClient.cancelQueries({ queryKey });
+      const previous = queryClient.getQueryData<Notification[]>(queryKey);
+      queryClient.setQueryData<Notification[]>(queryKey, (items = []) =>
+        items.map((item) => categoryForNotification(item.type) === category
+          ? { ...item, isRead: true } : item),
+      );
+      return { previous };
+    },
+    onError: (_error, _category, context) => {
+      queryClient.setQueryData(queryKey, context?.previous);
+      toast.error("Could not mark category as read");
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey }),
+  });
+
   return {
     notifications,
     unreadCount: notifications.filter((item) => !item.isRead).length,
     markAsRead: (id: string) => markOne.mutate(id),
     markAllAsRead: () => markAll.mutate(),
+    markCategoryAsRead: (category: Exclude<NotificationCategory, "all">) => markCategory.mutate(category),
   };
 }
