@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { GithubService } from '../github/github.service';
 import { createHash } from 'node:crypto';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class SyncService {
@@ -36,7 +37,7 @@ export class SyncService {
     const githubEvents = await this.github.fetchUserEvents(
       username,
       accessToken,
-      30,
+      100,
       true,
     );
     if (
@@ -44,6 +45,31 @@ export class SyncService {
       !Array.isArray(githubData.repositories?.nodes)
     ) {
       throw new Error('Incomplete GitHub sync response');
+    }
+    // GitHub's current Events API exposes before/head for pushes but omits
+    // commit messages. Enrich recent pushes before opening the DB transaction.
+    const pushMessages = new Map<number, string[]>();
+    const recentPushIndices = githubEvents
+      .map((event: any, index: number) => ({ event, index }))
+      .filter(({ event }: { event: any }) =>
+        event.type === 'PushEvent' &&
+        Date.now() - new Date(event.created_at).getTime() < 3 * 24 * 60 * 60 * 1000,
+      )
+      .slice(0, 30);
+    for (let offset = 0; offset < recentPushIndices.length; offset += 4) {
+      await Promise.all(recentPushIndices.slice(offset, offset + 4).map(async ({ event, index }: { event: any; index: number }) => {
+        const supplied = Array.isArray(event.payload?.commits)
+          ? event.payload.commits.map((commit: { message?: unknown }) => commit.message)
+              .filter((message: unknown): message is string => typeof message === 'string' && message.trim().length > 0)
+          : [];
+        const messages = supplied.length > 0 ? supplied : await this.github.fetchPushCommitMessages(
+          event.repo?.name,
+          event.payload?.before,
+          event.payload?.head,
+          accessToken,
+        );
+        pushMessages.set(index, messages);
+      }));
     }
     try {
       await this.prisma.$transaction(
@@ -250,20 +276,26 @@ export class SyncService {
             repository: string;
             createdAt: Date;
             githubEventId?: string;
+            metadata?: { commitMessages: string[] };
           }[] = [];
 
-          for (const event of githubEvents) {
+          for (const [index, event] of githubEvents.entries()) {
             const started = recentActivities.length;
             if (event.type === 'PushEvent') {
-              const commitsCount = event.payload?.commits?.length || 0;
-              if (commitsCount > 0) {
+              const commitMessages = pushMessages.get(index) ?? (Array.isArray(event.payload?.commits)
+                ? event.payload.commits.map((commit: { message?: unknown }) => commit.message)
+                    .filter((message: unknown): message is string => typeof message === 'string' && message.trim().length > 0)
+                : []);
+              const commitsCount = commitMessages.length || event.payload?.commits?.length || event.payload?.size || 0;
+              if (commitsCount > 0 || event.payload?.head) {
                 recentActivities.push({
                   userId,
                   type: 'COMMIT' as const,
-                  title: `Pushed ${commitsCount} commit${commitsCount > 1 ? 's' : ''}`,
+                  title: commitsCount > 0 ? `Pushed ${commitsCount} commit${commitsCount > 1 ? 's' : ''}` : 'Pushed commits',
                   description: `Contributed to ${event.repo.name}`,
                   repository: event.repo.name,
                   createdAt: new Date(event.created_at),
+                  ...(commitMessages.length > 0 ? { metadata: { commitMessages } } : {}),
                 });
               }
             } else if (
@@ -362,12 +394,13 @@ export class SyncService {
             }
           }
 
-          // Sort activities by date DESC and take top 20
+          // Keep all events returned by the latest sync so yesterday's work is not
+          // dropped when the developer has more than 20 recent events.
           recentActivities.sort(
             (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
           );
 
-          for (const activity of recentActivities.slice(0, 20)) {
+          for (const activity of recentActivities) {
             const githubEventId = activity.githubEventId!;
             const keyed = await tx.activity.findUnique({
               where: { userId_githubEventId: { userId, githubEventId } },
@@ -392,6 +425,12 @@ export class SyncService {
                   title: activity.title,
                   description: activity.description,
                   repository: activity.repository,
+                  ...(activity.metadata ? {
+                    metadata: {
+                      ...(((keyed || legacy)!.metadata ?? {}) as object),
+                      ...activity.metadata,
+                    } as Prisma.InputJsonValue,
+                  } : {}),
                 },
               });
             } else {

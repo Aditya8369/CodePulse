@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { StaggerContainer, StaggerItem } from "@/components/animations/page-transition";
 import { DeveloperRatingCard } from "@/components/cards/developer-rating-card";
 import { ChallengeCard } from "@/components/cards/challenge-card";
@@ -7,13 +8,14 @@ import { AchievementCard } from "@/components/cards/achievement-card";
 import { LeaderboardPreview } from "@/components/cards/leaderboard-preview";
 import { WelcomeHeroBanner } from "@/components/cards/welcome-hero-banner";
 import { ActivityTimeline } from "@/components/data-display/activity-timeline";
+import { StandupGeneratorModal } from "@/components/dashboard/standup-generator-modal";
 import { AnimatedCounter } from "@/components/animations/animated-counter";
 import { useCurrentUser } from "@/hooks/api/use-auth";
 import { useActiveChallenges } from "@/hooks/api/use-challenges";
 import { useLeaderboardInfinite } from "@/hooks/api/use-leaderboard";
 import { useSyncGitHub } from "@/hooks/api/use-sync";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
-import { GitCommit, GitPullRequest, Flame, Star, Loader2, Trophy, Swords, RefreshCw } from "lucide-react";
+import { GitCommit, GitPullRequest, Flame, Star, Loader2, Trophy, Swords, RefreshCw, ClipboardList } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const iconMap: Record<string, React.ElementType> = {
@@ -24,6 +26,7 @@ const iconMap: Record<string, React.ElementType> = {
 };
 
 export function DashboardContent() {
+  const [standupOpen, setStandupOpen] = useState(false);
   const { data: currentUser, isLoading } = useCurrentUser();
   const { data: challengesData } = useActiveChallenges();
   const { data: leaderboardData, isLoading: isLeaderboardLoading } = useLeaderboardInfinite("friends", 5);
@@ -79,6 +82,11 @@ export function DashboardContent() {
 
   return (
     <div className="space-y-8 pb-12">
+      <StandupGeneratorModal
+        open={standupOpen}
+        onClose={() => setStandupOpen(false)}
+        activities={currentUser.activities ?? []}
+      />
       {/* 0. Dashboard Header Bar with Sync Action */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -98,6 +106,14 @@ export function DashboardContent() {
 
         {/* Sync Controls */}
         <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setStandupOpen(true)}
+            className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-slate-200 hover:bg-white/10"
+          >
+            <ClipboardList className="h-4 w-4" aria-hidden="true" />
+            Generate standup
+          </button>
           {/* Relative Last Synced Badge */}
           <div
             data-testid="last-synced-badge"

@@ -282,6 +282,31 @@ export class GithubService {
     }
   }
 
+  /** The Events API now omits commit details from PushEvent payloads. */
+  async fetchPushCommitMessages(repo: string, before: string, head: string, token?: string): Promise<string[]> {
+    if (!/^[\w.-]+\/[\w.-]+$/.test(repo) || !/^[0-9a-f]{40}$/i.test(head)) return [];
+    try {
+      if (!/^[0-9a-f]{40}$/i.test(before) || /^0{40}$/.test(before)) {
+        const response = await axios.get(`https://api.github.com/repos/${repo}/commits/${head}`, {
+          headers: this.getHeaders(token),
+        });
+        return typeof response.data?.commit?.message === 'string' ? [response.data.commit.message] : [];
+      }
+      const response = await axios.get(`https://api.github.com/repos/${repo}/compare/${before}...${head}`, {
+        headers: this.getHeaders(token),
+        params: { per_page: 100 },
+      });
+      return Array.isArray(response.data?.commits)
+        ? response.data.commits
+            .map((item: { commit?: { message?: unknown } }) => item.commit?.message)
+            .filter((message: unknown): message is string => typeof message === 'string' && message.trim().length > 0)
+        : [];
+    } catch (error: any) {
+      this.logger.warn(`Could not load push commits for ${repo}: ${error.message}`);
+      return [];
+    }
+  }
+
   /**
    * Fetches public GitHub user profile details.
    */
