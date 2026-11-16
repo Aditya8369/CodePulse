@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { motion } from "motion/react";
 import { StaggerContainer, StaggerItem } from "@/components/animations/page-transition";
 import { ChallengeCard } from "@/components/cards/challenge-card";
@@ -26,6 +26,7 @@ import {
   subscribeToCustomChallenges,
 } from "@/lib/custom-challenges";
 import { CreateCustomChallengeModal } from "@/components/modals/create-custom-challenge-modal";
+import { ChallengeFilterBar } from "@/components/challenges/challenge-filter-bar";
 
 const statusTabs = [
   { id: "all", label: "All", icon: Target },
@@ -49,7 +50,16 @@ interface FormattedChallenge extends Challenge {
 export default function ChallengesPage() {
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "completed">("all");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [difficultyFilter, setDifficultyFilter] = useState("all");
+  const [searchInput, setSearchInput] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setSearchQuery(searchInput.trim().toLowerCase()), 300);
+    return () => window.clearTimeout(timer);
+  }, [searchInput]);
 
   const { data: activeChallengesData, isLoading } = useActiveChallenges();
   const { data: currentUser } = useCurrentUser();
@@ -68,7 +78,7 @@ export default function ChallengesPage() {
       : DEFAULT_CHALLENGES;
 
   // Connect challenges dynamically to live user statistics
-  const formattedCustom: FormattedChallenge[] = (customQuests || []).map((c: any) => ({
+  const formattedCustom: FormattedChallenge[] = (customQuests || []).map((c) => ({
     id: c.id,
     title: c.title,
     description: c.description,
@@ -112,6 +122,7 @@ export default function ChallengesPage() {
   });
 
   const realChallenges: FormattedChallenge[] = [...formattedCustom, ...formattedBase];
+  const categories = Array.from(new Set(realChallenges.map((challenge) => challenge.category))).sort();
 
   // Calculate live counts
   const totalActiveCount = realChallenges.filter((c) => !c.isCompleted).length;
@@ -130,15 +141,19 @@ export default function ChallengesPage() {
       ? realChallenges
       : realChallenges.filter((c) => c.rawType === typeFilter || (typeFilter === "CUSTOM" && c.isCustom));
 
-  // Filter by Status
-  const statusFiltered = typeFiltered.filter((c) => {
+  // Compose the new filters with the existing type and completion filters.
+  const filteredChallenges = typeFiltered.filter((c) => {
     if (statusFilter === "active") return !c.isCompleted;
     if (statusFilter === "completed") return c.isCompleted;
     return true;
+  }).filter((c) => {
+    return (categoryFilter === "all" || c.category === categoryFilter)
+      && (difficultyFilter === "all" || c.difficulty === difficultyFilter)
+      && (!searchQuery || `${c.title} ${c.description} ${c.category}`.toLowerCase().includes(searchQuery));
   });
 
-  const active = statusFiltered.filter((c) => !c.isCompleted);
-  const completed = statusFiltered.filter((c) => c.isCompleted);
+  const active = filteredChallenges.filter((c) => !c.isCompleted);
+  const completed = filteredChallenges.filter((c) => c.isCompleted);
 
   if (isLoading) {
     return (
@@ -280,13 +295,26 @@ export default function ChallengesPage() {
         </div>
       </div>
 
+      <ChallengeFilterBar
+        searchInput={searchInput}
+        onSearchInputChange={(value) => {
+          setSearchInput(value);
+          if (!value) setSearchQuery("");
+        }}
+        categoryFilter={categoryFilter}
+        onCategoryFilterChange={setCategoryFilter}
+        categories={categories}
+        difficultyFilter={difficultyFilter}
+        onDifficultyFilterChange={setDifficultyFilter}
+      />
+
       {/* Screen reader live region */}
       <div
         aria-live="polite"
         aria-atomic="true"
         className="sr-only"
       >
-        Showing {statusFiltered.length} challenges: {active.length} active and {completed.length} completed.
+        Showing {filteredChallenges.length} challenges: {active.length} active and {completed.length} completed.
       </div>
 
       {/* Active challenges section */}
@@ -328,7 +356,7 @@ export default function ChallengesPage() {
       )}
 
       {/* Empty State */}
-      {statusFiltered.length === 0 && (
+      {filteredChallenges.length === 0 && (
         <div
           role="status"
           aria-label="No challenges available"
@@ -343,12 +371,16 @@ export default function ChallengesPage() {
               ? "You haven't completed any challenges in this category yet. Keep pushing your commits, reviews, and PRs!"
               : "There are no challenges under the selected filter right now. Check back soon!"}
           </p>
-          {statusFilter !== "all" && (
+          {(statusFilter !== "all" || typeFilter !== "all" || categoryFilter !== "all" || difficultyFilter !== "all" || searchInput) && (
             <button
               type="button"
               onClick={() => {
                 setStatusFilter("all");
                 setTypeFilter("all");
+                setCategoryFilter("all");
+                setDifficultyFilter("all");
+                setSearchInput("");
+                setSearchQuery("");
               }}
               className="mt-2 text-xs font-semibold text-primary hover:underline cursor-pointer"
             >

@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { act, render, screen, fireEvent } from "@testing-library/react";
 import ChallengesPage from "./page";
 
 vi.mock("@/components/modals/claim-reward-modal", () => ({
@@ -22,6 +22,8 @@ vi.mock("@/hooks/api/use-auth", () => ({
 }));
 
 describe("ChallengesPage Component", () => {
+  afterEach(() => vi.useRealTimers());
+
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseActiveChallenges.mockReturnValue({
@@ -115,5 +117,38 @@ describe("ChallengesPage Component", () => {
 
     // Completed challenge is hidden
     expect(screen.queryByText("Star Collector")).not.toBeInTheDocument();
+  });
+
+  it("composes category and difficulty with the existing status filter", () => {
+    render(<ChallengesPage />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Commits" }));
+    expect(screen.getByText("Daily Committer")).toBeInTheDocument();
+    expect(screen.queryByText("Star Collector")).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Filter challenges by difficulty"), {
+      target: { value: "hard" },
+    });
+    expect(screen.getByText("No challenges found")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Reset all filters" }));
+    expect(screen.getByText("Daily Committer")).toBeInTheDocument();
+    expect(screen.getByText("Star Collector")).toBeInTheDocument();
+  });
+
+  it("debounces text search and clears it immediately", () => {
+    vi.useFakeTimers();
+    render(<ChallengesPage />);
+
+    const search = screen.getByRole("searchbox", { name: "Search challenges" });
+    fireEvent.change(search, { target: { value: "Star" } });
+    expect(screen.getByText("Daily Committer")).toBeInTheDocument();
+
+    act(() => vi.advanceTimersByTime(300));
+    expect(screen.queryByText("Daily Committer")).not.toBeInTheDocument();
+    expect(screen.getByText("Star Collector")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Clear challenge search" }));
+    expect(screen.getByText("Daily Committer")).toBeInTheDocument();
   });
 });
