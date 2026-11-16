@@ -28,6 +28,13 @@ import {
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { applyColorVisionTheme, COLOR_VISION_THEMES, type ColorVisionTheme } from "@/lib/colorblind-themes";
+import {
+  applyDeveloperTheme,
+  DEVELOPER_THEMES,
+  isDeveloperTheme,
+  isReadableAccent,
+  accentContrastOnWhite,
+} from "@/lib/developer-themes";
 import { GithubIcon } from "@/components/icons/github";
 import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
@@ -73,6 +80,7 @@ const LANDING_TABS = [
 export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState("profile");
   const [isExporting, setIsExporting] = useState(false);
+  const [accentDraft, setAccentDraft] = useState("");
 
   const { theme, resolvedTheme, setTheme } = useTheme();
   const { data: user, isLoading: isUserLoading } = useCurrentUser();
@@ -110,6 +118,8 @@ export default function SettingsPage() {
     resetToDefaults();
     setTheme("dark");
     applyColorVisionTheme("normal", "dark");
+    applyDeveloperTheme("default", null);
+    setAccentDraft("");
     toast.success("Preferences restored to recommended defaults!");
   };
 
@@ -504,6 +514,8 @@ export default function SettingsPage() {
                     updateAppearance(DEFAULT_APPEARANCE_PREFERENCES);
                     setTheme("dark");
                     applyColorVisionTheme("normal", "dark");
+                    applyDeveloperTheme("default", null);
+                    setAccentDraft("");
                     toast.success("Appearance settings reset to defaults.");
                   }}
                   className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
@@ -549,6 +561,76 @@ export default function SettingsPage() {
                     );
                   })}
                 </div>
+              </div>
+
+              {/* Developer palette builder */}
+              <div className="space-y-3 border-t border-white/[0.06] pt-4">
+                <div>
+                  <label className="text-sm font-medium block">Developer Palette</label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Pick a dark palette, then choose an optional accent that keeps white text readable.
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2" role="group" aria-label="Developer palette">
+                  {(Object.entries(DEVELOPER_THEMES) as [keyof typeof DEVELOPER_THEMES, (typeof DEVELOPER_THEMES)[keyof typeof DEVELOPER_THEMES]][]).map(([id, palette]) => {
+                    const selected = (preferences.appearance.developerTheme ?? "default") === id;
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        aria-pressed={selected}
+                        onClick={() => {
+                          setTheme("dark");
+                          setAccentDraft("");
+                          updateAppearance({ theme: "dark", developerTheme: id, customAccent: null });
+                          applyDeveloperTheme(id, null);
+                        }}
+                        className={cn(
+                          "rounded-xl border p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                          selected ? "border-primary ring-1 ring-primary" : "border-white/15 hover:border-white/40",
+                        )}
+                        style={{ backgroundColor: palette.background, color: "#f8fafc" }}
+                      >
+                        <span className="flex items-center gap-2 text-sm font-medium">
+                          <span className="size-4 rounded-full" style={{ backgroundColor: palette.accent }} aria-hidden="true" />
+                          {palette.label}
+                        </span>
+                        <span className="mt-1 block text-xs text-slate-300">{palette.description}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {isDeveloperTheme(preferences.appearance.developerTheme) && preferences.appearance.developerTheme !== "default" && (
+                  <div className="flex flex-wrap items-center gap-3 rounded-xl border border-white/10 p-3">
+                    <label htmlFor="custom-accent" className="text-sm font-medium">Custom accent</label>
+                    <input
+                      id="custom-accent"
+                      type="color"
+                      value={accentDraft || preferences.appearance.customAccent || DEVELOPER_THEMES[preferences.appearance.developerTheme].accent}
+                      onChange={(event) => setAccentDraft(event.target.value)}
+                      className="h-9 w-12 cursor-pointer rounded border border-white/20 bg-transparent"
+                    />
+                    <button
+                      type="button"
+                      disabled={!accentDraft || !isReadableAccent(accentDraft)}
+                      onClick={() => {
+                        if (!isReadableAccent(accentDraft)) return;
+                        updateAppearance({ customAccent: accentDraft });
+                        applyDeveloperTheme(preferences.appearance.developerTheme, accentDraft);
+                        setAccentDraft("");
+                      }}
+                      className="rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Apply color
+                    </button>
+                    {accentDraft && (
+                      <span className="text-xs text-muted-foreground" role="status">
+                        White text contrast: {accentContrastOnWhite(accentDraft).toFixed(1)}:1
+                        {isReadableAccent(accentDraft) ? " · Meets AA" : " · Choose a darker color"}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Color Vision Accessibility */}

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient, extractData } from '@/lib/api-client';
 import { isColorVisionTheme, type ColorVisionTheme } from '@/lib/colorblind-themes';
+import { isDeveloperTheme, isReadableAccent, type DeveloperTheme } from '@/lib/developer-themes';
 
 // ==========================================
 // Types
@@ -11,6 +12,8 @@ export interface AppearancePreferences {
   theme: 'dark' | 'light' | 'system';
   accentColor: 'purple' | 'blue' | 'emerald' | 'orange' | 'pink';
   colorVisionTheme: ColorVisionTheme;
+  developerTheme?: DeveloperTheme;
+  customAccent?: string | null;
   compactTableView: boolean;
   reducedMotion: boolean;
   defaultLandingTab: string;
@@ -38,6 +41,8 @@ export const DEFAULT_APPEARANCE_PREFERENCES: AppearancePreferences = {
   theme: 'dark',
   accentColor: 'purple',
   colorVisionTheme: 'normal',
+  developerTheme: 'default',
+  customAccent: null,
   compactTableView: false,
   reducedMotion: false,
   defaultLandingTab: 'dashboard',
@@ -82,6 +87,12 @@ export function loadLocalPreferences(): UserPreferences {
         colorVisionTheme: isColorVisionTheme(parsed.appearance?.colorVisionTheme)
           ? parsed.appearance.colorVisionTheme
           : DEFAULT_APPEARANCE_PREFERENCES.colorVisionTheme,
+        developerTheme: isDeveloperTheme(parsed.appearance?.developerTheme)
+          ? parsed.appearance.developerTheme
+          : 'default',
+        customAccent: isReadableAccent(parsed.appearance?.customAccent)
+          ? parsed.appearance.customAccent
+          : null,
       },
       notifications: {
         ...DEFAULT_NOTIFICATION_PREFERENCES,
