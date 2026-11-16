@@ -104,7 +104,7 @@ function SearchTrigger({ onOpen }: SearchTriggerProps) {
 function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const { notifications, unreadCount, markAsRead, markAllAsRead } =
+  const { notifications, unreadCount, markAsRead, markAllAsRead, markCategoryAsRead } =
     useNotifications();
 
   // Close dropdown when clicking outside or pressing Escape
@@ -175,6 +175,7 @@ function NotificationBell() {
         unreadCount={unreadCount}
         onMarkAsRead={markAsRead}
         onMarkAllAsRead={markAllAsRead}
+        onMarkCategoryAsRead={markCategoryAsRead}
       />
     </div>
   );

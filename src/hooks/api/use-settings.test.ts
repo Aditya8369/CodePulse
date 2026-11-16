@@ -36,6 +36,7 @@ describe("Persistent Settings & Preferences", () => {
     expect(DEFAULT_PREFERENCES).toBeDefined();
     expect(DEFAULT_PREFERENCES.appearance.theme).toBe("dark");
     expect(DEFAULT_PREFERENCES.appearance.accentColor).toBe("purple");
+    expect(DEFAULT_PREFERENCES.appearance.colorVisionTheme).toBe("normal");
     expect(DEFAULT_PREFERENCES.appearance.compactTableView).toBe(false);
     expect(DEFAULT_PREFERENCES.appearance.reducedMotion).toBe(false);
     expect(DEFAULT_PREFERENCES.appearance.defaultLandingTab).toBe("dashboard");
@@ -61,6 +62,7 @@ describe("Persistent Settings & Preferences", () => {
       appearance: {
         theme: "light",
         accentColor: "emerald",
+        colorVisionTheme: "tritanopia",
         compactTableView: true,
         reducedMotion: true,
         defaultLandingTab: "battles",
@@ -80,6 +82,7 @@ describe("Persistent Settings & Preferences", () => {
 
     expect(reloaded.appearance.theme).toBe("light");
     expect(reloaded.appearance.accentColor).toBe("emerald");
+    expect(reloaded.appearance.colorVisionTheme).toBe("tritanopia");
     expect(reloaded.appearance.compactTableView).toBe(true);
     expect(reloaded.appearance.reducedMotion).toBe(true);
     expect(reloaded.appearance.defaultLandingTab).toBe("battles");
@@ -101,6 +104,7 @@ describe("Persistent Settings & Preferences", () => {
     const merged = loadLocalPreferences();
     expect(merged.appearance.compactTableView).toBe(true);
     expect(merged.appearance.theme).toBe("dark");
+    expect(merged.appearance.colorVisionTheme).toBe("normal");
     expect(merged.appearance.defaultLandingTab).toBe("dashboard");
     expect(merged.notifications.weeklyDigest).toBe(false);
     expect(merged.notifications.battleChallenges).toBe(true);
@@ -111,5 +115,12 @@ describe("Persistent Settings & Preferences", () => {
     const fallback = loadLocalPreferences();
     expect(fallback.appearance.theme).toBe("dark");
     expect(fallback.appearance.defaultLandingTab).toBe("dashboard");
+  });
+
+  it("rejects an unknown stored color vision preset", () => {
+    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({
+      appearance: { colorVisionTheme: "unknown" },
+    }));
+    expect(loadLocalPreferences().appearance.colorVisionTheme).toBe("normal");
   });
 });

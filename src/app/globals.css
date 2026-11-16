@@ -69,6 +69,10 @@
   --accent: oklch(0.25 0.03 260);
   --accent-foreground: oklch(0.95 0 0);
   --destructive: oklch(0.65 0.22 25);
+  --status-success: #86efac;
+  --status-danger: #fca5a5;
+  --chart-positive: var(--status-success);
+  --chart-negative: var(--status-danger);
   --border: oklch(1 0 0 / 8%);
   --input: oklch(1 0 0 / 10%);
   --ring: oklch(0.65 0.25 280);
@@ -105,6 +109,8 @@
   --accent: oklch(0.96 0.01 280);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
+  --status-success: #166534;
+  --status-danger: #991b1b;
   --border: oklch(0.9 0 0);
   --input: oklch(0.9 0 0);
   --ring: oklch(0.55 0.25 280);

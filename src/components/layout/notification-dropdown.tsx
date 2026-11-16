@@ -13,12 +13,13 @@ import {
   CheckCheck,
   Check,
   Clock,
-  Sparkles,
   ExternalLink,
+  Search,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@/lib/utils";
 import type { Notification } from "@/types";
+import { categoryForNotification, notificationCategories, type NotificationCategory } from "@/lib/notification-categories";
 
 // ===========================
 // Notification Category Helpers
@@ -81,6 +82,16 @@ interface NotificationDropdownProps {
   unreadCount: number;
   onMarkAsRead: (id: string) => void;
   onMarkAllAsRead: () => void;
+  onMarkCategoryAsRead: (category: Exclude<NotificationCategory, "all">) => void;
+}
+
+function actionUrlFor(notification: Notification): string | null {
+  const url = notification.actionUrl;
+  if (url?.startsWith("/") && !url.startsWith("//") && !url.includes("\\")) return url;
+  if (notification.type === "battle") return "/battles";
+  if (notification.type === "achievement" || notification.type === "level_up") return "/achievements";
+  if (notification.type === "challenge") return "/challenges";
+  return null;
 }
 
 export function NotificationDropdown({
@@ -90,22 +101,31 @@ export function NotificationDropdown({
   unreadCount,
   onMarkAsRead,
   onMarkAllAsRead,
+  onMarkCategoryAsRead,
 }: NotificationDropdownProps) {
-  const [filter, setFilter] = useState<"all" | "unread">("all");
+  const [filter, setFilter] = useState<NotificationCategory>("all");
+  const [search, setSearch] = useState("");
+  const [unreadOnly, setUnreadOnly] = useState(false);
   const router = useRouter();
 
   const filteredNotifications = notifications.filter((n) => {
-    if (filter === "unread") return !n.isRead;
-    return true;
+    const matchesCategory = filter === "all" || categoryForNotification(n.type) === filter;
+    const query = search.trim().toLowerCase();
+    return matchesCategory && (!unreadOnly || !n.isRead) &&
+      (!query || `${n.title} ${n.message}`.toLowerCase().includes(query));
   });
+  const unreadInCategory = filter === "all" ? unreadCount : notifications.filter(
+    (n) => !n.isRead && categoryForNotification(n.type) === filter,
+  ).length;
 
   const handleItemClick = (notification: Notification) => {
     if (!notification.isRead) {
       onMarkAsRead(notification.id);
     }
-    if (notification.actionUrl) {
+    const url = actionUrlFor(notification);
+    if (url) {
       onClose();
-      router.push(notification.actionUrl);
+      router.push(url);
     }
   };
 
@@ -149,35 +169,49 @@ export function NotificationDropdown({
               )}
             </div>
 
-            {/* Filter Tabs: All vs Unread */}
-            <div className="flex items-center gap-1 p-0.5 rounded-xl bg-black/30 border border-white/5">
-              <button
-                onClick={() => setFilter("all")}
-                className={cn(
-                  "flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer text-center",
-                  filter === "all"
-                    ? "bg-white/10 text-white shadow-sm"
-                    : "text-muted-foreground hover:text-white"
-                )}
-              >
-                All ({notifications.length})
-              </button>
-              <button
-                onClick={() => setFilter("unread")}
-                className={cn(
-                  "flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer text-center",
-                  filter === "unread"
-                    ? "bg-white/10 text-white shadow-sm"
-                    : "text-muted-foreground hover:text-white"
-                )}
-              >
-                Unread ({unreadCount})
-              </button>
+            <div aria-label="Notification categories" className="flex gap-1 overflow-x-auto rounded-xl bg-black/30 p-1 border border-white/5">
+              {notificationCategories.map((category) => {
+                const count = category === "all" ? unreadCount : notifications.filter(
+                  (n) => !n.isRead && categoryForNotification(n.type) === category,
+                ).length;
+                return (
+                  <button
+                    key={category}
+                    type="button"
+                    aria-pressed={filter === category}
+                    onClick={() => setFilter(category)}
+                    className={cn(
+                      "shrink-0 px-2 py-1.5 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer capitalize",
+                      filter === category ? "bg-white/10 text-white shadow-sm" : "text-muted-foreground hover:text-white",
+                    )}
+                  >
+                    {category} <span aria-label={`${count} unread`}>({count})</span>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex items-center gap-2 mt-2">
+              <label className="flex flex-1 items-center gap-1.5 rounded-lg border border-white/10 bg-black/20 px-2 py-1 text-muted-foreground">
+                <Search className="h-3.5 w-3.5" aria-hidden="true" />
+                <input
+                  aria-label="Search notifications"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Search notifications"
+                  className="min-w-0 flex-1 bg-transparent text-xs text-white outline-none placeholder:text-muted-foreground"
+                />
+              </label>
+              <button type="button" aria-pressed={unreadOnly} onClick={() => setUnreadOnly((value) => !value)} className={cn("rounded-lg px-2 py-1 text-[11px]", unreadOnly ? "bg-white/10 text-white" : "text-muted-foreground hover:text-white")}>Unread</button>
+              {filter !== "all" && unreadInCategory > 0 && (
+                <button type="button" onClick={() => onMarkCategoryAsRead(filter)} className="text-[11px] text-primary hover:text-primary/80">
+                  Mark category read
+                </button>
+              )}
             </div>
           </div>
 
           {/* Notifications Scrollable List */}
-          <div className="max-h-[380px] overflow-y-auto divide-y divide-white/5 scrollbar-thin">
+          <motion.div key={filter} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.16 }} className="max-h-[380px] overflow-y-auto divide-y divide-white/5 scrollbar-thin">
             {filteredNotifications.length > 0 ? (
               filteredNotifications.map((notification) => {
                 const config =
@@ -223,7 +257,7 @@ export function NotificationDropdown({
                         >
                           {notification.title}
                         </h4>
-                        {notification.actionUrl && (
+                        {actionUrlFor(notification) && (
                           <ExternalLink className="w-2.5 h-2.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                         )}
                       </div>
@@ -236,6 +270,11 @@ export function NotificationDropdown({
                         <Clock className="w-3 h-3" />
                         <span>{formatRelativeTime(notification.createdAt)}</span>
                       </div>
+                      {actionUrlFor(notification) && (
+                        <button type="button" onClick={(event) => { event.stopPropagation(); handleItemClick(notification); }} className="mt-1 text-[11px] font-medium text-primary hover:text-primary/80">
+                          {notification.type === "battle" ? "View battle" : notification.type === "achievement" || notification.type === "level_up" ? "View achievement" : notification.type === "challenge" ? "View challenge" : "Open notification"}
+                        </button>
+                      )}
                     </div>
 
                     {/* Quick mark as read button */}
@@ -261,16 +300,14 @@ export function NotificationDropdown({
                   <Bell className="w-6 h-6" />
                 </div>
                 <h4 className="font-semibold text-sm text-white mb-1">
-                  {filter === "unread" ? "All caught up!" : "No notifications"}
+                  {search ? "No matching notifications" : filter === "all" ? "No notifications" : `No ${filter} notifications`}
                 </h4>
                 <p className="text-xs text-muted-foreground max-w-[200px]">
-                  {filter === "unread"
-                    ? "You don't have any unread notifications right now."
-                    : "No notifications to show at this moment."}
+                  {search ? "Try another search term." : "No notifications to show at this moment."}
                 </p>
               </div>
             )}
-          </div>
+          </motion.div>
         </motion.div>
       )}
     </AnimatePresence>

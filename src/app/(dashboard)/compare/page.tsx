@@ -16,6 +16,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CompareShareCard } from "@/components/compare/compare-share-card";
+import { RadarExportModal } from "@/components/compare/radar-export-modal";
 
 // Types
 interface DevStats {
@@ -81,6 +82,7 @@ function CompareDashboard() {
   const [githubToken, setGithubToken] = useState("");
   const [showTokenInput, setShowTokenInput] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isRadarExportOpen, setIsRadarExportOpen] = useState(false);
   
   // Load recent comparisons from local storage
   useEffect(() => {
@@ -638,13 +640,22 @@ function CompareDashboard() {
                       </div>
                     </motion.div>
                   ) : <div />}
-                  <button
-                    onClick={() => setIsShareModalOpen(true)}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold shadow-lg transition-all"
-                  >
-                    <Share2 className="w-4 h-4" />
-                    <span>Export Matchup Card</span>
-                  </button>
+                  <div className="flex flex-wrap justify-center gap-2">
+                    <button
+                      onClick={() => setIsRadarExportOpen(true)}
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold shadow-lg transition-all"
+                    >
+                      <Share2 className="w-4 h-4" />
+                      <span>Export Skill Radar</span>
+                    </button>
+                    <button
+                      onClick={() => setIsShareModalOpen(true)}
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold shadow-lg transition-all"
+                    >
+                      <Share2 className="w-4 h-4" />
+                      <span>Export Matchup Card</span>
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative">
@@ -875,6 +886,12 @@ function CompareDashboard() {
                 onClose={() => setIsShareModalOpen(false)}
                 dev1={dev1}
                 dev2={dev2}
+              />
+              <RadarExportModal
+                isOpen={isRadarExportOpen}
+                onClose={() => setIsRadarExportOpen(false)}
+                first={dev1}
+                second={dev2}
               />
             </motion.div>
           )

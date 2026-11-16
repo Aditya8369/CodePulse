@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient, extractData } from '@/lib/api-client';
+import { isColorVisionTheme, type ColorVisionTheme } from '@/lib/colorblind-themes';
 
 // ==========================================
 // Types
@@ -9,6 +10,7 @@ import { apiClient, extractData } from '@/lib/api-client';
 export interface AppearancePreferences {
   theme: 'dark' | 'light' | 'system';
   accentColor: 'purple' | 'blue' | 'emerald' | 'orange' | 'pink';
+  colorVisionTheme: ColorVisionTheme;
   compactTableView: boolean;
   reducedMotion: boolean;
   defaultLandingTab: string;
@@ -35,6 +37,7 @@ export interface UserPreferences {
 export const DEFAULT_APPEARANCE_PREFERENCES: AppearancePreferences = {
   theme: 'dark',
   accentColor: 'purple',
+  colorVisionTheme: 'normal',
   compactTableView: false,
   reducedMotion: false,
   defaultLandingTab: 'dashboard',
@@ -76,6 +79,9 @@ export function loadLocalPreferences(): UserPreferences {
       appearance: {
         ...DEFAULT_APPEARANCE_PREFERENCES,
         ...(parsed.appearance || {}),
+        colorVisionTheme: isColorVisionTheme(parsed.appearance?.colorVisionTheme)
+          ? parsed.appearance.colorVisionTheme
+          : DEFAULT_APPEARANCE_PREFERENCES.colorVisionTheme,
       },
       notifications: {
         ...DEFAULT_NOTIFICATION_PREFERENCES,

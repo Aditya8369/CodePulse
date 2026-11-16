@@ -29,6 +29,20 @@ export class NotificationsService {
     });
   }
 
+  async markCategoryAsRead(userId: string, category: string) {
+    const types: Record<string, NotificationType[]> = {
+      battles: [NotificationType.BATTLE],
+      achievements: [NotificationType.ACHIEVEMENT, NotificationType.CHALLENGE, NotificationType.LEVEL_UP],
+      social: [NotificationType.FRIEND],
+      system: [NotificationType.SYSTEM],
+    };
+    if (!Object.hasOwn(types, category)) return null;
+    return this.prisma.notification.updateMany({
+      where: { userId, isRead: false, type: { in: types[category] } },
+      data: { isRead: true },
+    });
+  }
+
   async createNotification(data: { userId: string, type: NotificationType, title: string, message: string }) {
     return this.prisma.notification.create({
       data: {
