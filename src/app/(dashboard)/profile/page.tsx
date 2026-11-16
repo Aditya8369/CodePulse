@@ -17,9 +17,12 @@ import {
 } from "lucide-react";
 import { ProfileQrModal } from "@/components/modals/profile-qr-modal";
 import { ProfileBadgeModal } from "@/components/modals/profile-badge-modal";
+import { BadgeShowcase } from "@/components/profile/badge-showcase";
 
 export default function ProfilePage() {
   const { data: user, isLoading } = useCurrentUser();
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+  const [isBadgeModalOpen, setIsBadgeModalOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -84,13 +87,10 @@ export default function ProfilePage() {
   const stats = user.stats || { totalCommits: 0, totalPRs: 0, totalReviews: 0, totalStars: 0, streak: 0, totalRepos: 0, followers: 0, following: 0 };
   
   // Map badges structure
-  const displayBadges = user.badges?.map((b: any) => b.badge || b) || [];
   const displayRepos = user.repositories || [];
   const displayActivities = user.activities || [];
   const displayLanguages = user.languages || [];
   const contributionData = user.stats?.contributionData || [];
-  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
-  const [isBadgeModalOpen, setIsBadgeModalOpen] = useState(false);
 
   return (
     <div className="space-y-6">
@@ -126,6 +126,7 @@ export default function ProfilePage() {
               )}
             </div>
             <p className="text-muted-foreground mb-1">@{user.username}</p>
+            <BadgeShowcase key={`header-${user.id}`} userId={user.id} badges={user.badges} placement="header" />
             {user.bio && <p className="text-sm text-muted-foreground mb-4 max-w-xl">{user.bio}</p>}
 
             <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
@@ -232,26 +233,7 @@ export default function ProfilePage() {
       />
 
       {/* Badges */}
-      {displayBadges.length > 0 && (
-        <div className="glass-card rounded-[20px] p-6">
-          <h2 className="text-lg font-semibold mb-4">Badges</h2>
-          <div className="flex flex-wrap gap-3">
-            {displayBadges.map((badge: any) => (
-              <motion.div
-                key={badge.id}
-                whileHover={{ scale: 1.05 }}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10"
-              >
-                <span className="text-lg">🏆</span>
-                <div>
-                  <div className="text-sm font-medium">{badge.name}</div>
-                  <div className="text-xs text-muted-foreground capitalize">{badge.tier}</div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      )}
+      <BadgeShowcase key={`gallery-${user.id}`} userId={user.id} badges={user.badges} />
 
       {/* Heatmap + Language */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
