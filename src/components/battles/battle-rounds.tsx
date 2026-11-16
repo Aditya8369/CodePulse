@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { AnimatedCounter } from "@/components/animations/animated-counter";
 import { CheckCircle2, User, BookOpen, Activity, Code, Award } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { audioManager } from "@/lib/audio-manager";
 
 interface DevData {
   username: string;
@@ -30,6 +31,7 @@ interface BattleRoundsProps {
   player2: DevData;
   battleType: string;
   onComplete: () => void;
+  isMuted?: boolean;
 }
 
 const ALL_ROUNDS = [
@@ -40,7 +42,7 @@ const ALL_ROUNDS = [
   { id: "quality", title: "Repository Quality", icon: Award },
 ];
 
-export function BattleRounds({ player1, player2, battleType, onComplete }: BattleRoundsProps) {
+export function BattleRounds({ player1, player2, battleType, onComplete, isMuted = false }: BattleRoundsProps) {
   const [currentRoundIndex, setCurrentRoundIndex] = useState(0);
 
   // Filter rounds based on battleType
@@ -65,6 +67,10 @@ export function BattleRounds({ player1, player2, battleType, onComplete }: Battl
       return () => clearTimeout(timer);
     }
   }, [currentRoundIndex, onComplete]);
+
+  useEffect(() => {
+    if (currentRoundIndex < ROUNDS.length && !isMuted) audioManager.playCountdownTick();
+  }, [currentRoundIndex, isMuted, ROUNDS.length]);
 
   const activeRound = ROUNDS[currentRoundIndex];
 
@@ -116,6 +122,7 @@ export function BattleRounds({ player1, player2, battleType, onComplete }: Battl
               round={activeRound} 
               p1={player1} 
               p2={player2} 
+              isMuted={isMuted}
             />
           ) : (
             <motion.div
@@ -137,7 +144,7 @@ export function BattleRounds({ player1, player2, battleType, onComplete }: Battl
   );
 }
 
-function RoundDisplay({ round, p1, p2 }: { round: any, p1: DevData, p2: DevData }) {
+function RoundDisplay({ round, p1, p2, isMuted }: { round: any, p1: DevData, p2: DevData, isMuted: boolean }) {
   // Deterministic mocking for missing fields based on actual stats
   const getMetrics = () => {
     switch (round.id) {
@@ -185,6 +192,12 @@ function RoundDisplay({ round, p1, p2 }: { round: any, p1: DevData, p2: DevData 
   });
   
   const winner = p1RoundScore > p2RoundScore ? p1.name : p2RoundScore > p1RoundScore ? p2.name : "Tie";
+
+  useEffect(() => {
+    if (isMuted || winner === "Tie") return;
+    const timer = setTimeout(() => audioManager.playRoundChime(winner === p1.name), metrics.length * 300 + 500);
+    return () => clearTimeout(timer);
+  }, [isMuted, winner, p1.name, metrics.length]);
 
   return (
     <motion.div
