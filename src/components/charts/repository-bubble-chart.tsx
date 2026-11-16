@@ -2,17 +2,21 @@
 
 import { useState, useMemo } from "react";
 import { motion } from "motion/react";
-import { Code2, Star, GitFork, ExternalLink, GitCommit, Sparkles } from "lucide-react";
+import { Code2, Star, GitFork, GitCommit } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { RepositoryInspectorModal } from "@/components/analytics/repository-inspector-modal";
+import type { Repository } from "@/types";
 
 interface RepositoryBubbleChartProps {
-  repos: any[];
+  repos: Array<Repository & { commitsCount?: number }>;
+  owner: string;
 }
 
 type MetricMode = "all" | "stars" | "forks" | "commits";
 
-export function RepositoryBubbleChart({ repos }: RepositoryBubbleChartProps) {
+export function RepositoryBubbleChart({ repos, owner }: RepositoryBubbleChartProps) {
   const [metric, setMetric] = useState<MetricMode>("stars");
+  const [selectedRepo, setSelectedRepo] = useState<string | null>(null);
 
   // Get top repos sorted by active metric
   const sortedRepos = useMemo(() => {
@@ -20,7 +24,7 @@ export function RepositoryBubbleChart({ repos }: RepositoryBubbleChartProps) {
       .sort((a, b) => {
         if (metric === "stars") return (b.stars || 0) - (a.stars || 0);
         if (metric === "forks") return (b.forks || 0) - (a.forks || 0);
-        if (metric === "commits") return (b.commitsCount || b.stars * 3 || 0) - (a.commitsCount || a.stars * 3 || 0);
+        if (metric === "commits") return (b.commitsCount ?? b.commits ?? 0) - (a.commitsCount ?? a.commits ?? 0);
         const scoreA = (a.stars || 0) * 2 + (a.forks || 0);
         const scoreB = (b.stars || 0) * 2 + (b.forks || 0);
         return scoreB - scoreA;
@@ -86,17 +90,19 @@ export function RepositoryBubbleChart({ repos }: RepositoryBubbleChartProps) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 relative z-10 flex-1">
         {sortedRepos.map((repo, idx) => {
-          const commits = repo.commitsCount || (repo.stars || 0) * 3 + 12;
+          const commits = repo.commitsCount ?? repo.commits ?? 0;
           return (
-            <motion.a
+            <motion.button
               key={repo.id || repo.name}
-              href={repo.url || `https://github.com/${repo.name}`}
-              target="_blank"
-              rel="noopener noreferrer"
+              type="button"
+              onClick={() => setSelectedRepo(
+                repo.fullName || repo.url?.match(/^https:\/\/github\.com\/([^/?#]+\/[^/?#]+)/)?.[1] || `${owner}/${repo.name}`,
+              )}
+              aria-label={`Inspect repository ${repo.fullName || repo.name}`}
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.05, duration: 0.3, ease: "easeOut" }}
-              className="group/card relative rounded-2xl p-5 border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] transition-all duration-300 flex flex-col justify-between overflow-hidden"
+              className="group/card relative rounded-2xl p-5 border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] transition-all duration-300 flex flex-col justify-between overflow-hidden text-left focus-visible:outline-2 focus-visible:outline-blue-400"
             >
               {/* Hover Gradient based on language color */}
               <div
@@ -114,7 +120,7 @@ export function RepositoryBubbleChart({ repos }: RepositoryBubbleChartProps) {
                   >
                     {repo.name}
                   </h4>
-                  <ExternalLink className="w-4 h-4 text-slate-500 group-hover/card:text-white opacity-0 group-hover/card:opacity-100 transition-all -translate-x-1 group-hover/card:translate-x-0" />
+                  <span className="shrink-0 text-xs text-blue-300 opacity-100 sm:opacity-0 sm:group-hover/card:opacity-100 sm:group-focus-visible/card:opacity-100">Inspect Repository</span>
                 </div>
 
                 {repo.description ? (
@@ -170,10 +176,11 @@ export function RepositoryBubbleChart({ repos }: RepositoryBubbleChartProps) {
                   </div>
                 </div>
               </div>
-            </motion.a>
+            </motion.button>
           );
         })}
       </div>
+      {selectedRepo && <RepositoryInspectorModal key={selectedRepo} fullName={selectedRepo} open onClose={() => setSelectedRepo(null)} />}
     </div>
   );
 }
