@@ -20,6 +20,10 @@ vi.mock("next-themes", () => ({
   }),
 }));
 
+vi.mock("@/components/providers/websocket-status-indicator", () => ({
+  WebSocketStatusIndicator: () => <span>Battle socket status</span>,
+}));
+
 // Mock use-notifications
 vi.mock("@/hooks/api/use-notifications", () => ({
   useNotifications: () => ({
