@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -33,6 +33,8 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { CustomThrottlerGuard } from './common/guards/custom-throttler.guard';
+import { SystemMetricsService } from './common/services/system-metrics.service';
+import { LoadShedderMiddleware } from './common/middleware/load-shedder.middleware';
 
 @Module({
   imports: [
@@ -90,10 +92,15 @@ import { CustomThrottlerGuard } from './common/guards/custom-throttler.guard';
   controllers: [AppController],
   providers: [
     AppService,
+    SystemMetricsService,
     {
       provide: APP_GUARD,
       useClass: CustomThrottlerGuard,
     },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer): void {
+    consumer.apply(LoadShedderMiddleware).forRoutes('*');
+  }
+}
