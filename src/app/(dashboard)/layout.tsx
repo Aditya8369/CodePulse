@@ -22,6 +22,7 @@ import {
   useHasAuthToken,
 } from "@/hooks/api/use-auth";
 import { OfflineBanner } from "@/components/feedback/offline-banner";
+import { BattleSocketProvider } from "@/components/providers/battle-socket-provider";
 
 export default function DashboardLayout({
   children,
@@ -100,44 +101,46 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="relative min-h-screen bg-background">
-      {/* Sidebar */}
-      <Sidebar />
+    <BattleSocketProvider>
+      <div className="relative min-h-screen bg-background">
+        {/* Sidebar */}
+        <Sidebar />
 
-      {/* Main content area — offset by sidebar width */}
-      <motion.div
-        className={cn(
-          "flex min-h-screen flex-col transition-[margin] duration-300 ease-out",
-          !isMobile && "ml-[256px]",
-        )}
-      >
-        {/* Topbar */}
-        <Topbar onOpenCommandPalette={() => setCommandPaletteOpen(true)} />
+        {/* Main content area — offset by sidebar width */}
+        <motion.div
+          className={cn(
+            "flex min-h-screen flex-col transition-[margin] duration-300 ease-out",
+            !isMobile && "ml-[256px]",
+          )}
+        >
+          {/* Topbar */}
+          <Topbar onOpenCommandPalette={() => setCommandPaletteOpen(true)} />
 
-        {/* Page content */}
-        <main className="flex-1 px-4 pt-6 pb-20 md:px-6 md:py-6 lg:px-8">
-          <DashboardBreadcrumbs />
-          <PageTransition>{children}</PageTransition>
-        </main>
-      </motion.div>
+          {/* Page content */}
+          <main className="flex-1 px-4 pt-6 pb-20 md:px-6 md:py-6 lg:px-8">
+            <DashboardBreadcrumbs />
+            <PageTransition>{children}</PageTransition>
+          </main>
+        </motion.div>
 
-      {/* Mobile Bottom Navigation */}
-      <MobileNav />
-      <OfflineBanner />
+        {/* Mobile Bottom Navigation */}
+        <MobileNav />
+        <OfflineBanner />
 
-      {/* Command Palette (global overlay) */}
-      <CommandPalette
-        open={commandPaletteOpen}
-        onOpenChange={setCommandPaletteOpen}
-      />
+        {/* Command Palette (global overlay) */}
+        <CommandPalette
+          open={commandPaletteOpen}
+          onOpenChange={setCommandPaletteOpen}
+        />
 
-      {/* Keyboard Shortcuts Guide Modal */}
-      <ShortcutsModal
-        isOpen={shortcutsOpen}
-        onClose={() => setShortcutsOpen(false)}
-      />
-      {/* Session Inactivity Timeout Warning Modal */}
-      <SessionTimeoutModal />
-    </div>
+        {/* Keyboard Shortcuts Guide Modal */}
+        <ShortcutsModal
+          isOpen={shortcutsOpen}
+          onClose={() => setShortcutsOpen(false)}
+        />
+        {/* Session Inactivity Timeout Warning Modal */}
+        <SessionTimeoutModal />
+      </div>
+    </BattleSocketProvider>
   );
 }

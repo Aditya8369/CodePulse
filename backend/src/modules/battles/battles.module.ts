@@ -10,6 +10,10 @@ import { RatingDecayScheduler } from './rating-decay.scheduler';
 
 @Module({
   imports: [BullModule.registerQueue({ name: 'rating-decay' })],
+import { MetricsModule } from '../metrics/metrics.module';
+
+@Module({
+  imports: [MetricsModule],
   controllers: [BattlesController],
   providers: [
     BattlesService,

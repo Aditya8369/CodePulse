@@ -2,15 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Wifi, Swords, ShieldCheck, Clock, CheckCircle2, User } from "lucide-react";
+import { Swords, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-interface PlayerLobbyState {
-  userId: string;
-  username: string;
-  isReady: boolean;
-  avatar?: string;
-}
+import { useBattleSocketStatus } from "@/components/providers/battle-socket-provider";
 
 interface BattleLiveRoomProps {
   battleId: string;
@@ -25,36 +19,38 @@ export function BattleLiveRoom({
   opponentUsername,
   onBattleStart,
 }: BattleLiveRoomProps) {
-  const [isConnected, setIsConnected] = useState(true);
+  const { status, attempt, retry } = useBattleSocketStatus();
+  const isConnected = status === "connected";
   const [isReady, setIsReady] = useState(false);
   const [opponentReady, setOpponentReady] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
 
-  // Simulated live socket state with graceful fallback
+  // The lobby readiness demo is separate from the real socket connection status.
   useEffect(() => {
-    // When both are ready, initiate 3-second synchronized countdown
-    if (isReady && opponentReady) {
+    if (!isReady || opponentReady) return;
+    const timer = setTimeout(() => {
+      setOpponentReady(true);
       setCountdown(3);
-      const timer = setInterval(() => {
-        setCountdown((prev) => {
-          if (prev === null || prev <= 1) {
-            clearInterval(timer);
-            onBattleStart();
-            return null;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-      return () => clearInterval(timer);
-    }
-  }, [isReady, opponentReady, onBattleStart]);
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, [isReady, opponentReady]);
+
+  useEffect(() => {
+    if (countdown === null) return;
+    const timer = setTimeout(() => {
+      if (countdown <= 1) {
+        setCountdown(null);
+        onBattleStart();
+      } else {
+        setCountdown(countdown - 1);
+      }
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [countdown, onBattleStart]);
 
   // Simulate opponent becoming ready shortly after player
   const handleReadyClick = () => {
     setIsReady(true);
-    setTimeout(() => {
-      setOpponentReady(true);
-    }, 1200);
   };
 
   return (
@@ -70,12 +66,27 @@ export function BattleLiveRoom({
             <span
               className={cn(
                 "w-2.5 h-2.5 rounded-full",
-                isConnected ? "bg-emerald-400 animate-pulse" : "bg-amber-400"
+                isConnected
+                  ? "bg-emerald-400"
+                  : status === "disconnected"
+                    ? "bg-red-400"
+                    : "bg-amber-400 motion-safe:animate-pulse",
               )}
             />
             <span className="text-xs font-mono font-medium text-slate-300">
-              {isConnected ? "WEBSOCKET LOBBY CONNECTED" : "RECONNECTING..."}
+              {isConnected
+                ? "BATTLE SOCKET CONNECTED"
+                : status === "disconnected"
+                  ? "BATTLE SOCKET DISCONNECTED"
+                  : status === "reconnecting"
+                    ? `RECONNECTING (${attempt}/5)`
+                    : "CONNECTING..."}
             </span>
+            {status === "disconnected" && (
+              <button type="button" onClick={retry} className="text-xs text-primary underline">
+                Retry now
+              </button>
+            )}
           </div>
           <span className="text-xs font-mono text-muted-foreground">
             ROOM: #{battleId.slice(0, 8)}
