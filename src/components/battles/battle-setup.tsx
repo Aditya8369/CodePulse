@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useId } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Search, ChevronDown, Wand2, Swords, Sparkles, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -20,6 +20,8 @@ const BATTLE_TYPES = [
   { id: "Open Source Impact", icon: Zap, color: "text-pink-500" },
   { id: "AI Battle", icon: Sparkles, color: "text-cyan-500" },
 ];
+
+const GITHUB_USERNAME = /^(?=.{1,39}$)[a-z0-9]+(?:-[a-z0-9]+)*$/i;
 
 export function BattleSetup({
   onStart,
@@ -44,12 +46,16 @@ export function BattleSetup({
   // focused states for some extra glow
   const [focusedInput, setFocusedInput] = useState<1 | 2 | null>(null);
 
+  const challengerId = useId();
+  const opponentId = useId();
+  const validPlayer1 = GITHUB_USERNAME.test(player1.trim());
+  const validPlayer2 = GITHUB_USERNAME.test(player2.trim());
+  const canStart = validPlayer1 && validPlayer2;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const p1 = player1.trim();
-    const p2 = player2.trim();
-    if (p1 && p2) {
-      onStart(p1, p2, battleType.id);
+    if (canStart) {
+      onStart(player1.trim(), player2.trim(), battleType.id);
     }
   };
 
@@ -116,7 +122,7 @@ export function BattleSetup({
               
               {/* Player 1 Input */}
               <div className="space-y-3">
-                <label htmlFor="battle-player-one" className="flex items-center gap-2 text-sm font-bold text-blue-500 uppercase tracking-widest ml-1">
+                <label htmlFor={challengerId} className="flex items-center gap-2 text-sm font-bold text-blue-500 uppercase tracking-widest ml-1">
                   <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
                   Challenger
                 </label>
@@ -130,9 +136,9 @@ export function BattleSetup({
                       <Search className={cn("w-5 h-5 text-muted-foreground transition-colors", focusedInput === 1 && "text-blue-500")} />
                     </div>
                     <input
-                      id="battle-player-one"
                       type="text"
                       autoFocus={focusFirstInput}
+                      id={challengerId}
                       value={player1}
                       onFocus={() => setFocusedInput(1)}
                       onBlur={() => setFocusedInput(null)}
@@ -141,10 +147,10 @@ export function BattleSetup({
                       className="w-full py-5 pl-2 pr-5 text-lg md:text-xl font-medium bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-all placeholder:text-muted-foreground/40"
                       required
                     />
-                    {player1 && (
+                    {validPlayer1 && (
                       <div className="absolute right-4 top-1/2 -translate-y-1/2">
                         <img 
-                          src={`https://github.com/${player1}.png?size=60`}
+                          src={`https://github.com/${player1.trim()}.png?size=60`}
                           alt={player1}
                           className="w-8 h-8 rounded-full border-2 border-blue-500/50 shadow-lg object-cover bg-muted"
                           onError={(e) => (e.currentTarget.style.display = 'none')}
@@ -167,7 +173,7 @@ export function BattleSetup({
 
               {/* Player 2 Input */}
               <div className="space-y-3">
-                <label htmlFor="battle-player-two" className="flex items-center justify-end gap-2 text-sm font-bold text-pink-500 uppercase tracking-widest mr-1">
+                <label htmlFor={opponentId} className="flex items-center justify-end gap-2 text-sm font-bold text-pink-500 uppercase tracking-widest mr-1">
                   Opponent
                   <span className="w-2 h-2 rounded-full bg-pink-500 animate-pulse" />
                 </label>
@@ -181,8 +187,8 @@ export function BattleSetup({
                       <Search className={cn("w-5 h-5 text-muted-foreground transition-colors", focusedInput === 2 && "text-pink-500")} />
                     </div>
                     <input
-                      id="battle-player-two"
                       type="text"
+                      id={opponentId}
                       value={player2}
                       onFocus={() => setFocusedInput(2)}
                       onBlur={() => setFocusedInput(null)}
@@ -191,10 +197,10 @@ export function BattleSetup({
                       className="w-full py-5 pl-2 pr-5 text-lg md:text-xl font-medium bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-all placeholder:text-muted-foreground/40 text-left"
                       required
                     />
-                    {player2 && (
+                    {validPlayer2 && (
                       <div className="absolute right-4 top-1/2 -translate-y-1/2">
                         <img 
-                          src={`https://github.com/${player2}.png?size=60`}
+                          src={`https://github.com/${player2.trim()}.png?size=60`}
                           alt={player2}
                           className="w-8 h-8 rounded-full border-2 border-pink-500/50 shadow-lg object-cover bg-muted"
                           onError={(e) => (e.currentTarget.style.display = 'none')}
@@ -274,23 +280,23 @@ export function BattleSetup({
 
                 <button
                   type="submit"
-                  disabled={!player1.trim() || !player2.trim()}
+                  disabled={!canStart}
                   aria-label="Start battle between developers"
                   className={cn(
                     "flex-[2] sm:flex-none relative group overflow-hidden px-8 py-4 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-                    !player1.trim() || !player2.trim()
+                    !canStart
                       ? "bg-muted text-muted-foreground cursor-not-allowed"
                       : "text-white shadow-xl hover:shadow-primary/25 active:scale-[0.98]"
                   )}
                 >
-                  {player1.trim() && player2.trim() && (
+                  {canStart && (
                     <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 group-hover:scale-105 transition-transform duration-500" />
                   )}
-                  {!player1.trim() || !player2.trim() ? (
+                  {!canStart ? (
                     <div className="absolute inset-0 bg-muted" />
                   ) : null}
                   <span className="relative z-10 flex items-center gap-2">
-                    <Swords className={cn("w-4 h-4", player1.trim() && player2.trim() && "animate-bounce")} aria-hidden="true" />
+                    <Swords className={cn("w-4 h-4", canStart && "animate-bounce")} aria-hidden="true" />
                     Start Battle
                   </span>
                 </button>
