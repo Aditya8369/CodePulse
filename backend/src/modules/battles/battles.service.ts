@@ -12,6 +12,7 @@ import {
   remainingPlacementsAfterMatch,
   tierForElo,
 } from './season-rating';
+import { decayFloorForElo } from './rating-decay';
 
 export interface EloOutcome {
   winnerRating: number;
@@ -233,6 +234,7 @@ export class BattlesService {
 
       // Execute all rating, XP, activity, and battle status updates atomically in a Prisma Transaction
       return this.prisma.$transaction(async (tx) => {
+        const completedAt = new Date();
         // Competitive MMR is stored separately from GitHub productivity rating.
         await tx.battleRating.upsert({
           where: { userId: winnerId },
@@ -241,9 +243,15 @@ export class BattlesService {
             elo: eloOutcome.winnerRating,
             placementMatchesRemaining: 4,
             seasonNumber: currentSeason?.number ?? 1,
+            lastBattleAt: completedAt,
+            decayFloor: decayFloorForElo(eloOutcome.winnerRating),
           },
           update: {
             elo: eloOutcome.winnerRating,
+            lastBattleAt: completedAt,
+            decayPeriodsApplied: 0,
+            decayFloor: decayFloorForElo(eloOutcome.winnerRating),
+            decayWarnedFor: null,
             placementMatchesRemaining: remainingPlacementsAfterMatch(
               winnerBattleRating?.placementMatchesRemaining ?? 5,
             ),
@@ -256,9 +264,15 @@ export class BattlesService {
             elo: eloOutcome.loserRating,
             placementMatchesRemaining: 4,
             seasonNumber: currentSeason?.number ?? 1,
+            lastBattleAt: completedAt,
+            decayFloor: decayFloorForElo(eloOutcome.loserRating),
           },
           update: {
             elo: eloOutcome.loserRating,
+            lastBattleAt: completedAt,
+            decayPeriodsApplied: 0,
+            decayFloor: decayFloorForElo(eloOutcome.loserRating),
+            decayWarnedFor: null,
             placementMatchesRemaining: remainingPlacementsAfterMatch(
               loserBattleRating?.placementMatchesRemaining ?? 5,
             ),

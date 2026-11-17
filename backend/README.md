@@ -101,6 +101,20 @@ npm test
 npm run test:cov
 ```
 
+### Competitive rating inactivity
+
+Completed ranked battles update `BattleRating.lastBattleAt` for both players.
+The `rating-decay` BullMQ queue schedules warnings every Saturday at 00:00 UTC
+and decay every Monday at 00:00 UTC. After 14 inactive days, each due week costs
+25 competitive Elo, down to the floor fixed by the player's last completed
+battle: 1500 for Diamond, 1800 for Master or Grandmaster. The worker catches up
+missed weekly periods and records each deduction as a zero-XP
+`RATING_DECAY` transaction; competitive Elo never debits XP. Existing ratings
+without a known last battle date start tracking on their next completed battle.
+Deploy the Prisma migration before starting workers. The battle-season
+leaderboard currently reads the database directly, so the worker does not write
+an unused Redis leaderboard key.
+
 ### Slow Prisma queries
 
 `PrismaService` emits a structured Nest warning when a query takes longer than
