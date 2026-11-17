@@ -25,6 +25,7 @@ import { RecommendationsModule } from './modules/recommendations/recommendations
 import { MetricsModule } from './modules/metrics/metrics.module';
 import { SecurityModule } from './modules/security/security.module';
 import { HealthModule } from './modules/health/health.module';
+import { CloudModule } from './modules/cloud/cloud.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import { BullModule } from '@nestjs/bullmq';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -82,6 +83,7 @@ import { CustomThrottlerGuard } from './common/guards/custom-throttler.guard';
     MetricsModule,
     SecurityModule,
     HealthModule,
+    CloudModule,
   ],
   controllers: [AppController],
   providers: [
