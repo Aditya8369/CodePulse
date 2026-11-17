@@ -61,10 +61,32 @@ export function isReadableAccent(value: unknown): value is string {
   return accentContrastOnWhite(value) >= 4.5;
 }
 
+/** Monaco's IStandaloneThemeData shape, kept dependency-free until an editor is mounted. */
+export function monacoDeveloperTheme(theme: DeveloperTheme, customAccent?: string | null) {
+  const palette = DEVELOPER_THEMES[theme];
+  const accent = isReadableAccent(customAccent) ? customAccent : palette.accent;
+  return {
+    base: "vs-dark" as const,
+    inherit: true,
+    rules: [
+      { token: "keyword", foreground: accent.slice(1) },
+      { token: "string", foreground: "86efac" },
+      { token: "comment", foreground: "94a3b8" },
+    ],
+    colors: {
+      "editor.background": palette.background,
+      "editor.foreground": "#f8fafc",
+      "editor.lineHighlightBackground": palette.surface,
+      "editorCursor.foreground": accent,
+    },
+  };
+}
+
 const OVERRIDDEN_PROPERTIES = [
   "--background", "--card", "--popover", "--secondary", "--muted", "--accent",
   "--primary", "--ring", "--chart-1", "--sidebar", "--sidebar-primary",
   "--sidebar-ring", "--sidebar-accent",
+  "--background-glow", "--card-border",
 ] as const;
 
 /** Apply only palette tokens; color-vision status tokens remain independent. */
@@ -92,5 +114,7 @@ export function applyDeveloperTheme(theme: unknown, customAccent: unknown, isLig
   root.style.setProperty("--sidebar-primary", accent);
   root.style.setProperty("--sidebar-ring", accent);
   root.style.setProperty("--sidebar-accent", palette.surface);
+  root.style.setProperty("--background-glow", accent);
+  root.style.setProperty("--card-border", `color-mix(in srgb, ${accent} 28%, transparent)`);
   return selected;
 }

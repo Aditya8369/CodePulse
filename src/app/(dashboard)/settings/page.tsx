@@ -22,8 +22,6 @@ import {
   LogOut,
   RotateCcw,
   Check,
-  Sliders,
-  Sparkles,
   Download,
 } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -105,7 +103,7 @@ export default function SettingsPage() {
         toast.success("Profile saved successfully!");
       },
       onError: (error) => {
-        toast.error("Failed to save profile. " + (error as any)?.message);
+        toast.error("Failed to save profile. " + (error instanceof Error ? error.message : "Unknown error"));
       },
     });
   };

@@ -1,4 +1,3 @@
-import { describe, it, expect, beforeEach } from 'vitest';
 import { BattlesService } from './battles.service';
 
 describe('BattlesService - ELO Rating Engine (#87)', () => {
