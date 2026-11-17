@@ -30,7 +30,7 @@ A heartfelt thank you to all the amazing developers contributing to **CodePulse*
         <sub><b>@code-with-abhi-i5</b></sub>
       </a><br />
       <sub>👑 Maintainer</sub><br />
-      <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=code-with-abhi-i5"><sub>🔨 176 commits</sub></a>
+      <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=code-with-abhi-i5"><sub>🔨 177 commits</sub></a>
     </td>
     <td align="center" width="160px">
       <a href="https://github.com/Babin123456">
@@ -57,20 +57,20 @@ A heartfelt thank you to all the amazing developers contributing to **CodePulse*
       <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=divyanshAgarwal123"><sub>🔨 25 commits</sub></a>
     </td>
     <td align="center" width="160px">
+      <a href="https://github.com/aush5895">
+        <img src="https://avatars.githubusercontent.com/u/229103100?v=4&s=100" width="80px" style="border-radius: 50%;" alt="aush5895" /><br />
+        <sub><b>@aush5895</b></sub>
+      </a><br />
+      <sub>💻 Contributor</sub><br />
+      <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=aush5895"><sub>🔨 6 commits</sub></a>
+    </td>
+    <td align="center" width="160px">
       <a href="https://github.com/Ankit-Kum-ar">
         <img src="https://avatars.githubusercontent.com/u/111765525?v=4&s=100" width="80px" style="border-radius: 50%;" alt="Ankit-Kum-ar" /><br />
         <sub><b>@Ankit-Kum-ar</b></sub>
       </a><br />
       <sub>💻 Contributor</sub><br />
       <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=Ankit-Kum-ar"><sub>🔨 5 commits</sub></a>
-    </td>
-    <td align="center" width="160px">
-      <a href="https://github.com/aush5895">
-        <img src="https://avatars.githubusercontent.com/u/229103100?v=4&s=100" width="80px" style="border-radius: 50%;" alt="aush5895" /><br />
-        <sub><b>@aush5895</b></sub>
-      </a><br />
-      <sub>💻 Contributor</sub><br />
-      <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=aush5895"><sub>🔨 5 commits</sub></a>
     </td>
   </tr>
   <tr>
