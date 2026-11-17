@@ -21,6 +21,7 @@ import {
   useCurrentUser,
   useHasAuthToken,
 } from "@/hooks/api/use-auth";
+import { OfflineBanner } from "@/components/feedback/offline-banner";
 
 export default function DashboardLayout({
   children,
@@ -122,6 +123,7 @@ export default function DashboardLayout({
 
       {/* Mobile Bottom Navigation */}
       <MobileNav />
+      <OfflineBanner />
 
       {/* Command Palette (global overlay) */}
       <CommandPalette
