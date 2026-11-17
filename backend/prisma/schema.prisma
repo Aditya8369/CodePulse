@@ -116,10 +116,15 @@ model BattleRating {
   elo                       Float    @default(1200)
   placementMatchesRemaining Int      @default(0)
   seasonNumber              Int      @default(1)
+  lastBattleAt              DateTime?
+  decayPeriodsApplied       Int      @default(0)
+  decayFloor                Float?
+  decayWarnedFor            DateTime?
   updatedAt                 DateTime @updatedAt
   user                      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([seasonNumber, elo])
+  @@index([lastBattleAt])
   @@map("battle_ratings")
 }
 
