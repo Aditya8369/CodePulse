@@ -28,6 +28,7 @@ import {
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { useLogout } from "@/hooks/api/use-auth";
+import { WebSocketStatusIndicator } from "@/components/providers/websocket-status-indicator";
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -365,6 +366,7 @@ export function Topbar({ onOpenCommandPalette }: TopbarProps) {
 
       {/* Right: Actions */}
       <div className="flex items-center gap-1.5">
+        <WebSocketStatusIndicator />
         <div className="hidden lg:block">
           <SearchTrigger onOpen={onOpenCommandPalette} />
         </div>
