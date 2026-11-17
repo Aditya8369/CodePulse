@@ -1,6 +1,17 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  Optional,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateBattleDto, UpdateBattleStatusDto } from './dto/battles.dto';
+import { SeasonResetService } from './season-reset.service';
+import {
+  placementKFactor,
+  remainingPlacementsAfterMatch,
+  tierForElo,
+} from './season-rating';
 
 export interface EloOutcome {
   winnerRating: number;
@@ -13,7 +24,10 @@ export interface EloOutcome {
 
 @Injectable()
 export class BattlesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly seasonReset?: SeasonResetService,
+  ) {}
 
   /**
    * Calculates competitive ELO outcome and dynamic XP rewards (K-factor = 32).
@@ -21,7 +35,8 @@ export class BattlesService {
   public calculateElo(
     winnerRating: number,
     loserRating: number,
-    kFactor = 32,
+    winnerKFactor = 32,
+    loserKFactor = winnerKFactor,
   ): EloOutcome {
     // Expected score formula: EA = 1 / (1 + 10^((RB - RA) / 400))
     const expectedWinner =
@@ -30,8 +45,8 @@ export class BattlesService {
       1 / (1 + Math.pow(10, (winnerRating - loserRating) / 400));
 
     // Underdog multiplier gives an extra proportionate reward if a lower-rated player defeats a titan
-    let winnerDelta = Math.round(kFactor * (1 - expectedWinner));
-    const loserDelta = Math.round(kFactor * (0 - expectedLoser));
+    let winnerDelta = Math.round(winnerKFactor * (1 - expectedWinner));
+    const loserDelta = Math.round(loserKFactor * (0 - expectedLoser));
 
     // Ensure winner always gains at least 8 ELO and loser loses at most proportional points
     winnerDelta = Math.max(8, winnerDelta);
@@ -156,6 +171,10 @@ export class BattlesService {
   }
 
   async updateBattleStatus(battleId: string, dto: UpdateBattleStatusDto) {
+    const currentSeason =
+      dto.status === 'COMPLETED' && dto.winnerId
+        ? await this.seasonReset?.rolloverIfDue()
+        : undefined;
     const battle = await this.prisma.battle.findUnique({
       where: { id: battleId },
       include: {
@@ -172,6 +191,16 @@ export class BattlesService {
       return battle;
     }
 
+    if (
+      dto.winnerId &&
+      dto.winnerId !== battle.challengerId &&
+      dto.winnerId !== battle.opponentId
+    ) {
+      throw new BadRequestException(
+        'Winner must be a participant in the battle',
+      );
+    }
+
     // If a winner is declared and status is COMPLETED, atomically update ELO and XP
     if (dto.status === 'COMPLETED' && dto.winnerId) {
       const winnerId = dto.winnerId;
@@ -180,22 +209,107 @@ export class BattlesService {
           ? battle.opponentId
           : battle.challengerId;
 
-      const [winnerRatingRec, loserRatingRec] = await Promise.all([
+      const [
+        winnerRatingRec,
+        loserRatingRec,
+        winnerBattleRating,
+        loserBattleRating,
+      ] = await Promise.all([
         this.prisma.developerRating.findUnique({ where: { userId: winnerId } }),
         this.prisma.developerRating.findUnique({ where: { userId: loserId } }),
+        this.prisma.battleRating.findUnique({ where: { userId: winnerId } }),
+        this.prisma.battleRating.findUnique({ where: { userId: loserId } }),
       ]);
 
-      const initialWinnerRating = winnerRatingRec?.overall || 1200;
-      const initialLoserRating = loserRatingRec?.overall || 1200;
+      const initialWinnerRating = winnerBattleRating?.elo ?? 1200;
+      const initialLoserRating = loserBattleRating?.elo ?? 1200;
 
       const eloOutcome = this.calculateElo(
         initialWinnerRating,
         initialLoserRating,
+        placementKFactor(winnerBattleRating?.placementMatchesRemaining ?? 5),
+        placementKFactor(loserBattleRating?.placementMatchesRemaining ?? 5),
       );
 
       // Execute all rating, XP, activity, and battle status updates atomically in a Prisma Transaction
       return this.prisma.$transaction(async (tx) => {
-        // 1. Update Winner Rating and XP
+        // Competitive MMR is stored separately from GitHub productivity rating.
+        await tx.battleRating.upsert({
+          where: { userId: winnerId },
+          create: {
+            userId: winnerId,
+            elo: eloOutcome.winnerRating,
+            placementMatchesRemaining: 4,
+            seasonNumber: currentSeason?.number ?? 1,
+          },
+          update: {
+            elo: eloOutcome.winnerRating,
+            placementMatchesRemaining: remainingPlacementsAfterMatch(
+              winnerBattleRating?.placementMatchesRemaining ?? 5,
+            ),
+          },
+        });
+        await tx.battleRating.upsert({
+          where: { userId: loserId },
+          create: {
+            userId: loserId,
+            elo: eloOutcome.loserRating,
+            placementMatchesRemaining: 4,
+            seasonNumber: currentSeason?.number ?? 1,
+          },
+          update: {
+            elo: eloOutcome.loserRating,
+            placementMatchesRemaining: remainingPlacementsAfterMatch(
+              loserBattleRating?.placementMatchesRemaining ?? 5,
+            ),
+          },
+        });
+
+        // The fifth placement match grants a visible tier badge for this season.
+        for (const player of [
+          {
+            userId: winnerId,
+            rating: winnerBattleRating,
+            elo: eloOutcome.winnerRating,
+          },
+          {
+            userId: loserId,
+            rating: loserBattleRating,
+            elo: eloOutcome.loserRating,
+          },
+        ]) {
+          if (player.rating?.placementMatchesRemaining !== 1) continue;
+          const tier = tierForElo(player.elo);
+          const seasonNumber =
+            currentSeason?.number ?? player.rating.seasonNumber;
+          const badgeId = `season-${seasonNumber}-${tier.toLowerCase()}-tier`;
+          await tx.badge.upsert({
+            where: { id: badgeId },
+            create: {
+              id: badgeId,
+              name: `Season ${seasonNumber} ${tier} Tier`,
+              description: `Completed five placement matches in season ${seasonNumber}`,
+              tier:
+                tier === 'MASTER' || tier === 'GRANDMASTER' ? 'DIAMOND' : tier,
+              category: 'seasonal-placement',
+            },
+            update: {},
+          });
+          await tx.userBadge.createMany({
+            data: [{ userId: player.userId, badgeId }],
+            skipDuplicates: true,
+          });
+          await tx.activity.create({
+            data: {
+              userId: player.userId,
+              type: 'ACHIEVEMENT',
+              title: `${tier} placement rank revealed`,
+              description: `Completed five placement matches in season ${seasonNumber}.`,
+            },
+          });
+        }
+
+        // 1. Update Winner XP
         let winnerXp = (winnerRatingRec?.xp || 0) + eloOutcome.winnerXpGain;
         let winnerLevel = winnerRatingRec?.level || 1;
         let winnerXpToNext = winnerRatingRec?.xpToNextLevel || 1000;
@@ -212,20 +326,18 @@ export class BattlesService {
           where: { userId: winnerId },
           create: {
             userId: winnerId,
-            overall: eloOutcome.winnerRating,
             xp: winnerXp,
             level: winnerLevel,
             xpToNextLevel: winnerXpToNext,
           },
           update: {
-            overall: eloOutcome.winnerRating,
             xp: winnerXp,
             level: winnerLevel,
             xpToNextLevel: winnerXpToNext,
           },
         });
 
-        // 2. Update Loser Rating and Participation XP
+        // 2. Update Loser participation XP
         let loserXp = (loserRatingRec?.xp || 0) + eloOutcome.loserXpGain;
         let loserLevel = loserRatingRec?.level || 1;
         let loserXpToNext = loserRatingRec?.xpToNextLevel || 1000;
@@ -240,13 +352,11 @@ export class BattlesService {
           where: { userId: loserId },
           create: {
             userId: loserId,
-            overall: eloOutcome.loserRating,
             xp: loserXp,
             level: loserLevel,
             xpToNextLevel: loserXpToNext,
           },
           update: {
-            overall: eloOutcome.loserRating,
             xp: loserXp,
             level: loserLevel,
             xpToNextLevel: loserXpToNext,
