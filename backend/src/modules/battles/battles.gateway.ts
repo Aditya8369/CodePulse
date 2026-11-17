@@ -9,6 +9,7 @@ import {
 } from '@nestjs/websockets';
 import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
+import { MetricsService } from '../metrics/metrics.service';
 
 interface PlayerState {
   userId: string;
@@ -31,7 +32,11 @@ interface RoomState {
   },
   namespace: '/battles',
 })
-export class BattlesGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class BattlesGateway
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
+  constructor(private readonly metrics: MetricsService) {}
+
   @WebSocketServer()
   server: Server;
 
@@ -40,24 +45,30 @@ export class BattlesGateway implements OnGatewayConnection, OnGatewayDisconnect 
   private disconnectTimers: Map<string, NodeJS.Timeout> = new Map();
 
   handleConnection(client: Socket) {
+    this.metrics.socketConnected(client.id);
     this.logger.log(`Client connected to battle socket: ${client.id}`);
   }
 
   handleDisconnect(client: Socket) {
+    this.metrics.socketDisconnected(client.id);
     this.logger.log(`Client disconnected: ${client.id}`);
 
     // Identify which room client was in
     for (const [battleId, room] of this.rooms.entries()) {
       for (const [userId, player] of Object.entries(room.players)) {
         if (player.socketId === client.id) {
-          this.logger.warn(`Player ${player.username} (${userId}) disconnected from battle ${battleId}`);
+          this.logger.warn(
+            `Player ${player.username} (${userId}) disconnected from battle ${battleId}`,
+          );
 
           // Broadcast temporary disconnect notice
-          this.server.to(`battle:${battleId}`).emit('player_disconnect_warning', {
-            userId,
-            username: player.username,
-            reconnectWindowSeconds: 30,
-          });
+          this.server
+            .to(`battle:${battleId}`)
+            .emit('player_disconnect_warning', {
+              userId,
+              username: player.username,
+              reconnectWindowSeconds: 30,
+            });
 
           // 30-second grace period before forfeiture
           const timeout = setTimeout(() => {
@@ -80,12 +91,12 @@ export class BattlesGateway implements OnGatewayConnection, OnGatewayDisconnect 
   @SubscribeMessage('player_join')
   handlePlayerJoin(
     @MessageBody() data: { battleId: string; userId: string; username: string },
-    @ConnectedSocket() client: Socket
+    @ConnectedSocket() client: Socket,
   ) {
     const { battleId, userId, username } = data;
     const roomName = `battle:${battleId}`;
 
-    client.join(roomName);
+    void client.join(roomName);
 
     if (!this.rooms.has(battleId)) {
       this.rooms.set(battleId, {
@@ -121,10 +132,7 @@ export class BattlesGateway implements OnGatewayConnection, OnGatewayDisconnect 
   }
 
   @SubscribeMessage('player_ready')
-  handlePlayerReady(
-    @MessageBody() data: { battleId: string; userId: string },
-    @ConnectedSocket() client: Socket
-  ) {
+  handlePlayerReady(@MessageBody() data: { battleId: string; userId: string }) {
     const { battleId, userId } = data;
     const room = this.rooms.get(battleId);
     if (!room || !room.players[userId]) return;
@@ -153,7 +161,9 @@ export class BattlesGateway implements OnGatewayConnection, OnGatewayDisconnect 
     const interval = setInterval(() => {
       secondsLeft -= 1;
       if (secondsLeft > 0) {
-        this.server.to(roomName).emit('start_countdown', { count: secondsLeft });
+        this.server
+          .to(roomName)
+          .emit('start_countdown', { count: secondsLeft });
       } else {
         clearInterval(interval);
         this.server.to(roomName).emit('battle_commenced', {
@@ -166,7 +176,12 @@ export class BattlesGateway implements OnGatewayConnection, OnGatewayDisconnect 
 
   @SubscribeMessage('round_transition')
   handleRoundTransition(
-    @MessageBody() data: { battleId: string; nextRound: number; metric: string }
+    @MessageBody()
+    data: {
+      battleId: string;
+      nextRound: number;
+      metric: string;
+    },
   ) {
     const { battleId, nextRound, metric } = data;
     const room = this.rooms.get(battleId);

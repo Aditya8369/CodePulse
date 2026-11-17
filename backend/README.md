@@ -111,6 +111,25 @@ production, forward Nest warnings from stdout to your log aggregator and filter
 for `slow_prisma_query`. Run the focused regression test with
 `npx jest src/prisma/prisma.service.spec.ts --runInBand`.
 
+### Prometheus metrics
+
+Set `METRICS_BASIC_AUTH_USER` and `METRICS_BASIC_AUTH_PASSWORD` in the backend
+environment before scraping. `GET /metrics` is outside the `/api/v1` prefix and
+returns `401` when either credential is unset or the request lacks valid Basic
+authentication. Store the password in your deployment secret manager.
+
+```bash
+curl --user "$METRICS_BASIC_AUTH_USER:$METRICS_BASIC_AUTH_PASSWORD" \
+  http://localhost:3001/metrics
+```
+
+The OpenMetrics output includes Node runtime metrics, HTTP latency histograms
+using route templates, current battle WebSocket connections, active battles,
+and waiting jobs per BullMQ queue. Import `deploy/grafana/dashboard.json` from
+the repository root into Grafana and select the Prometheus datasource; it
+contains p50, p95, and p99 latency panels. Configure your Prometheus scrape job
+with the same Basic credentials and `/metrics` as its path.
+
 ## 📚 API Documentation (Swagger)
 
 When the server is running, the interactive OpenAPI/Swagger documentation is available at:
