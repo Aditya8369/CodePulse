@@ -28,7 +28,7 @@ describe("BattleSetup", () => {
   it("starts with the selected battle type", () => {
     const onStart = vi.fn();
     render(<BattleSetup onStart={onStart} initialPlayer1="octocat" initialPlayer2="hubot" />);
-    fireEvent.click(screen.getByRole("button", { name: "Overall Battle" }));
+    fireEvent.click(screen.getByRole("button", { name: "Battle type: Overall Battle" }));
     fireEvent.click(screen.getByRole("button", { name: "Repository Battle" }));
     fireEvent.click(screen.getByRole("button", { name: /start battle/i }));
 
