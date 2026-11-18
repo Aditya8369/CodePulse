@@ -14,6 +14,24 @@ export class AnalyticsController {
     return this.analyticsService.getPlatformStats();
   }
 
+  @Get('privacy-safe-aggregations')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Get differentially private platform statistics with epsilon budget accounting and cohort suppression',
+  })
+  async getPrivacySafeAggregations(
+    @Request() req: { user: { id: string } },
+    @Query('epsilon') epsilon?: string,
+  ) {
+    const parsedEpsilon = epsilon ? parseFloat(epsilon) : 1.0;
+    return this.analyticsService.getPrivacySafeAggregations(
+      req.user.id,
+      parsedEpsilon,
+    );
+  }
+
   @Get('user/:username')
   @ApiOperation({ summary: 'Get aggregated analytics for a specific user' })
   async getUserAnalytics(@Param('username') username: string) {
