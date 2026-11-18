@@ -13,7 +13,10 @@ function fixture() {
     },
     user: { update: jest.fn() },
     languageStat: { upsert: jest.fn() },
-    developerRating: { upsert: jest.fn() },
+    developerRating: {
+      findUnique: jest.fn().mockResolvedValue({ gamificationXp: 0, overall: 0 }),
+      upsert: jest.fn(),
+    },
     repository: {
       upsert: jest.fn(async ({ where, create, update }: any) => {
         const key = where.userId_githubRepoId;
