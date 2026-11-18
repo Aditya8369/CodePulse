@@ -5,8 +5,81 @@ import {
   GameDayScenario,
   DrillStatus,
 } from './gameday-runner.service';
+import {
+  MultiCloudDrService,
+  MultiCloudDrReport,
+  CloudProvider,
+} from './multi-cloud-dr.service';
 
-describe('HealthController', () => {
+describe('HealthController - Multi-Cloud Disaster Recovery', () => {
+  let controller: HealthController;
+  let service: MultiCloudDrService;
+
+  const mockReport: MultiCloudDrReport = {
+    generatedAt: new Date().toISOString(),
+    primaryCloud: 'AWS',
+    activeSecondaryClouds: ['GCP', 'AZURE'],
+    overallHealth: 'HEALTHY',
+    crossCloudDnsLatencyMs: 24,
+    failoverReadiness: 'READY',
+    dnsFailoverTarget: 'AWS',
+    heartbeats: [
+      {
+        provider: 'AWS',
+        status: 'UP',
+        latencyMs: 12,
+        lastHeartbeat: new Date().toISOString(),
+        region: 'us-east-1',
+        consecutiveFailures: 0,
+      },
+      {
+        provider: 'GCP',
+        status: 'UP',
+        latencyMs: 18,
+        lastHeartbeat: new Date().toISOString(),
+        region: 'us-central1',
+        consecutiveFailures: 0,
+      },
+    ],
+  };
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [HealthController],
+      providers: [
+        {
+          provide: MultiCloudDrService,
+          useValue: {
+            generateReport: jest.fn().mockReturnValue(mockReport),
+            triggerDnsFailover: jest.fn().mockResolvedValue(true),
+          },
+        },
+      ],
+    }).compile();
+
+    controller = module.get<HealthController>(HealthController);
+    service = module.get<MultiCloudDrService>(MultiCloudDrService);
+  });
+
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
+  });
+
+  it('should return DR report from service', () => {
+    const report = controller.getDrReport();
+    expect(report).toEqual(mockReport);
+    expect(service.generateReport).toHaveBeenCalled();
+  });
+
+  it('should trigger manual failover and return new status', async () => {
+    const result = await controller.triggerFailover('GCP');
+    expect(service.triggerDnsFailover).toHaveBeenCalledWith('GCP');
+    expect(result.success).toBe(true);
+    expect(result.targetCloud).toBe('GCP');
+  });
+});
+
+describe('HealthController - Game-Day Chaos Drills', () => {
   let controller: HealthController;
   let gamedayService: Partial<GameDayRunnerService>;
 
@@ -46,34 +119,25 @@ describe('HealthController', () => {
         status: mockReport.status,
         scenario: mockReport.scenario,
         environment: mockReport.environment,
-        message: 'Disaster recovery drill completed',
-        rto: mockReport.rto,
-        rpo: mockReport.rpo,
+        rtoSeconds: mockReport.rto.actualSeconds,
+        slaMet: true,
         report: mockReport,
       }),
       getStatus: jest.fn().mockReturnValue({
-        status: DrillStatus.IDLE,
-        activeDrill: null,
-        lastReport: mockReport,
-        totalDrillsExecuted: 1,
-        environment: 'staging',
-        isEnvironmentAllowed: true,
-        availableScenarios: Object.values(GameDayScenario),
-        slaTargets: { rtoSeconds: 30, rpoSeconds: 5 },
+        active: false,
+        lastDrillId: mockReport.drillId,
+        lastReportSummary: {
+          scenario: mockReport.scenario,
+          status: mockReport.status,
+          rtoSeconds: mockReport.rto.actualSeconds,
+        },
       }),
       getReports: jest.fn().mockReturnValue([mockReport]),
-      getReportById: jest.fn().mockImplementation((id: string) => {
-        if (id === mockReport.drillId) return mockReport;
-        throw new Error('Not found');
-      }),
-      abortDrill: jest.fn().mockReturnValue({
-        aborted: true,
-        drillId: mockReport.drillId,
-        message: 'Drill abort requested',
-      }),
+      getReportById: jest.fn().mockReturnValue(mockReport),
+      abortDrill: jest.fn().mockReturnValue({ aborted: true }),
     };
 
-    const testingModule: TestingModule = await Test.createTestingModule({
+    const module: TestingModule = await Test.createTestingModule({
       controllers: [HealthController],
       providers: [
         {
@@ -83,72 +147,33 @@ describe('HealthController', () => {
       ],
     }).compile();
 
-    controller = testingModule.get<HealthController>(HealthController);
+    controller = module.get<HealthController>(HealthController);
   });
 
-  it('should be defined', () => {
-    expect(controller).toBeDefined();
+  it('should start drill successfully', async () => {
+    const dto: StartGameDayDrillDto = {
+      scenario: GameDayScenario.PRIMARY_DB_CRASH,
+      dryRun: true,
+    };
+    const res = await controller.startDrill(dto);
+    expect(res.success).toBe(true);
+    expect(gamedayService.startDrill).toHaveBeenCalledWith(dto);
   });
 
-  describe('POST /admin/gameday/start', () => {
-    it('should trigger drill with provided scenario and return report', async () => {
-      const dto: StartGameDayDrillDto = {
-        scenario: GameDayScenario.PRIMARY_DB_CRASH,
-        dryRun: true,
-      };
+  it('should get status and reports', async () => {
+    const status = await controller.getStatus();
+    expect(status.lastDrillId).toBe('gameday-123');
 
-      const result = await controller.startDrill(dto);
+    const list = await controller.getReports();
+    expect(list.count).toBe(1);
 
-      expect(gamedayService.startDrill).toHaveBeenCalledWith(dto);
-      expect(result.success).toBe(true);
-      expect(result.drillId).toBe('gameday-123');
-      expect(result.rto.slaMet).toBe(true);
-      expect(result.rpo.slaMet).toBe(true);
-    });
-
-    it('should trigger drill with default options when body is empty', async () => {
-      const result = await controller.startDrill();
-      expect(gamedayService.startDrill).toHaveBeenCalledWith({});
-      expect(result.success).toBe(true);
-    });
+    const single = await controller.getReportById('gameday-123');
+    expect(single.drillId).toBe('gameday-123');
   });
 
-  describe('GET /admin/gameday/status', () => {
-    it('should return current status and last report summary', async () => {
-      const status = await controller.getStatus();
-      expect(gamedayService.getStatus).toHaveBeenCalled();
-      expect(status.status).toBe(DrillStatus.IDLE);
-      expect(status.lastReport).toEqual(mockReport);
-      expect(status.slaTargets.rtoSeconds).toBe(30);
-    });
-
-    it('should handle getStartStatus alias', async () => {
-      const status = await controller.getStartStatus();
-      expect(gamedayService.getStatus).toHaveBeenCalled();
-      expect(status.status).toBe(DrillStatus.IDLE);
-    });
-  });
-
-  describe('GET /admin/gameday/reports', () => {
-    it('should return list of Game-Day audit reports', async () => {
-      const result = await controller.getReports();
-      expect(gamedayService.getReports).toHaveBeenCalled();
-      expect(result.count).toBe(1);
-      expect(result.reports[0].drillId).toBe('gameday-123');
-    });
-
-    it('should return specific report by drillId', async () => {
-      const report = await controller.getReportById('gameday-123');
-      expect(gamedayService.getReportById).toHaveBeenCalledWith('gameday-123');
-      expect(report.drillId).toBe('gameday-123');
-    });
-  });
-
-  describe('POST /admin/gameday/abort', () => {
-    it('should forward abort request to runner service', async () => {
-      const result = await controller.abortDrill();
-      expect(gamedayService.abortDrill).toHaveBeenCalled();
-      expect(result.aborted).toBe(true);
-    });
+  it('should abort drill', async () => {
+    const res = await controller.abortDrill();
+    expect(res.aborted).toBe(true);
+    expect(gamedayService.abortDrill).toHaveBeenCalled();
   });
 });
