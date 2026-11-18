@@ -101,6 +101,30 @@ jobs:
             }
 
             // ==========================================
+            // 1C-2. AUTO-DELETE SPAM COMMENTS (VERCEL & CODERABBIT)
+            // ==========================================
+            try {
+              const allComments = await github.rest.issues.listComments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number
+              });
+              for (const c of (allComments.data || [])) {
+                const authorLogin = (c.user && c.user.login ? c.user.login.toLowerCase() : '');
+                if (authorLogin.includes('vercel') || authorLogin.includes('coderabbit')) {
+                  console.log(`Auto-deleting spam bot comment #${c.id} by @${authorLogin} on PR #${pr.number}...`);
+                  await github.rest.issues.deleteComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    comment_id: c.id
+                  });
+                }
+              }
+            } catch (err) {
+              console.warn(`Could not clean bot comments: ${err.message}`);
+            }
+
+            // ==========================================
             // 1D. CONVENTIONAL COMMITS PR TITLE VALIDATION
             // ==========================================
             const prTitle = (pr.title || "").trim();
