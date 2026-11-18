@@ -27,6 +27,7 @@ import { RepositoriesModule } from './modules/repositories/repositories.module';
 import { SecurityModule } from './modules/security/security.module';
 import { HealthModule } from './modules/health/health.module';
 import { CloudModule } from './modules/cloud/cloud.module';
+import { GraphModule } from './modules/graph/graph.module';
 import { ObservabilityModule } from './modules/observability/observability.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import { BullModule } from '@nestjs/bullmq';
@@ -89,6 +90,7 @@ import { LoadShedderMiddleware } from './common/middleware/load-shedder.middlewa
     SecurityModule,
     HealthModule,
     CloudModule,
+    GraphModule,
     ObservabilityModule,
   ],
   controllers: [AppController],

@@ -26,10 +26,10 @@ import {
 import {
   GameDayRunnerService,
   GameDayScenario,
-  GameDayReport,
 } from './gameday-runner.service';
-import {
-  MultiCloudDrService,
+import type { GameDayReport } from './gameday-runner.service';
+import { MultiCloudDrService } from './multi-cloud-dr.service';
+import type {
   MultiCloudDrReport,
   CloudProvider,
 } from './multi-cloud-dr.service';
