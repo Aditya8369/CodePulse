@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { ReplicaBalancerService } from './replica-balancer.service';
+import { ShardingRouterService } from './sharding-router.service';
 import { VaultService } from '../modules/security/vault.service';
 
 const DEFAULT_SLOW_QUERY_THRESHOLD_MS = 200;
@@ -45,6 +46,8 @@ export class PrismaService
     public readonly replicaBalancer?: ReplicaBalancerService,
     @Optional()
     public readonly vaultService?: VaultService,
+    @Optional()
+    public readonly shardingRouter?: ShardingRouterService,
   ) {
     const dynamicCreds = vaultService?.getCurrentDatabaseCredential();
     const baseDbUrl = process.env.DATABASE_URL;
@@ -113,5 +116,40 @@ export class PrismaService
       return this.replicaBalancer.executeRead(operationName, args, action);
     }
     return action(this);
+  }
+
+  /**
+   * Executes a database operation routed to the tenant's dedicated database shard
+   * via consistent hashing on organizationId / guildId.
+   */
+  async executeOnTenantShard<T>(
+    tenantId: string | undefined | null,
+    action: (client: PrismaClient) => Promise<T>,
+  ): Promise<T> {
+    if (this.shardingRouter) {
+      return this.shardingRouter.executeOnTenantShard(tenantId, (client) =>
+        action(client),
+      );
+    }
+    return action(this);
+  }
+
+  /**
+   * Cross-shard Scatter-Gather executor:
+   * Fans out queries across all database shards in parallel and aggregates the sorted results.
+   */
+  async scatterGather<T>(
+    queryFn: (client: PrismaClient, shardId: string) => Promise<T[]>,
+    sortFn?: (a: T, b: T) => number,
+    limit?: number,
+  ): Promise<T[]> {
+    if (this.shardingRouter) {
+      return this.shardingRouter.scatterGather(queryFn, sortFn, limit);
+    }
+    const results = await queryFn(this, 'default');
+    if (sortFn) results.sort(sortFn);
+    return typeof limit === 'number' && limit > 0
+      ? results.slice(0, limit)
+      : results;
   }
 }

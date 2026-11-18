@@ -2,12 +2,23 @@ import { Global, Module } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
 import { DeadlockDetectorService } from '../common/monitoring/deadlock-detector.service';
 import { ReplicaBalancerService } from './replica-balancer.service';
+import { ShardingRouterService } from './sharding-router.service';
 import { SecurityModule } from '../modules/security/security.module';
 
 @Global()
 @Module({
   imports: [SecurityModule],
-  providers: [PrismaService, DeadlockDetectorService, ReplicaBalancerService],
-  exports: [PrismaService, DeadlockDetectorService, ReplicaBalancerService],
+  providers: [
+    PrismaService,
+    DeadlockDetectorService,
+    ReplicaBalancerService,
+    ShardingRouterService,
+  ],
+  exports: [
+    PrismaService,
+    DeadlockDetectorService,
+    ReplicaBalancerService,
+    ShardingRouterService,
+  ],
 })
 export class PrismaModule {}
