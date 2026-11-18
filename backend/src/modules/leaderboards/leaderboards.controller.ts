@@ -1,6 +1,7 @@
 import { Controller, Get, Query, Req, UseGuards, Param, ParseIntPipe } from '@nestjs/common';
 import { LeaderboardsService } from './leaderboards.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { PowChallengeGuard } from '../../common/guards/pow-challenge.guard';
 import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 
 @ApiTags('Leaderboards')
@@ -47,6 +48,7 @@ export class LeaderboardsController {
   }
 
   @Get('user/:username')
+  @UseGuards(PowChallengeGuard)
   @ApiOperation({ summary: 'Search and get specific user profile stats' })
   async getUserProfile(@Param('username') username: string) {
     return this.leaderboardsService.searchProfile(username);

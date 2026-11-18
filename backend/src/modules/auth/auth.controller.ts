@@ -11,6 +11,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagg
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import type { Request } from 'express';
 import { AuthService } from './auth.service';
+import { PowChallengeGuard } from '../../common/guards/pow-challenge.guard';
 import {
   AuthResponseDto,
   EmailPasswordDto,
@@ -43,6 +44,7 @@ export class AuthController {
   }
 
   @Post('register')
+  @UseGuards(PowChallengeGuard)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create an account with email and password' })
   async register(@Body() registerDto: RegisterDto): Promise<AuthResponseDto> {

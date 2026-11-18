@@ -1,3 +1,4 @@
+import { SecurityModule } from '../security/security.module';
 import { Module } from '@nestjs/common';
 import { QueuesModule } from '../queues/queues.module';
 import { LeaderboardsController } from './leaderboards.controller';
@@ -8,7 +9,7 @@ import { CountryNormalizerService } from './country-normalizer.service';
 import { LeaderboardWorker } from './leaderboard.worker';
 
 @Module({
-  imports: [QueuesModule],
+  imports: [SecurityModule, QueuesModule],
   controllers: [LeaderboardsController],
   providers: [
     LeaderboardsService,
