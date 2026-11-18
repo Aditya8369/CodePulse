@@ -1,10 +1,10 @@
 import * as k8s from "@kubernetes/client-node";
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import {
-  ExecutionRunnerOperator,
-  ExecutionRunnerPoolCustomResource,
+  RunnerOperator,
+  RunnerPoolCustomResource,
   IKubernetesClientWrapper,
-  DeepProbeResult,
+  GrpcHealthProbeResult,
 } from "./runner-operator";
 
 class MockKubernetesClient implements IKubernetesClientWrapper {
@@ -12,7 +12,7 @@ class MockKubernetesClient implements IKubernetesClientWrapper {
   public deletedPods: Array<{ name: string; gracePeriod: number }> = [];
   public createdPods: k8s.V1Pod[] = [];
   public updatedStatus: unknown = null;
-  public probeResponses: Map<string, DeepProbeResult> = new Map();
+  public probeResponses: Map<string, GrpcHealthProbeResult> = new Map();
 
   listPods(): Promise<k8s.V1PodList> {
     const podList: k8s.V1PodList = {
@@ -47,241 +47,155 @@ class MockKubernetesClient implements IKubernetesClientWrapper {
     _namespace: string,
     _plural: string,
     _name: string,
-    status: unknown,
+    status: any,
   ): Promise<void> {
     this.updatedStatus = status;
     return Promise.resolve();
   }
 
-  probePodHealth(podIp: string): Promise<DeepProbeResult> {
+  probeGrpcHealth(podIp: string): Promise<GrpcHealthProbeResult> {
     if (this.probeResponses.has(podIp)) {
       return Promise.resolve(this.probeResponses.get(podIp)!);
     }
     return Promise.resolve({
       healthy: true,
-      memoryUsageMb: 120,
+      cpuPercent: 15.0,
+      memoryPercent: 20.0,
       zombieProcesses: 0,
       activeExecutions: 0,
+      diskFull: false,
     });
   }
 }
 
-describe("ExecutionRunnerOperator", () => {
+describe("RunnerOperator Vitest Suite", () => {
   let mockClient: MockKubernetesClient;
-  let operator: ExecutionRunnerOperator;
-  let poolCR: ExecutionRunnerPoolCustomResource;
+  let operator: RunnerOperator;
+  let sampleCRD: RunnerPoolCustomResource;
 
   beforeEach(() => {
     mockClient = new MockKubernetesClient();
-    operator = new ExecutionRunnerOperator(mockClient, "codepulse-runners");
+    operator = new RunnerOperator(mockClient, "codepulse-runners");
 
-    poolCR = {
+    sampleCRD = {
       apiVersion: "codepulse.io/v1alpha1",
-      kind: "ExecutionRunnerPool",
+      kind: "RunnerPool",
       metadata: {
-        name: "tournament-runner-pool",
+        name: "tournament-pool",
         namespace: "codepulse-runners",
       },
       spec: {
-        warmPoolSize: 5,
-        maxConcurrentBusy: 50,
-        runnerImage: "ghcr.io/codepulse/execution-sandbox:latest",
-        maxMemoryMb: 512,
-        deepProbeIntervalSeconds: 2,
-        deepProbePath: "/healthz/deep",
-        recycleTimeoutSeconds: 5,
+        minRunners: 3,
+        maxRunners: 10,
+        runnerImage: "ghcr.io/codepulse/runner-sandbox:latest",
+        targetQueueWaitSeconds: 3.0,
+        healthThresholds: {
+          cpuThresholdPercent: 95.0,
+          memoryThresholdPercent: 95.0,
+          sustainedThresholdSeconds: 30,
+          executionTimeoutSeconds: 15,
+        },
       },
     };
   });
 
-  afterEach(() => {
-    operator.stopReconciliationLoop();
-  });
+  describe("Reconciliation & Initial Pod Provisioning", () => {
+    it("should provision minRunners when pool is empty", async () => {
+      const status = await operator.reconcile(sampleCRD, 0);
 
-  describe("Warm Pool Provisioning & Reconciliation", () => {
-    it("should provision warm pods up to warmPoolSize (5 pods) on cold start", async () => {
-      const status = await operator.reconcile(poolCR);
-
-      expect(status.warmPods).toBe(5);
-      expect(status.busyPods).toBe(0);
+      expect(status).toBeDefined();
+      expect(status.currentRunners).toBe(3);
+      expect(status.readyRunners).toBe(3);
+      expect(mockClient.createdPods.length).toBe(3);
       expect(status.phase).toBe("Ready");
-      expect(mockClient.createdPods.length).toBe(5);
-
-      // Verify each created pod manifest structure
-      for (const pod of mockClient.createdPods) {
-        expect(pod.metadata?.labels?.["codepulse.io/state"]).toBe("warm");
-        expect(pod.spec?.terminationGracePeriodSeconds).toBe(0); // instant kill guarantee
-        expect(pod.spec?.containers?.[0].image).toBe(
-          "ghcr.io/codepulse/execution-sandbox:latest",
-        );
-      }
-    });
-
-    it("should maintain existing healthy warm and busy pods without unneeded pod creations", async () => {
-      // Seed 3 warm pods and 2 busy pods
-      for (let i = 0; i < 3; i++) {
-        mockClient.pods.set(`warm-pod-${i}`, {
-          metadata: {
-            name: `warm-pod-${i}`,
-            labels: { "codepulse.io/state": "warm" },
-          },
-          status: { phase: "Running", podIP: `10.244.0.1${i}` },
-        });
-      }
-      for (let i = 0; i < 2; i++) {
-        mockClient.pods.set(`busy-pod-${i}`, {
-          metadata: {
-            name: `busy-pod-${i}`,
-            labels: { "codepulse.io/state": "busy" },
-          },
-          status: { phase: "Running", podIP: `10.244.0.2${i}` },
-        });
-      }
-
-      // Pool needs 5 warm pods, currently has 3 -> should create only 2 more warm pods
-      const status = await operator.reconcile(poolCR);
-
-      expect(status.warmPods).toBe(5);
-      expect(status.busyPods).toBe(2);
-      expect(mockClient.createdPods.length).toBe(2);
     });
   });
 
-  describe("Self-Healing: Poisoned & Degraded Runner Recycling (< 5s)", () => {
-    it("should recycle pod instantly when native OOMKilled or CrashLoopBackOff is detected", async () => {
-      // Seed 5 warm pods, one with terminated OOMKilled error
-      for (let i = 0; i < 4; i++) {
-        mockClient.pods.set(`warm-pod-${i}`, {
-          metadata: {
-            name: `warm-pod-${i}`,
-            labels: { "codepulse.io/state": "warm" },
-          },
-          status: { phase: "Running", podIP: `10.244.0.1${i}` },
-        });
-      }
-      mockClient.pods.set("crashed-pod-oom", {
-        metadata: {
-          name: "crashed-pod-oom",
-          labels: { "codepulse.io/state": "warm" },
-        },
-        status: {
-          phase: "Failed",
-          containerStatuses: [
-            {
-              name: "execution-runner",
-              image: "test",
-              imageID: "test-id",
-              ready: false,
-              restartCount: 3,
-              state: {
-                terminated: {
-                  exitCode: 137,
-                  reason: "OOMKilled",
-                },
-              },
-            },
-          ],
-        },
+  describe("Degraded Pod Detection & Self-Healing", () => {
+    it("should terminate and replace zombie compiler pods hanging beyond execution timeout", async () => {
+      // Pre-populate with a healthy pod and a zombie pod
+      const zombiePod: k8s.V1Pod = {
+        metadata: { name: "runner-zombie-1" },
+        status: { phase: "Running", podIP: "10.244.0.5" },
+      };
+      mockClient.pods.set("runner-zombie-1", zombiePod);
+
+      mockClient.probeResponses.set("10.244.0.5", {
+        healthy: false,
+        cpuPercent: 50.0,
+        memoryPercent: 40.0,
+        zombieProcesses: 2, // Zombie detected
+        activeExecutions: 1,
+        executionAgeSeconds: 25, // Exceeds 15s timeout
+        diskFull: false,
       });
 
-      const status = await operator.reconcile(poolCR);
+      const status = await operator.reconcile(sampleCRD, 0);
 
-      expect(mockClient.deletedPods).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({ name: "crashed-pod-oom", gracePeriod: 0 }),
-        ]),
-      );
-      expect(status.recycledPodsTotal).toBe(1);
-      expect(status.lastRecycleDurationMs).toBeLessThan(5000); // < 5s SLA
-      expect(status.warmPods).toBe(5); // warm pool replenished
+      expect(mockClient.deletedPods.some((p) => p.name === "runner-zombie-1")).toBe(true);
+      expect(status.restartedRunnersTotal).toBe(1);
+      expect(status.phase).toBe("Healing");
+      expect(status.mttrSeconds).toBeLessThan(10); // Recovers within 10s
     });
 
-    it("should detect memory leak via /healthz/deep (> 512MB) and immediately recycle pod", async () => {
-      // Setup 5 running warm pods
-      for (let i = 0; i < 5; i++) {
-        mockClient.pods.set(`warm-pod-${i}`, {
-          metadata: {
-            name: `warm-pod-${i}`,
-            labels: { "codepulse.io/state": "warm" },
-          },
-          status: { phase: "Running", podIP: `10.244.0.1${i}` },
-        });
-      }
+    it("should evict pods sustaining >95% CPU/Memory threshold for 30s", async () => {
+      const saturatedPod: k8s.V1Pod = {
+        metadata: { name: "runner-saturated-1" },
+        status: { phase: "Running", podIP: "10.244.0.9" },
+      };
+      mockClient.pods.set("runner-saturated-1", saturatedPod);
 
-      // Configure deep probe on pod 2 to report 768MB memory (> 512MB maxMemoryMb)
-      mockClient.probeResponses.set("10.244.0.12", {
-        healthy: true,
-        memoryUsageMb: 768,
+      mockClient.probeResponses.set("10.244.0.9", {
+        healthy: false,
+        cpuPercent: 98.0, // > 95% threshold
+        memoryPercent: 96.0,
         zombieProcesses: 0,
         activeExecutions: 1,
+        diskFull: false,
       });
 
-      const status = await operator.reconcile(poolCR);
+      // First reconcile: records first degraded observation, doesn't evict yet
+      await operator.reconcile(sampleCRD, 0);
+      expect(mockClient.deletedPods.length).toBe(0);
 
-      expect(mockClient.deletedPods).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({ name: "warm-pod-2", gracePeriod: 0 }),
-        ]),
-      );
-      expect(status.phase).toBe("Healing");
-      expect(status.recycledPodsTotal).toBe(1);
-      expect(status.warmPods).toBe(5);
-    });
+      // Advance mock time past 30s
+      const origDateNow = Date.now;
+      try {
+        Date.now = () => origDateNow() + 35000;
 
-    it("should detect zombie process leak via /healthz/deep and trigger instant recycling", async () => {
-      mockClient.pods.set("warm-pod-zombie", {
-        metadata: {
-          name: "warm-pod-zombie",
-          labels: { "codepulse.io/state": "warm" },
-        },
-        status: { phase: "Running", podIP: "10.244.0.99" },
-      });
-
-      mockClient.probeResponses.set("10.244.0.99", {
-        healthy: false,
-        memoryUsageMb: 150,
-        zombieProcesses: 4,
-        activeExecutions: 0,
-        reason: "Zombie processes detected: 4",
-      });
-
-      const status = await operator.reconcile(poolCR);
-
-      expect(mockClient.deletedPods).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({ name: "warm-pod-zombie", gracePeriod: 0 }),
-        ]),
-      );
-      expect(status.recycledPodsTotal).toBe(1);
+        await operator.reconcile(sampleCRD, 0);
+        expect(mockClient.deletedPods.some((p) => p.name === "runner-saturated-1")).toBe(true);
+      } finally {
+        Date.now = origDateNow;
+      }
     });
   });
 
-  describe("Prometheus Metrics & Observability", () => {
-    it("should export standard Prometheus metrics for Grafana dashboards", async () => {
-      await operator.reconcile(poolCR);
+  describe("Dynamic Autoscaling under Battle Queue Pressure", () => {
+    it("should autoscale runner pods when queue wait time exceeds 3 seconds", async () => {
+      // Pool at minRunners (3)
+      await operator.reconcile(sampleCRD, 0);
+      expect(mockClient.pods.size).toBe(3);
 
-      const metrics = operator.exportPrometheusMetrics();
+      // Surge queue wait time: 4.5s (> 3.0s target)
+      const scaledStatus = await operator.reconcile(sampleCRD, 4.5);
 
-      expect(metrics).toContain(
-        'codepulse_runner_warm_pods{namespace="codepulse-runners"} 5',
-      );
-      expect(metrics).toContain(
-        'codepulse_runner_busy_pods{namespace="codepulse-runners"} 0',
-      );
-      expect(metrics).toContain(
-        'codepulse_runner_recycled_total{namespace="codepulse-runners"} 0',
-      );
-      expect(metrics).toContain(
-        'codepulse_runner_last_recycle_duration_ms{namespace="codepulse-runners"}',
-      );
-      expect(metrics).toContain(
-        'codepulse_runner_avg_recycle_duration_ms{namespace="codepulse-runners"}',
-      );
+      expect(scaledStatus.phase).toBe("Scaling");
+      expect(scaledStatus.currentRunners).toBeGreaterThan(3);
+      expect(scaledStatus.currentRunners).toBeLessThanOrEqual(10); // Capped by maxRunners
+      expect(scaledStatus.lastAutoscaleTime).toBeDefined();
+    });
+  });
 
-      const poolMetrics = operator.getMetrics();
-      expect(poolMetrics.warmPods).toBe(5);
-      expect(poolMetrics.busyPods).toBe(0);
-      expect(poolMetrics.recycledPodsTotal).toBe(0);
+  describe("Prometheus Metrics Export", () => {
+    it("should output Prometheus format metrics tracking capacity, restarts, and MTTR", async () => {
+      const status = await operator.reconcile(sampleCRD, 0);
+      const metrics = operator.getPrometheusMetrics(status);
+
+      expect(metrics).toContain("codepulse_runner_pool_capacity 3");
+      expect(metrics).toContain("codepulse_runner_pool_ready_runners 3");
+      expect(metrics).toContain("codepulse_runner_pool_restarts_total");
+      expect(metrics).toContain("codepulse_runner_pool_mttr_seconds");
     });
   });
 });
