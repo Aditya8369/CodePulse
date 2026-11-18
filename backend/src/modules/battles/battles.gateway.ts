@@ -14,6 +14,7 @@ import { MetricsService } from '../metrics/metrics.service';
 import { ZkpVerifierService } from '../crypto/zkp-verifier.service';
 import type { ZkpVerificationRequest } from '../crypto/zkp-verifier.service';
 import { DisruptorRingBuffer } from '../../common/concurrency/disruptor-ring-buffer';
+import { WatermarkService } from './watermark.service';
 
 interface PlayerState {
   userId: string;
@@ -55,6 +56,7 @@ export class BattlesGateway
   constructor(
     private readonly metrics: MetricsService,
     @Optional() private readonly zkpService?: ZkpVerifierService,
+    @Optional() private readonly watermarkService?: WatermarkService,
   ) {}
 
   @WebSocketServer()
@@ -366,5 +368,70 @@ export class BattlesGateway
         error: err.message,
       });
     }
+  }
+
+  @SubscribeMessage('tab_focus_change')
+  handleTabFocusChange(
+    @ConnectedSocket() client: Socket,
+    @MessageBody()
+    data: {
+      battleId: string;
+      userId: string;
+      event: 'blur' | 'focus' | 'visibility_hidden' | 'visibility_visible';
+    },
+  ) {
+    if (this.watermarkService) {
+      const recorded = this.watermarkService.recordTabFocusChange(
+        data.battleId,
+        data.userId,
+        data.event,
+        Date.now(),
+      );
+
+      // Alert battle channel if focus lost
+      if (data.event === 'blur' || data.event === 'visibility_hidden') {
+        this.server.to(`battle:${data.battleId}`).emit('anti_ghosting_warning', {
+          userId: data.userId,
+          message: 'Player switched away from active battle screen',
+          timestamp: recorded.timestamp,
+        });
+      }
+    }
+  }
+
+  @SubscribeMessage('request_spectator_stream')
+  handleSpectatorStreamRequest(
+    @ConnectedSocket() client: Socket,
+    @MessageBody()
+    data: {
+      battleId: string;
+      spectatorId: string;
+    },
+  ) {
+    const ipAddress =
+      client.handshake.headers['x-forwarded-for']?.toString() ||
+      client.handshake.address ||
+      '127.0.0.1';
+
+    if (this.watermarkService) {
+      const watermark = this.watermarkService.generateSteganographicWatermark({
+        spectatorId: data.spectatorId,
+        ipAddress,
+        timestamp: Date.now(),
+        matchId: data.battleId,
+      });
+
+      client.emit('spectator_stream_initialized', {
+        battleId: data.battleId,
+        delaySeconds: this.watermarkService.getSpectatorDelay(),
+        watermark: {
+          signature: watermark.signature,
+          luminanceModulationMap: watermark.luminanceModulationMap,
+          timestamp: watermark.timestamp,
+        },
+      });
+    }
+
+    void client.join(`spectator:${data.battleId}`);
   }
 }
