@@ -1,9 +1,18 @@
-import { BadGatewayException, BadRequestException, Injectable, Inject, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import {
+  BadGatewayException,
+  BadRequestException,
+  Injectable,
+  Inject,
+  NotFoundException,
+  Optional,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
 import axios from 'axios';
+import { DifferentialPrivacyService } from './differential-privacy.service';
 
 type GitHubCommit = { commit?: { committer?: { date?: string }; author?: { date?: string } } };
 type PunchcardCache = { timestamps: string[]; truncated: boolean };
@@ -16,6 +25,7 @@ export class AnalyticsService {
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
     @Inject(CACHE_MANAGER) private readonly cache: Cache,
+    @Optional() private readonly dpService?: DifferentialPrivacyService,
   ) {}
 
   async getRepositoryCommitPunchcard(userId: string, repositoryId: string, timezone = 'UTC') {
@@ -107,6 +117,58 @@ export class AnalyticsService {
       stats: user.stats,
       languages: user.languages,
       // More aggregated data can be added here (e.g. contribution heatmap data)
+    };
+  }
+
+  async getPrivacySafeAggregations(userId: string, epsilon = 1.0) {
+    const dp = this.dpService ?? new DifferentialPrivacyService();
+    const users = await this.prisma.user.findMany({
+      include: { stats: true },
+      take: 250,
+    });
+
+    const cohortData = users.map((u) => {
+      const statsRecord = (u.stats ?? {}) as Record<string, unknown>;
+      const xpVal =
+        typeof statsRecord.xp === 'number'
+          ? statsRecord.xp
+          : typeof statsRecord.totalCommits === 'number'
+            ? statsRecord.totalCommits
+            : 0;
+      return {
+        id: u.id,
+        metric: xpVal,
+      };
+    });
+
+    const privacyResult = dp.privatizeQuery(
+      cohortData,
+      (item) => item.metric,
+      {
+        epsilon,
+        sensitivity: 1000,
+        consumerKey: userId,
+        maxAllowedBudget: 10.0,
+      },
+    );
+
+    const budgetStatus = dp.getBudgetStatus(userId, 10.0);
+
+    return {
+      query: 'platform-developer-metric-aggregate',
+      epsilonRequested: epsilon,
+      privacyBudget: budgetStatus,
+      cohortAnalysis: {
+        rawCohortSize: cohortData.length,
+        suppressed: privacyResult.suppressed,
+        minCohortThreshold: 5,
+      },
+      result: privacyResult.suppressed
+        ? null
+        : {
+            noisyAggregateValue: privacyResult.noisyValue,
+            noiseMechanism: `Laplace(sensitivity=1000, epsilon=${epsilon})`,
+          },
     };
   }
 }
