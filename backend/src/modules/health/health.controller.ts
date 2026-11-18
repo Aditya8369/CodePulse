@@ -38,6 +38,12 @@ import type {
   GeoDnsStatusReport,
   RouteOptimizationDecision,
 } from './geo-dns.service';
+import { ChaosRunnerService } from './chaos-runner.service';
+import type {
+  ChaosExperimentResult,
+  ResilienceScorecard,
+} from './chaos-runner.service';
+import { RunChaosExperimentDto } from './dto/chaos-experiment.dto';
 
 export class DivertTrafficDto {
   fromRegion!: string;
@@ -111,6 +117,7 @@ export class HealthController {
     @Optional() private readonly gamedayService?: GameDayRunnerService,
     @Optional() private readonly multiCloudDrService?: MultiCloudDrService,
     @Optional() private readonly geoDnsService?: GeoDnsService,
+    @Optional() private readonly chaosRunner?: ChaosRunnerService,
   ) {}
 
   @Get()
@@ -312,5 +319,89 @@ export class HealthController {
       throw new BadRequestException('GameDayRunnerService is not available');
     }
     return this.gamedayService.abortDrill();
+  }
+
+  // --- Chaos Engineering & Disaster Recovery Game-Day Drill Runner Endpoints ---
+
+  @Post('chaos/experiment')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Schedule and execute a controlled Chaos Engineering experiment',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Chaos experiment executed and resilience scorecard generated',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid blast radius configuration or experiment parameters',
+  })
+  async runChaosExperiment(
+    @Body() dto: RunChaosExperimentDto,
+  ): Promise<ChaosExperimentResult> {
+    if (!this.chaosRunner) {
+      throw new BadRequestException('ChaosRunnerService is not available');
+    }
+    return this.chaosRunner.executeExperiment(dto);
+  }
+
+  @Post('chaos/abort/:id')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Manually abort an active chaos experiment',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Chaos experiment aborted successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Chaos experiment not active or service unavailable',
+  })
+  async abortChaosExperiment(
+    @Param('id') id: string,
+    @Body('reason') reason?: string,
+  ): Promise<ChaosExperimentResult> {
+    if (!this.chaosRunner) {
+      throw new BadRequestException('ChaosRunnerService is not available');
+    }
+    return this.chaosRunner.abortExperiment(
+      id,
+      reason || 'Manual operator trigger',
+    );
+  }
+
+  @Get('chaos/scorecard')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Generate Executive Resilience Scorecard from chaos experiments',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Resilience scorecard generated',
+  })
+  getChaosScorecard(): ResilienceScorecard {
+    if (!this.chaosRunner) {
+      throw new BadRequestException('ChaosRunnerService is not available');
+    }
+    return this.chaosRunner.generateScorecard();
+  }
+
+  @Get('chaos/active')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get currently active chaos experiment if running',
+  })
+  getActiveChaosExperiment(): { active: boolean; experiment: ChaosExperimentResult | null } {
+    if (!this.chaosRunner) {
+      throw new BadRequestException('ChaosRunnerService is not available');
+    }
+    const experiment = this.chaosRunner.getActiveExperiment();
+    return {
+      active: !!experiment,
+      experiment,
+    };
   }
 }
