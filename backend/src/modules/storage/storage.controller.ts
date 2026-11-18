@@ -11,13 +11,41 @@ import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { MmapStorageService } from './mmap-storage.service';
 import type { MmapEngineStats } from './mmap-storage.service';
+import { HsmService } from './hsm.service';
+import type { StorageTierAuditReport } from './hsm.service';
 
 @ApiTags('storage')
-@Controller('storage/monaco')
+@Controller('storage')
 export class StorageController {
-  constructor(private readonly mmapStorage: MmapStorageService) {}
+  constructor(
+    private readonly mmapStorage: MmapStorageService,
+    private readonly hsmService: HsmService,
+  ) {}
 
-  @Get('stats')
+  @Get('tiers/audit')
+  @ApiOperation({
+    summary:
+      'Audit multi-tier hierarchical storage distribution (Hot NVMe, Warm S3, Cold Glacier) and cost savings',
+  })
+  async getStorageTiersAudit(): Promise<StorageTierAuditReport> {
+    return this.hsmService.getStorageTierAudit();
+  }
+
+  @Get('commit/:repositoryId/:commitSha')
+  @ApiOperation({
+    summary:
+      'Transparently retrieve commit diff across Hot SSD, Warm S3, or Cold Glacier storage tiers',
+  })
+  @ApiParam({ name: 'repositoryId', description: 'Repository ID' })
+  @ApiParam({ name: 'commitSha', description: 'Commit SHA hash' })
+  async getCommitDiff(
+    @Param('repositoryId') repositoryId: string,
+    @Param('commitSha') commitSha: string,
+  ) {
+    return this.hsmService.getCommitDiff(repositoryId, commitSha);
+  }
+
+  @Get('monaco/stats')
   @ApiOperation({
     summary: 'Get Memory-Mapped File (mmap) Storage Engine zero-copy performance metrics',
   })
@@ -25,7 +53,7 @@ export class StorageController {
     return this.mmapStorage.getStats();
   }
 
-  @Post('reload/*assetKey')
+  @Post('monaco/reload/*assetKey')
   @ApiOperation({
     summary: 'Hot-reload and remap a Monaco asset into virtual memory without restart',
   })
@@ -42,7 +70,7 @@ export class StorageController {
     };
   }
 
-  @Get('*assetKey')
+  @Get('monaco/*assetKey')
   @ApiOperation({
     summary:
       'Serve Monaco WebWorker bundles and language grammars directly from OS memory-mapped virtual memory (Zero-Copy)',

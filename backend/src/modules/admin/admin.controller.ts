@@ -26,6 +26,8 @@ import { AcmeCertService } from '../security/acme-cert.service';
 import type { SslStatusResponse } from '../security/acme-cert.service';
 import { ThreatDetectorService } from '../security/threat-detector.service';
 import type { ThreatTelemetryDashboard } from '../security/threat-detector.service';
+import { HsmService } from '../storage/hsm.service';
+import type { StorageTierAuditReport } from '../storage/hsm.service';
 
 @ApiTags('admin')
 @Controller('admin')
@@ -35,6 +37,7 @@ export class AdminController {
     @Optional() private readonly acmeCertService?: AcmeCertService,
     @Optional() private readonly dynamicConfigService?: DynamicConfigService,
     @Optional() private readonly threatDetectorService?: ThreatDetectorService,
+    @Optional() private readonly hsmService?: HsmService,
   ) {}
 
   @Delete('user/:id')
@@ -173,5 +176,20 @@ export class AdminController {
       throw new BadRequestException('ThreatDetectorService is not available');
     }
     return this.threatDetectorService.getThreatTelemetry();
+  }
+
+  // --- Hierarchical Storage Management (HSM) Tier Audit ---
+
+  @Get('storage-tiers')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Audit multi-tier hierarchical storage distribution (Hot NVMe, Warm S3, Cold Glacier) and cost savings',
+  })
+  async getStorageTiers(): Promise<StorageTierAuditReport> {
+    if (!this.hsmService) {
+      throw new BadRequestException('HsmService is not available');
+    }
+    return this.hsmService.getStorageTierAudit();
   }
 }
