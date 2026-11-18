@@ -8,6 +8,7 @@ import { ThemeFavicon } from "@/components/layout/theme-favicon";
 import { ColorVisionSync } from "@/components/theme/color-vision-sync";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "sonner";
+import { LocalizationProvider } from "@/components/layout/language-selector";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -32,9 +33,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
       >
         <ThemeFavicon />
         <ColorVisionSync />
-        <TooltipProvider delay={0}>
-          {children}
-        </TooltipProvider>
+        <LocalizationProvider>
+          <TooltipProvider delay={0}>
+            {children}
+          </TooltipProvider>
+        </LocalizationProvider>
         <Toaster
           theme="dark"
           position="bottom-right"

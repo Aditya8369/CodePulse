@@ -1,0 +1,20 @@
+{
+  "app.name": "CodePulse",
+  "app.tagline": "منصة تحليلات مطوري GitHub والتلعيب",
+  "nav.dashboard": "لوحة التحكم",
+  "nav.repositories": "المستودعات",
+  "nav.leaderboard": "لوحة المتصدرين",
+  "nav.battles": "المعارك البرمجية",
+  "nav.challenges": "التحديات",
+  "nav.analytics": "التحليلات",
+  "nav.settings": "الإعدادات",
+  "topbar.searchPlaceholder": "ابحث عن المطورين أو المستودعات أو الأوامر...",
+  "topbar.languageSelector": "اختر اللغة",
+  "topbar.rtlBadge": "من اليمين لليسار",
+  "dashboard.welcome": "مرحبًا بعودتك، {name}!",
+  "dashboard.commitSummary": "{count, plural, =0 {لا توجد إيداعات اليوم} one {إيداع واحد (#) اليوم} two {إيداعان (#) اليوم} few {# إيداعات اليوم} many {# إيداعًا اليوم} other {# إيداع اليوم}}",
+  "dashboard.streakStatus": "{days, plural, =0 {ابدأ سلسلتك اليوم} one {سلسلة نشطة ليوم واحد (#)} other {سلسلة نشطة لمدة # أيام}}",
+  "dashboard.mentorGreeting": "{gender, select, female {لقد وصلت إلى دوري الألماس!} male {لقد وصل إلى دوري الألماس!} other {لقد وصلوا إلى دوري الألماس!}}",
+  "battles.activeCount": "{count, plural, =0 {لا توجد معارك نشطة} one {معركة نشطة واحدة (#)} other {# معارك نشطة}}",
+  "notifications.unread": "{count, plural, =0 {لا توجد إشعارات غير مقروءة} one {إشعار واحد (#) غير مقروء} other {# إشعارات غير مقروءة}}"
+}

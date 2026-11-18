@@ -16,6 +16,7 @@ import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import { useNotifications } from "@/hooks/api/use-notifications";
 import { NotificationDropdown } from "@/components/layout/notification-dropdown";
+import { LanguageSelector } from "@/components/layout/language-selector";
 import { useCurrentUser } from "@/hooks/api/use-auth";
 import { NAV_ITEMS } from "@/lib/constants";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -385,6 +386,7 @@ export function Topbar({ onOpenCommandPalette }: TopbarProps) {
           <Search className="h-[18px] w-[18px]" />
         </motion.button>
 
+        <LanguageSelector />
         <NotificationBell />
         <ThemeToggle />
 
