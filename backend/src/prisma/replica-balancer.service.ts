@@ -3,6 +3,7 @@ import {
   Logger,
   OnModuleInit,
   OnModuleDestroy,
+  Optional,
 } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 
@@ -73,7 +74,7 @@ export class ReplicaBalancerService implements OnModuleInit, OnModuleDestroy {
   private readonly statuses: Map<string, ReplicaNodeStatus> = new Map();
   private readonly nodeLatencies: Map<string, number[]> = new Map();
 
-  constructor(clientAdapter?: IReplicaClientAdapter) {
+  constructor(@Optional() clientAdapter?: any) {
     this.clientAdapter = clientAdapter || this.createDefaultAdapter();
     this.initializeDefaultReplicaNodes();
   }
