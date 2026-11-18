@@ -358,6 +358,8 @@ model Battle {
   winnerId           String?
   forfeitedById      String?
   cancellationReason String?
+  zkpProofHash       String?
+  zkpVerifiedAt      DateTime?
   challenger         User         @relation("BattleChallenger", fields: [challengerId], references: [id])
   opponent           User         @relation("BattleOpponent", fields: [opponentId], references: [id])
   winner             User?        @relation("BattleWinner", fields: [winnerId], references: [id])
