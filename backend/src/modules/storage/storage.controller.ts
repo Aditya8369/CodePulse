@@ -1,0 +1,78 @@
+import {
+  Controller,
+  Get,
+  Param,
+  Res,
+  Headers,
+  HttpStatus,
+  Post,
+} from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
+import type { Response } from 'express';
+import { MmapStorageService } from './mmap-storage.service';
+import type { MmapEngineStats } from './mmap-storage.service';
+
+@ApiTags('storage')
+@Controller('storage/monaco')
+export class StorageController {
+  constructor(private readonly mmapStorage: MmapStorageService) {}
+
+  @Get('stats')
+  @ApiOperation({
+    summary: 'Get Memory-Mapped File (mmap) Storage Engine zero-copy performance metrics',
+  })
+  getStats(): MmapEngineStats {
+    return this.mmapStorage.getStats();
+  }
+
+  @Post('reload/:assetKey(*)')
+  @ApiOperation({
+    summary: 'Hot-reload and remap a Monaco asset into virtual memory without restart',
+  })
+  @ApiParam({ name: 'assetKey', description: 'Relative path of the Monaco asset' })
+  hotReload(@Param('assetKey') assetKey: string) {
+    const remapped = this.mmapStorage.hotReloadAsset(assetKey);
+    return {
+      success: true,
+      assetKey: remapped.metadata.assetKey,
+      sizeBytes: remapped.metadata.sizeBytes,
+      etag: remapped.metadata.etag,
+      mappedAt: remapped.metadata.mappedAt,
+    };
+  }
+
+  @Get(':assetKey(*)')
+  @ApiOperation({
+    summary:
+      'Serve Monaco WebWorker bundles and language grammars directly from OS memory-mapped virtual memory (Zero-Copy)',
+  })
+  @ApiParam({ name: 'assetKey', description: 'Relative path of the Monaco asset bundle' })
+  @ApiResponse({ status: 200, description: 'Direct zero-copy memory stream' })
+  @ApiResponse({ status: 304, description: 'Not Modified (ETag matched in cache)' })
+  serveAsset(
+    @Param('assetKey') assetKey: string,
+    @Headers('if-none-match') ifNoneMatch: string | undefined,
+    @Res() res: Response,
+  ) {
+    const { buffer, metadata } = this.mmapStorage.getMemoryMappedAsset(assetKey);
+
+    // Fast 304 check without buffer copy
+    if (ifNoneMatch && ifNoneMatch === metadata.etag) {
+      res.status(HttpStatus.NOT_MODIFIED).end();
+      return;
+    }
+
+    res.set({
+      'Content-Type': metadata.contentType,
+      'Content-Length': metadata.sizeBytes.toString(),
+      'ETag': metadata.etag,
+      'Cache-Control': 'public, max-age=31536000, immutable',
+      'X-Storage-Engine': 'Memory-Mapped-File-ZeroCopy',
+      'X-Virtual-Memory-Pages': metadata.pageCount.toString(),
+    });
+
+    // Zero-copy transfer: sends the memory-mapped buffer straight to kernel socket
+    res.status(HttpStatus.OK).end(buffer);
+  }
+}
+
