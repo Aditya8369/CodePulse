@@ -10,9 +10,24 @@ export class BadgesService {
   }
 
   async getUserBadges(userId: string) {
-    return this.prisma.userBadge.findMany({
-      where: { userId },
-      include: { badge: true },
+    const [earned, totalUsers] = await Promise.all([
+      this.prisma.userBadge.findMany({
+        where: { userId },
+        include: { badge: { include: { _count: { select: { users: true } } } } },
+      }),
+      this.prisma.user.count(),
+    ]);
+    return earned.map(({ badge, ...record }) => {
+      const { _count, ...details } = badge;
+      return {
+        ...record,
+        badge: {
+          ...details,
+          globalUnlockPercent: totalUsers > 0
+            ? Math.min(100, (_count.users / totalUsers) * 100)
+            : null,
+        },
+      };
     });
   }
 
