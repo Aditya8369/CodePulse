@@ -24,6 +24,8 @@ import {
 } from '../../config/dynamic-config.service';
 import { AcmeCertService } from '../security/acme-cert.service';
 import type { SslStatusResponse } from '../security/acme-cert.service';
+import { ThreatDetectorService } from '../security/threat-detector.service';
+import type { ThreatTelemetryDashboard } from '../security/threat-detector.service';
 
 @ApiTags('admin')
 @Controller('admin')
@@ -32,6 +34,7 @@ export class AdminController {
     private readonly adminService: AdminService,
     @Optional() private readonly acmeCertService?: AcmeCertService,
     @Optional() private readonly dynamicConfigService?: DynamicConfigService,
+    @Optional() private readonly threatDetectorService?: ThreatDetectorService,
   ) {}
 
   @Delete('user/:id')
@@ -155,5 +158,20 @@ export class AdminController {
       renewed,
       status: this.acmeCertService.getCertificateStatus(),
     };
+  }
+
+  // --- ML API Threat Detection & Anomaly Telemetry ---
+
+  @Get('threat-telemetry')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Get real-time ML API threat detection scores, active IP quarantines, and anomaly vector telemetry',
+  })
+  getThreatTelemetry(): ThreatTelemetryDashboard {
+    if (!this.threatDetectorService) {
+      throw new BadRequestException('ThreatDetectorService is not available');
+    }
+    return this.threatDetectorService.getThreatTelemetry();
   }
 }
