@@ -209,6 +209,11 @@ model Repository {
   archivedAt    DateTime?
 
   @@unique([userId, githubRepoId])
+  @@index([userId])
+  @@index([userId, language])
+  @@index([userId, stars(sort: Desc)])
+  @@index([userId, forks(sort: Desc)])
+  @@index([userId, updatedAt(sort: Desc)])
   @@map("repositories")
 }
 
