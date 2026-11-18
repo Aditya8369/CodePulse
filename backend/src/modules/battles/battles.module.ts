@@ -13,6 +13,7 @@ import { MetricsModule } from '../metrics/metrics.module';
 import { XpModule } from '../xp/xp.module';
 import { AnalyticsModule } from '../analytics/analytics.module';
 import { ReplayStreamService } from './replay-stream.service';
+import { CryptoModule } from '../crypto/crypto.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { ReplayStreamService } from './replay-stream.service';
     MetricsModule,
     XpModule,
     AnalyticsModule,
+    CryptoModule,
   ],
   controllers: [BattlesController],
   providers: [
