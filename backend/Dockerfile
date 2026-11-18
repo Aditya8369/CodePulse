@@ -5,7 +5,7 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends openssl ca-c
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm ci || npm install
 COPY . .
 RUN npx prisma generate
 EXPOSE 3001
