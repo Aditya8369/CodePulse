@@ -40,6 +40,8 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { CustomThrottlerGuard } from './common/guards/custom-throttler.guard';
+import { TokenBucketRateLimitGuard } from './common/guards/token-bucket-rate-limit.guard';
+import { GuardsModule } from './common/guards/guards.module';
 import { SystemMetricsService } from './common/services/system-metrics.service';
 import { LoadShedderMiddleware } from './common/middleware/load-shedder.middleware';
 
@@ -112,6 +114,7 @@ import { LoadShedderMiddleware } from './common/middleware/load-shedder.middlewa
     StorageModule,
     CryptoModule,
     IdentityModule,
+    GuardsModule,
   ],
   controllers: [AppController],
   providers: [
