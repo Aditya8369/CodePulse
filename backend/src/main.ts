@@ -1,9 +1,15 @@
 import 'dotenv/config';
+import { OtelTracerService } from './common/observability/otel-tracer.service';
+
+// Initialize OpenTelemetry NodeSDK distributed tracing before application bootstrap
+void OtelTracerService.getInstance().initSdk();
+
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
+import { TraceInterceptor } from './common/interceptors/trace.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -23,8 +29,11 @@ async function bootstrap() {
     }),
   );
 
-  // Global Interceptor for standard response
-  app.useGlobalInterceptors(new TransformInterceptor());
+  // Global Interceptors
+  app.useGlobalInterceptors(
+    new TraceInterceptor(),
+    new TransformInterceptor(),
+  );
 
   // Swagger OpenAPI Configuration
   const config = new DocumentBuilder()
