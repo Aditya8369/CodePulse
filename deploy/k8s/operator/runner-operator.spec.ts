@@ -1,4 +1,5 @@
 import * as k8s from "@kubernetes/client-node";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import {
   ExecutionRunnerOperator,
   ExecutionRunnerPoolCustomResource,
