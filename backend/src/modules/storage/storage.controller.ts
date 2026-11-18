@@ -25,12 +25,13 @@ export class StorageController {
     return this.mmapStorage.getStats();
   }
 
-  @Post('reload/:assetKey(*)')
+  @Post('reload/*assetKey')
   @ApiOperation({
     summary: 'Hot-reload and remap a Monaco asset into virtual memory without restart',
   })
   @ApiParam({ name: 'assetKey', description: 'Relative path of the Monaco asset' })
-  hotReload(@Param('assetKey') assetKey: string) {
+  hotReload(@Param('assetKey') rawKey: string | string[]) {
+    const assetKey = Array.isArray(rawKey) ? rawKey.join('/') : rawKey;
     const remapped = this.mmapStorage.hotReloadAsset(assetKey);
     return {
       success: true,
@@ -41,7 +42,7 @@ export class StorageController {
     };
   }
 
-  @Get(':assetKey(*)')
+  @Get('*assetKey')
   @ApiOperation({
     summary:
       'Serve Monaco WebWorker bundles and language grammars directly from OS memory-mapped virtual memory (Zero-Copy)',
@@ -50,10 +51,11 @@ export class StorageController {
   @ApiResponse({ status: 200, description: 'Direct zero-copy memory stream' })
   @ApiResponse({ status: 304, description: 'Not Modified (ETag matched in cache)' })
   serveAsset(
-    @Param('assetKey') assetKey: string,
+    @Param('assetKey') rawKey: string | string[],
     @Headers('if-none-match') ifNoneMatch: string | undefined,
     @Res() res: Response,
   ) {
+    const assetKey = Array.isArray(rawKey) ? rawKey.join('/') : rawKey;
     const { buffer, metadata } = this.mmapStorage.getMemoryMappedAsset(assetKey);
 
     // Fast 304 check without buffer copy
