@@ -310,20 +310,25 @@ model UserBadge {
 }
 
 model Battle {
-  id              String       @id @default(uuid())
-  challengerId    String
-  opponentId      String
-  status          BattleStatus @default(PENDING)
-  category        String
-  challengerScore Float?
-  opponentScore   Float?
-  startedAt       DateTime     @default(now())
-  endsAt          DateTime
-  winnerId        String?
-  challenger      User         @relation("BattleChallenger", fields: [challengerId], references: [id])
-  opponent        User         @relation("BattleOpponent", fields: [opponentId], references: [id])
-  winner          User?        @relation("BattleWinner", fields: [winnerId], references: [id])
+  id                 String       @id @default(uuid())
+  challengerId       String
+  opponentId         String
+  status             BattleStatus @default(PENDING)
+  category           String
+  challengerScore    Float?
+  opponentScore      Float?
+  startedAt          DateTime     @default(now())
+  endsAt             DateTime
+  winnerId           String?
+  forfeitedById      String?
+  cancellationReason String?
+  challenger         User         @relation("BattleChallenger", fields: [challengerId], references: [id])
+  opponent           User         @relation("BattleOpponent", fields: [opponentId], references: [id])
+  winner             User?        @relation("BattleWinner", fields: [winnerId], references: [id])
 
+  @@index([status, endsAt])
+  @@index([challengerId, status])
+  @@index([opponentId, status])
   @@map("battles")
 }
 
@@ -403,6 +408,8 @@ enum BattleStatus {
   ACTIVE
   COMPLETED
   CANCELLED
+  EXPIRED
+  FORFEITED
 }
 
 enum NotificationType {
