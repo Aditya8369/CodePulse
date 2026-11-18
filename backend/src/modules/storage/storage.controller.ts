@@ -6,18 +6,72 @@ import {
   Headers,
   HttpStatus,
   Post,
+  Body,
+  Delete,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { MmapStorageService } from './mmap-storage.service';
 import type { MmapEngineStats } from './mmap-storage.service';
+import { RocksDbService } from './rocksdb.service';
+import type { RocksDbStats } from './rocksdb.service';
+import { WorkspaceStateService } from './workspace-state.service';
+import type { UnsavedDraftState } from './workspace-state.service';
 
 @ApiTags('storage')
-@Controller('storage/monaco')
+@Controller('storage')
 export class StorageController {
-  constructor(private readonly mmapStorage: MmapStorageService) {}
+  constructor(
+    private readonly mmapStorage: MmapStorageService,
+    private readonly rocksDb: RocksDbService,
+    private readonly workspaceState: WorkspaceStateService,
+  ) {}
 
-  @Get('stats')
+  @Get('rocksdb/stats')
+  @ApiOperation({
+    summary: 'Get embedded RocksDB LSM-Tree key-value store metrics',
+  })
+  getRocksDbStats(): RocksDbStats {
+    return this.rocksDb.getStats();
+  }
+
+  @Post('workspace/draft')
+  @ApiOperation({
+    summary: 'Save transient unsaved editor draft with microsecond write latency in RocksDB',
+  })
+  @ApiBody({ description: 'Editor draft payload' })
+  async saveDraft(@Body() draft: UnsavedDraftState) {
+    await this.workspaceState.saveDraft(draft);
+    return { success: true, key: this.workspaceState.getWorkspaceKey(draft.userId, draft.fileId) };
+  }
+
+  @Get('workspace/draft/:userId/:fileId')
+  @ApiOperation({
+    summary: 'Retrieve transient unsaved editor draft from RocksDB',
+  })
+  @ApiParam({ name: 'userId' })
+  @ApiParam({ name: 'fileId' })
+  async getDraft(
+    @Param('userId') userId: string,
+    @Param('fileId') fileId: string,
+  ) {
+    const draft = await this.workspaceState.getDraft(userId, fileId);
+    return { success: true, draft };
+  }
+
+  @Post('workspace/flush')
+  @ApiOperation({
+    summary: 'Flush finalized code drafts to persistent store and prune RocksDB state upon commit',
+  })
+  async flushDrafts(
+    @Body('userId') userId: string,
+    @Body('fileIds') fileIds: string[],
+    @Body('commitSha') commitSha?: string,
+  ) {
+    return this.workspaceState.flushCommittedDrafts(userId, fileIds, commitSha);
+  }
+
+  @Get('monaco/stats')
   @ApiOperation({
     summary: 'Get Memory-Mapped File (mmap) Storage Engine zero-copy performance metrics',
   })
@@ -25,7 +79,7 @@ export class StorageController {
     return this.mmapStorage.getStats();
   }
 
-  @Post('reload/*assetKey')
+  @Post('monaco/reload/*assetKey')
   @ApiOperation({
     summary: 'Hot-reload and remap a Monaco asset into virtual memory without restart',
   })
@@ -42,7 +96,7 @@ export class StorageController {
     };
   }
 
-  @Get('*assetKey')
+  @Get('monaco/*assetKey')
   @ApiOperation({
     summary:
       'Serve Monaco WebWorker bundles and language grammars directly from OS memory-mapped virtual memory (Zero-Copy)',
