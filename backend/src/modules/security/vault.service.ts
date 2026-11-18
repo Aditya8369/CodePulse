@@ -3,6 +3,7 @@ import {
   Logger,
   OnModuleInit,
   OnModuleDestroy,
+  Optional,
 } from '@nestjs/common';
 import axios, { AxiosInstance } from 'axios';
 import { defaultVaultConfig, VaultConfig } from '../../config/vault.config';
@@ -62,7 +63,7 @@ export class VaultService implements OnModuleInit, OnModuleDestroy {
   private retrievalTimestamps: number[] = [];
   private anomalySpikeCount = 0;
 
-  constructor(customConfig?: Partial<VaultConfig>) {
+  constructor(@Optional() customConfig?: any) {
     this.config = { ...defaultVaultConfig, ...customConfig };
     this.httpClient = axios.create({
       baseURL: this.config.endpoint.replace(/\/+$/, ''),
