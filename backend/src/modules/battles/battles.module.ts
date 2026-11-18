@@ -10,6 +10,7 @@ import { RatingDecayScheduler } from './rating-decay.scheduler';
 import { BattlesLifecycleScheduler } from './battles-lifecycle.scheduler';
 import { BattlesLifecycleWorker } from './battles-lifecycle.worker';
 import { MetricsModule } from '../metrics/metrics.module';
+import { XpModule } from '../xp/xp.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { MetricsModule } from '../metrics/metrics.module';
       { name: 'battles-lifecycle' },
     ),
     MetricsModule,
+    XpModule,
   ],
   controllers: [BattlesController],
   providers: [

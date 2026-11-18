@@ -122,6 +122,23 @@ export class ChallengesService {
               metadata: { challengeId: challenge.id },
             },
           });
+
+          if (this.xpService) {
+            await this.xpService.addXp({
+              userId,
+              amount: challenge.xpReward,
+              source: 'CHALLENGE_COMPLETE',
+              reason: `Completed challenge: ${challenge.title}`,
+            });
+          } else {
+            await tx.developerRating.updateMany({
+              where: { userId },
+              data: {
+                gamificationXp: { increment: challenge.xpReward },
+                xp: { increment: challenge.xpReward },
+              },
+            });
+          }
         }
       };
 
