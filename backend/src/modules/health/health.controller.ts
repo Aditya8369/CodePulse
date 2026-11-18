@@ -1,11 +1,13 @@
 import {
   Controller,
-  Post,
   Get,
+  Post,
   Param,
   Body,
   HttpCode,
   HttpStatus,
+  BadRequestException,
+  Optional,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -26,6 +28,11 @@ import {
   GameDayScenario,
   GameDayReport,
 } from './gameday-runner.service';
+import {
+  MultiCloudDrService,
+  MultiCloudDrReport,
+  CloudProvider,
+} from './multi-cloud-dr.service';
 
 export class StartGameDayDrillDto {
   @ApiPropertyOptional({
@@ -81,9 +88,60 @@ export class StartGameDayDrillDto {
 }
 
 @ApiTags('admin', 'health', 'gameday')
-@Controller('admin/gameday')
+@Controller('health')
 export class HealthController {
-  constructor(private readonly gamedayService: GameDayRunnerService) {}
+  constructor(
+    @Optional() private readonly gamedayService?: GameDayRunnerService,
+    @Optional() private readonly multiCloudDrService?: MultiCloudDrService,
+  ) {}
+
+  @Get()
+  @ApiOperation({ summary: 'Basic health check' })
+  getHealth(): { status: string; timestamp: string } {
+    return {
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  // --- Multi-Cloud Disaster Recovery Endpoints ---
+
+  @Get('dr')
+  @ApiOperation({
+    summary:
+      'Get active-active cross-cloud disaster recovery status and heartbeats',
+  })
+  getDrReport(): MultiCloudDrReport {
+    if (!this.multiCloudDrService) {
+      throw new BadRequestException('MultiCloudDrService is not available');
+    }
+    return this.multiCloudDrService.generateReport();
+  }
+
+  @Post('dr/failover')
+  @ApiOperation({
+    summary: 'Manually trigger cross-cloud DNS failover (Admin / Drill)',
+  })
+  async triggerFailover(
+    @Body('targetCloud') targetCloud: CloudProvider,
+  ): Promise<{
+    success: boolean;
+    targetCloud: CloudProvider;
+    report: MultiCloudDrReport;
+  }> {
+    if (!this.multiCloudDrService) {
+      throw new BadRequestException('MultiCloudDrService is not available');
+    }
+    const success =
+      await this.multiCloudDrService.triggerDnsFailover(targetCloud);
+    return {
+      success,
+      targetCloud,
+      report: this.multiCloudDrService.generateReport(),
+    };
+  }
+
+  // --- Game-Day Chaos Drill Endpoints ---
 
   @Post('start')
   @HttpCode(HttpStatus.OK)
@@ -106,6 +164,9 @@ export class HealthController {
     description: 'A drill is already in progress or invalid scenario provided',
   })
   async startDrill(@Body() dto?: StartGameDayDrillDto) {
+    if (!this.gamedayService) {
+      throw new BadRequestException('GameDayRunnerService is not available');
+    }
     return this.gamedayService.startDrill(dto ?? {});
   }
 
@@ -115,6 +176,9 @@ export class HealthController {
     summary: 'Get current Game-Day drill status and last report summary',
   })
   async getStatus() {
+    if (!this.gamedayService) {
+      throw new BadRequestException('GameDayRunnerService is not available');
+    }
     return this.gamedayService.getStatus();
   }
 
@@ -124,6 +188,9 @@ export class HealthController {
     summary: 'Status query alias for drill start endpoint',
   })
   async getStartStatus() {
+    if (!this.gamedayService) {
+      throw new BadRequestException('GameDayRunnerService is not available');
+    }
     return this.gamedayService.getStatus();
   }
 
@@ -133,6 +200,9 @@ export class HealthController {
     summary: 'List automated compliance Game-Day audit reports',
   })
   async getReports(): Promise<{ count: number; reports: GameDayReport[] }> {
+    if (!this.gamedayService) {
+      throw new BadRequestException('GameDayRunnerService is not available');
+    }
     const reports = this.gamedayService.getReports();
     return {
       count: reports.length,
@@ -156,6 +226,9 @@ export class HealthController {
   async getReportById(
     @Param('drillId') drillId: string,
   ): Promise<GameDayReport> {
+    if (!this.gamedayService) {
+      throw new BadRequestException('GameDayRunnerService is not available');
+    }
     return this.gamedayService.getReportById(drillId);
   }
 
@@ -166,6 +239,9 @@ export class HealthController {
     summary: 'Abort the currently active Game-Day drill',
   })
   async abortDrill() {
+    if (!this.gamedayService) {
+      throw new BadRequestException('GameDayRunnerService is not available');
+    }
     return this.gamedayService.abortDrill();
   }
 }
