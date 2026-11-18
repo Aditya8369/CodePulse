@@ -23,6 +23,7 @@ import { AdminModule } from './modules/admin/admin.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { RecommendationsModule } from './modules/recommendations/recommendations.module';
 import { MetricsModule } from './modules/metrics/metrics.module';
+import { SecurityModule } from './modules/security/security.module';
 import { HealthModule } from './modules/health/health.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import { BullModule } from '@nestjs/bullmq';
@@ -79,6 +80,7 @@ import { CustomThrottlerGuard } from './common/guards/custom-throttler.guard';
     SettingsModule,
     RecommendationsModule,
     MetricsModule,
+    SecurityModule,
     HealthModule,
   ],
   controllers: [AppController],
