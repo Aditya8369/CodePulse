@@ -54,6 +54,16 @@ establish sub-100-ms end-to-end loading or sustained 60 FPS on all hardware;
 initial native text layout remains a performance limitation for that stronger
 acceptance interpretation.
 
+A subsequent production profile isolated an additional 1,836-ms main-thread
+task caused by laying out both large editable source inputs while loading the
+example. Loading the example now collapses the Source files panel before
+updating those inputs; it retains both complete values and can be reopened for
+editing. In the instrumented before/after runs, benchmark-click to the first
+canvas draw fell from about 3,001 ms to 1,179 ms; the original uninstrumented
+functional harness fell from 2,370 ms to 1,086 ms. The remaining native comparison
+text layout still costs about 790 ms in that profile. This reduces duplicate
+source-editor work; it does not resolve the sub-100-ms initial-load criterion.
+
 Browser checks covered both layouts, top/bottom synchronized scroll, bounded
 paint rows, unchanged DOM size, native selection/copy with an inserted alignment
 row and tabs, empty files, worker replacement, and 320/375/414-pixel layouts
