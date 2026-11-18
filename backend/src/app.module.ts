@@ -26,6 +26,7 @@ import { MetricsModule } from './modules/metrics/metrics.module';
 import { RepositoriesModule } from './modules/repositories/repositories.module';
 import { SecurityModule } from './modules/security/security.module';
 import { HealthModule } from './modules/health/health.module';
+import { ExecutionModule } from './modules/execution/execution.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import { BullModule } from '@nestjs/bullmq';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -84,6 +85,7 @@ import { CustomThrottlerGuard } from './common/guards/custom-throttler.guard';
     RepositoriesModule,
     SecurityModule,
     HealthModule,
+    ExecutionModule,
   ],
   controllers: [AppController],
   providers: [
