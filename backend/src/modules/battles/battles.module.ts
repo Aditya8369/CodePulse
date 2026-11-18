@@ -14,6 +14,7 @@ import { XpModule } from '../xp/xp.module';
 import { AnalyticsModule } from '../analytics/analytics.module';
 import { ReplayStreamService } from './replay-stream.service';
 import { CryptoModule } from '../crypto/crypto.module';
+import { WatermarkService } from './watermark.service';
 
 @Module({
   imports: [
@@ -37,7 +38,8 @@ import { CryptoModule } from '../crypto/crypto.module';
     BattlesLifecycleScheduler,
     BattlesLifecycleWorker,
     ReplayStreamService,
+    WatermarkService,
   ],
-  exports: [BattlesService, BattlesGateway, ReplayStreamService],
+  exports: [BattlesService, BattlesGateway, ReplayStreamService, WatermarkService],
 })
 export class BattlesModule {}
