@@ -3,6 +3,7 @@ import {
   ConflictException,
   Injectable,
   Logger,
+  Optional,
   ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -12,6 +13,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { SyncService } from '../sync/sync.service';
 import { TokenBlacklistService } from './token-blacklist.service';
+import { VaultService } from '../security/vault.service';
 import axios from 'axios';
 import { Prisma } from '@prisma/client';
 import {
@@ -54,6 +56,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly syncService: SyncService,
     private readonly blacklistService: TokenBlacklistService,
+    @Optional() private readonly vaultService?: VaultService,
   ) {}
 
   async register(
@@ -239,9 +242,7 @@ export class AuthService {
       tokenRecord.familyId,
     );
     if (isFamilyBlacklisted) {
-      throw new UnauthorizedException(
-        'Refresh token family has been revoked.',
-      );
+      throw new UnauthorizedException('Refresh token family has been revoked.');
     }
 
     // 4. Check for token reuse (already revoked token attempted to be used again)
@@ -321,12 +322,26 @@ export class AuthService {
     deviceFingerprint?: string,
     existingFamilyId?: string,
   ): Promise<AuthResponseDto> {
-    const accessToken = this.jwtService.sign({
-      sub: user.id,
-      githubId: user.githubId,
-      username: user.username,
-      email: user.email,
-    });
+    const signSecret = this.vaultService
+      ? this.vaultService.getCurrentJwtSigningKey()
+      : undefined;
+
+    const accessToken = signSecret
+      ? this.jwtService.sign(
+          {
+            sub: user.id,
+            githubId: user.githubId,
+            username: user.username,
+            email: user.email,
+          },
+          { secret: signSecret },
+        )
+      : this.jwtService.sign({
+          sub: user.id,
+          githubId: user.githubId,
+          username: user.username,
+          email: user.email,
+        });
 
     const refreshToken = randomBytes(40).toString('hex');
     const tokenHash = this.blacklistService.hashToken(refreshToken);

@@ -28,11 +28,11 @@ import {
   GameDayScenario,
   GameDayReport,
 } from './gameday-runner.service';
-import {
-  MultiCloudDrService,
+import type {
   MultiCloudDrReport,
   CloudProvider,
 } from './multi-cloud-dr.service';
+import { MultiCloudDrService } from './multi-cloud-dr.service';
 
 export class StartGameDayDrillDto {
   @ApiPropertyOptional({

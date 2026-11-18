@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { SyncService } from '../sync/sync.service';
 import { TokenBlacklistService } from './token-blacklist.service';
+import { VaultService } from '../security/vault.service';
 import { randomBytes, scryptSync } from 'crypto';
 import { UnauthorizedException } from '@nestjs/common';
 
@@ -145,10 +146,16 @@ describe('AuthService', () => {
     };
 
     prismaMock.refreshToken.findUnique.mockResolvedValue(tokenRecord);
-    prismaMock.refreshToken.update.mockResolvedValue({ ...tokenRecord, revokedAt: new Date() });
+    prismaMock.refreshToken.update.mockResolvedValue({
+      ...tokenRecord,
+      revokedAt: new Date(),
+    });
     prismaMock.refreshToken.create.mockResolvedValue({ id: 'new-record-id' });
 
-    const result = await service.refreshAccessToken(rawRefreshToken, 'desktop-chrome');
+    const result = await service.refreshAccessToken(
+      rawRefreshToken,
+      'desktop-chrome',
+    );
 
     expect(result.accessToken).toBe('signed-jwt');
     expect(result.refreshToken).toBeDefined();
@@ -198,7 +205,9 @@ describe('AuthService', () => {
         where: { familyId: 'compromised-family-456' },
       }),
     );
-    expect(await blacklistService.isFamilyBlacklisted('compromised-family-456')).toBe(true);
+    expect(
+      await blacklistService.isFamilyBlacklisted('compromised-family-456'),
+    ).toBe(true);
   });
 
   it('logs out and blacklists token family in Redis and database', async () => {
@@ -220,8 +229,12 @@ describe('AuthService', () => {
       where: { familyId: 'family-to-logout' },
       data: expect.objectContaining({ revokedAt: expect.any(Date) }),
     });
-    expect(await blacklistService.isFamilyBlacklisted('family-to-logout')).toBe(true);
-    expect(await blacklistService.isTokenBlacklisted('sample-access-token')).toBe(true);
+    expect(await blacklistService.isFamilyBlacklisted('family-to-logout')).toBe(
+      true,
+    );
+    expect(
+      await blacklistService.isTokenBlacklisted('sample-access-token'),
+    ).toBe(true);
   });
 
   it('does not disclose or issue a reset for an unregistered email', async () => {
@@ -233,5 +246,64 @@ describe('AuthService', () => {
     expect(prismaMock.user.findUnique).toHaveBeenCalledWith({
       where: { authEmail: 'unknown@example.com' },
     });
+  });
+
+  it('signs tokens using Vault rotated secret when VaultService is provided', async () => {
+    const vaultMock = {
+      getCurrentJwtSigningKey: jest
+        .fn()
+        .mockReturnValue('vault-active-key-777'),
+    };
+
+    const moduleWithVault: TestingModule = await Test.createTestingModule({
+      providers: [
+        AuthService,
+        TokenBlacklistService,
+        {
+          provide: PrismaService,
+          useValue: prismaMock,
+        },
+        {
+          provide: ConfigService,
+          useValue: configMock,
+        },
+        {
+          provide: JwtService,
+          useValue: jwtMock,
+        },
+        {
+          provide: SyncService,
+          useValue: syncMock,
+        },
+        {
+          provide: VaultService,
+          useValue: vaultMock,
+        },
+      ],
+    }).compile();
+
+    const authWithVault = moduleWithVault.get<AuthService>(AuthService);
+
+    prismaMock.user.findUnique.mockResolvedValue(null);
+    prismaMock.user.create.mockResolvedValue({
+      id: 'vault-user-id',
+      githubId: null,
+      username: 'vaultuser',
+      name: 'Vault User',
+      email: 'vault@example.com',
+      passwordHash: null,
+    });
+    prismaMock.refreshToken.create.mockResolvedValue({ id: 'rt-id' });
+
+    await authWithVault.register({
+      name: 'Vault User',
+      email: 'vault@example.com',
+      password: 'password123',
+    });
+
+    expect(jwtMock.sign).toHaveBeenCalledWith(
+      expect.objectContaining({ sub: 'vault-user-id' }),
+      { secret: 'vault-active-key-777' },
+    );
   });
 });
