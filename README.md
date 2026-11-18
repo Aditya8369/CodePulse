@@ -30,7 +30,7 @@ A heartfelt thank you to all the amazing developers contributing to **CodePulse*
         <sub><b>@code-with-abhi-i5</b></sub>
       </a><br />
       <sub>👑 Maintainer</sub><br />
-      <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=code-with-abhi-i5"><sub>🔨 226 commits</sub></a>
+      <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=code-with-abhi-i5"><sub>🔨 228 commits</sub></a>
     </td>
     <td align="center" width="160px">
       <a href="https://github.com/pratikadamas">
@@ -65,22 +65,22 @@ A heartfelt thank you to all the amazing developers contributing to **CodePulse*
       <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=Sarbajit-Sengupta"><sub>🔨 11 commits</sub></a>
     </td>
     <td align="center" width="160px">
+      <a href="https://github.com/Itssonia7">
+        <img src="https://avatars.githubusercontent.com/u/174490730?v=4&s=100" width="80px" style="border-radius: 50%;" alt="Itssonia7" /><br />
+        <sub><b>@Itssonia7</b></sub>
+      </a><br />
+      <sub>💻 Contributor</sub><br />
+      <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=Itssonia7"><sub>🔨 8 commits</sub></a>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="160px">
       <a href="https://github.com/aush5895">
         <img src="https://avatars.githubusercontent.com/u/229103100?v=4&s=100" width="80px" style="border-radius: 50%;" alt="aush5895" /><br />
         <sub><b>@aush5895</b></sub>
       </a><br />
       <sub>💻 Contributor</sub><br />
       <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=aush5895"><sub>🔨 6 commits</sub></a>
-    </td>
-  </tr>
-  <tr>
-    <td align="center" width="160px">
-      <a href="https://github.com/Itssonia7">
-        <img src="https://avatars.githubusercontent.com/u/174490730?v=4&s=100" width="80px" style="border-radius: 50%;" alt="Itssonia7" /><br />
-        <sub><b>@Itssonia7</b></sub>
-      </a><br />
-      <sub>💻 Contributor</sub><br />
-      <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=Itssonia7"><sub>🔨 6 commits</sub></a>
     </td>
     <td align="center" width="160px">
       <a href="https://github.com/Ankit-Kum-ar">
