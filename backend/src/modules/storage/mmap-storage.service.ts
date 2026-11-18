@@ -4,6 +4,7 @@ import {
   OnModuleInit,
   OnModuleDestroy,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -51,7 +52,7 @@ export class MmapStorageService implements OnModuleInit, OnModuleDestroy {
   private totalHits = 0;
   private zeroCopyBytesServed = 0;
 
-  constructor(customStorageDir?: string) {
+  constructor(@Optional() customStorageDir?: string) {
     this.storageRoot =
       customStorageDir ||
       path.resolve(process.cwd(), 'public', 'static', 'monaco');

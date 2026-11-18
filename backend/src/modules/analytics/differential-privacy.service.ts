@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 
 export interface DifferentialPrivacyOptions {
@@ -28,7 +28,7 @@ export class DifferentialPrivacyService {
     { epsilon: number; delta: number; queries: number }
   >();
 
-  constructor(options?: DifferentialPrivacyOptions) {
+  constructor(@Optional() options?: DifferentialPrivacyOptions) {
     this.defaultEpsilon = options?.defaultEpsilon ?? 1.0;
     this.defaultDelta = options?.defaultDelta ?? 1e-5;
     this.minCohortSize = options?.minCohortSize ?? 5;

@@ -3,6 +3,7 @@ import {
   Logger,
   OnModuleInit,
   OnModuleDestroy,
+  Optional,
 } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import * as crypto from 'crypto';
@@ -81,7 +82,10 @@ export class ShardingRouterService implements OnModuleInit, OnModuleDestroy {
     },
   };
 
-  constructor(customConfigs?: ShardNodeConfig[], customAdapter?: IShardClientAdapter) {
+  constructor(
+    @Optional() customConfigs?: ShardNodeConfig[],
+    @Optional() customAdapter?: IShardClientAdapter,
+  ) {
     if (customAdapter) {
       this.adapter = customAdapter;
     }

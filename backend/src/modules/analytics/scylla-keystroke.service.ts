@@ -3,6 +3,7 @@ import {
   Logger,
   OnModuleInit,
   OnModuleDestroy,
+  Optional,
 } from '@nestjs/common';
 
 export interface KeystrokePacket {
@@ -62,7 +63,10 @@ export class ScyllaKeystrokeService implements OnModuleInit, OnModuleDestroy {
 
   private adapter: IScyllaClientAdapter | null = null;
 
-  constructor(customConfig?: Partial<ScyllaConfig>, customAdapter?: IScyllaClientAdapter) {
+  constructor(
+    @Optional() customConfig?: Partial<ScyllaConfig>,
+    @Optional() customAdapter?: IScyllaClientAdapter,
+  ) {
     this.config = {
       contactPoints: (process.env.SCYLLA_CONTACT_POINTS || '127.0.0.1:9042').split(','),
       localDataCenter: process.env.SCYLLA_DATA_CENTER || 'datacenter1',
