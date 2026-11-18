@@ -5,6 +5,8 @@ import { VaultService } from './vault.service';
 import { PowService } from './pow.service';
 import { PowController } from './pow.controller';
 import { PowChallengeGuard } from '../../common/guards/pow-challenge.guard';
+import { ThreatDetectorService } from './threat-detector.service';
+import { ThreatMonitorInterceptor } from '../../common/interceptors/threat-monitor.interceptor';
 
 @Global()
 @Module({
@@ -15,6 +17,8 @@ import { PowChallengeGuard } from '../../common/guards/pow-challenge.guard';
     VaultService,
     PowService,
     PowChallengeGuard,
+    ThreatDetectorService,
+    ThreatMonitorInterceptor,
   ],
   exports: [
     AcmeCertService,
@@ -22,6 +26,8 @@ import { PowChallengeGuard } from '../../common/guards/pow-challenge.guard';
     VaultService,
     PowService,
     PowChallengeGuard,
+    ThreatDetectorService,
+    ThreatMonitorInterceptor,
   ],
 })
 export class SecurityModule {}
