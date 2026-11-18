@@ -84,10 +84,14 @@ jobs:
             }
 
             // ==========================================
-            // 1E. MERGE CONFLICT / DIRTY BRANCH CHECK
+            // 1E. MERGE CONFLICT / DIRTY BRANCH CHECK (STRICT ENFORCEMENT)
             // ==========================================
-            if (pr.mergeable === false || pr.mergeable_state === 'dirty') {
-              violations.push("❌ **Merge Conflict Detected**: This branch has conflicts with `main`. Please rebase your branch:\n```bash\ngit fetch origin\ngit rebase origin/main\n# resolve conflicts\ngit push --force-with-lease\n```");
+            const isConflicted = pr.mergeable === false || pr.mergeable_state === 'dirty' || pr.mergeable_state === 'conflicting';
+            if (isConflicted) {
+              labelsToAdd.push('status: merge-conflict');
+              violations.push("❌ **STRICT: Merge Conflicts Detected**: Your branch has merge conflicts with `main`. Maintainers will **NOT** resolve conflicts for you. You must resolve them locally:\n```bash\ngit fetch origin\ngit merge origin/main\n# Open and resolve all <<<<<<< HEAD conflicts in your files\ngit add .\ngit commit -m \"fix: resolve merge conflicts with main\"\ngit push origin your-branch-name\n```");
+            } else {
+              labelsToRemove.push('status: merge-conflict');
             }
 
             // ==========================================
