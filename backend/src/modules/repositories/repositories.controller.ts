@@ -6,16 +6,23 @@ import {
   Query,
   UseGuards,
   Request,
+  Response as Res,
+  Headers,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiHeader } from '@nestjs/swagger';
+import type { Response } from 'express';
 import { RepositoriesService } from './repositories.service';
+import { ArchiveStreamService } from './archive-stream.service';
 import { QueryRepositoriesDto } from './dto/repositories.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('repositories')
 @Controller('repositories')
 export class RepositoriesController {
-  constructor(private readonly repositoriesService: RepositoriesService) {}
+  constructor(
+    private readonly repositoriesService: RepositoriesService,
+    private readonly archiveStreamService: ArchiveStreamService,
+  ) {}
 
   @Get()
   @UseGuards(JwtAuthGuard)
@@ -47,6 +54,38 @@ export class RepositoriesController {
   @ApiOperation({ summary: 'Get repository details by ID' })
   async getRepositoryById(@Request() req: any, @Param('id') id: string) {
     return this.repositoriesService.getRepositoryById(req.user.id, id);
+  }
+
+  @Get(':id/download.zip')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Download repository archive as a zero-copy streaming ZIP with HTTP Range Request support',
+  })
+  @ApiParam({ name: 'id', description: 'Repository ID' })
+  @ApiHeader({
+    name: 'Range',
+    required: false,
+    description: 'HTTP Range request header (e.g. bytes=0-1048575)',
+  })
+  async downloadRepositoryZip(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Res() res: Response,
+    @Headers('range') rangeHeader?: string,
+    @Headers('accept-encoding') acceptEncoding?: string,
+  ) {
+    const userId = req.user?.id || req.user?.sub || 'anonymous';
+    return this.archiveStreamService.streamRepositoryArchive(
+      userId,
+      id,
+      res,
+      {
+        rangeHeader,
+        acceptEncoding,
+      },
+    );
   }
 
   @Post(':id/sync')
