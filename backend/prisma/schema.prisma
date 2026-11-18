@@ -240,20 +240,26 @@ model Challenge {
   createdAt   DateTime        @default(now())
   users       UserChallenge[]
 
+  @@index([expiresAt])
+  @@index([category, expiresAt])
   @@map("challenges")
 }
 
 model UserChallenge {
-  id          String    @id @default(uuid())
+  id          String          @id @default(uuid())
   userId      String
   challengeId String
-  progress    Int       @default(0)
-  isCompleted Boolean   @default(false)
+  progress    Int             @default(0)
+  isCompleted Boolean         @default(false)
+  status      ChallengeStatus @default(IN_PROGRESS)
   completedAt DateTime?
-  challenge   Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  claimedAt   DateTime?
+  challenge   Challenge       @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, challengeId])
+  @@index([userId, status])
+  @@index([status])
   @@map("user_challenges")
 }
 
@@ -374,6 +380,13 @@ enum ChallengeType {
   WEEKLY
   MONTHLY
   SEASONAL
+}
+
+enum ChallengeStatus {
+  IN_PROGRESS
+  COMPLETED
+  CLAIMED
+  EXPIRED
 }
 
 enum Difficulty {
