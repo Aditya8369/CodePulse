@@ -32,6 +32,7 @@ import { CloudModule } from './modules/cloud/cloud.module';
 import { GraphModule } from './modules/graph/graph.module';
 import { ObservabilityModule } from './modules/observability/observability.module';
 import { StorageModule } from './modules/storage/storage.module';
+import { CryptoModule } from './modules/crypto/crypto.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import { BullModule } from '@nestjs/bullmq';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -98,6 +99,7 @@ import { LoadShedderMiddleware } from './common/middleware/load-shedder.middlewa
     GraphModule,
     ObservabilityModule,
     StorageModule,
+    CryptoModule,
   ],
   controllers: [AppController],
   providers: [
