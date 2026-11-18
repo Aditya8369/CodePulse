@@ -120,14 +120,20 @@ describe('Battle activity timeline', () => {
     const ratingUpdates = tx.battleRating.upsert.mock.calls.map(
       ([argument]) => argument as { update: Record<string, unknown> },
     );
-    expect(ratingUpdates[0].update).toEqual({
+    expect(ratingUpdates[0].update).toMatchObject({
       elo: 1248,
       placementMatchesRemaining: 0,
+      decayPeriodsApplied: 0,
+      decayWarnedFor: null,
     });
-    expect(ratingUpdates[1].update).toEqual({
+    expect(ratingUpdates[0].update.lastBattleAt).toBeInstanceOf(Date);
+    expect(ratingUpdates[1].update).toMatchObject({
       elo: 1184,
       placementMatchesRemaining: 0,
+      decayPeriodsApplied: 0,
+      decayWarnedFor: null,
     });
+    expect(ratingUpdates[1].update.lastBattleAt).toBeInstanceOf(Date);
     expect(tx.badge.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'season-1-silver-tier' },

@@ -21,6 +21,11 @@ import { ReportsModule } from './modules/reports/reports.module';
 import { SearchModule } from './modules/search/search.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { SettingsModule } from './modules/settings/settings.module';
+import { RecommendationsModule } from './modules/recommendations/recommendations.module';
+import { MetricsModule } from './modules/metrics/metrics.module';
+import { RepositoriesModule } from './modules/repositories/repositories.module';
+import { SecurityModule } from './modules/security/security.module';
+import { HealthModule } from './modules/health/health.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import { BullModule } from '@nestjs/bullmq';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -42,7 +47,7 @@ import { CustomThrottlerGuard } from './common/guards/custom-throttler.guard';
     }),
     CacheModule.register({
       isGlobal: true,
-      ttl: 60 * 60 * 1000, 
+      ttl: 60 * 60 * 1000,
       host: process.env.REDIS_HOST || 'localhost',
       port: parseInt(process.env.REDIS_PORT || '6379'),
       password: process.env.REDIS_PASSWORD || undefined,
@@ -74,6 +79,11 @@ import { CustomThrottlerGuard } from './common/guards/custom-throttler.guard';
     SearchModule,
     AdminModule,
     SettingsModule,
+    RecommendationsModule,
+    MetricsModule,
+    RepositoriesModule,
+    SecurityModule,
+    HealthModule,
   ],
   controllers: [AppController],
   providers: [
