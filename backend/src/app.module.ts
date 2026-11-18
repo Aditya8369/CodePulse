@@ -23,6 +23,7 @@ import { AdminModule } from './modules/admin/admin.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { RecommendationsModule } from './modules/recommendations/recommendations.module';
 import { MetricsModule } from './modules/metrics/metrics.module';
+import { DynamicConfigModule } from './config/dynamic-config.module';
 import { RepositoriesModule } from './modules/repositories/repositories.module';
 import { SecurityModule } from './modules/security/security.module';
 import { HealthModule } from './modules/health/health.module';
@@ -86,6 +87,7 @@ import { LoadShedderMiddleware } from './common/middleware/load-shedder.middlewa
     SettingsModule,
     RecommendationsModule,
     MetricsModule,
+    DynamicConfigModule,
     RepositoriesModule,
     SecurityModule,
     HealthModule,
