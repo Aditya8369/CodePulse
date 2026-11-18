@@ -6,13 +6,14 @@ import {
   ConnectedSocket,
   OnGatewayConnection,
   OnGatewayDisconnect,
+  OnGatewayInit,
 } from '@nestjs/websockets';
-import { Logger } from '@nestjs/common';
+import { Logger, OnModuleDestroy, Optional } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { MetricsService } from '../metrics/metrics.service';
-import { Optional } from '@nestjs/common';
 import { ZkpVerifierService } from '../crypto/zkp-verifier.service';
 import type { ZkpVerificationRequest } from '../crypto/zkp-verifier.service';
+import { DisruptorRingBuffer } from '../../common/concurrency/disruptor-ring-buffer';
 
 interface PlayerState {
   userId: string;
@@ -29,6 +30,15 @@ interface RoomState {
   countdownTimer?: NodeJS.Timeout;
 }
 
+export interface BattleIngestEvent {
+  battleId: string;
+  userId: string;
+  socketId: string;
+  eventType: 'keystroke' | 'test_case_eval' | 'disconnect' | 'player_ready' | 'player_join';
+  data: any;
+  timestamp: number;
+}
+
 @WebSocketGateway({
   cors: {
     origin: '*',
@@ -36,8 +46,12 @@ interface RoomState {
   namespace: '/battles',
 })
 export class BattlesGateway
-  implements OnGatewayConnection, OnGatewayDisconnect
+  implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit, OnModuleDestroy
 {
+  // Pre-allocated LMAX Disruptor Ring Buffer for ultra-high-throughput lock-free event ingestion
+  public readonly ringBuffer = new DisruptorRingBuffer<BattleIngestEvent>(65536);
+  private drainInterval: NodeJS.Timeout | null = null;
+
   constructor(
     private readonly metrics: MetricsService,
     @Optional() private readonly zkpService?: ZkpVerifierService,
@@ -50,6 +64,62 @@ export class BattlesGateway
   private rooms: Map<string, RoomState> = new Map();
   private disconnectTimers: Map<string, NodeJS.Timeout> = new Map();
 
+  afterInit() {
+    this.startDisruptorConsumerLoop();
+    this.logger.log('BattlesGateway initialized with LMAX Disruptor lock-free ring buffer');
+  }
+
+  onModuleDestroy() {
+    if (this.drainInterval) {
+      clearInterval(this.drainInterval);
+      this.drainInterval = null;
+    }
+  }
+
+  /**
+   * Continuous high-frequency consumer draining the Disruptor Ring Buffer
+   * with zero GC pauses and deterministic ordering.
+   */
+  private startDisruptorConsumerLoop() {
+    this.drainInterval = setInterval(() => {
+      this.ringBuffer.drain((event) => {
+        this.processRingBufferEvent(event.payload);
+      }, 1024);
+    }, 5); // 5ms micro-batching drain
+  }
+
+  /**
+   * Internal processor for events drained from the lock-free ring buffer.
+   */
+  private processRingBufferEvent(event: BattleIngestEvent) {
+    if (!event) return;
+    const { eventType, battleId, userId, data } = event;
+
+    if (eventType === 'keystroke') {
+      this.server
+        ?.to(`battle:${battleId}`)
+        ?.emit('opponent_keystroke_stream', {
+          battleId,
+          userId,
+          deltaLength: data?.delta?.length || 0,
+          cursorPosition: data?.cursorPosition,
+          timestamp: event.timestamp,
+        });
+    } else if (eventType === 'test_case_eval') {
+      this.server
+        ?.to(`battle:${battleId}`)
+        ?.emit('player_test_case_progress', {
+          battleId,
+          userId,
+          passedCount: data?.passedCount,
+          totalCount: data?.totalCount,
+          executionTimeMs: data?.executionTimeMs,
+        });
+    } else if (eventType === 'disconnect') {
+      this.handlePlayerDisconnectProcessing(event.socketId, userId, battleId);
+    }
+  }
+
   handleConnection(client: Socket) {
     this.metrics.socketConnected(client.id);
     this.logger.log(`Client connected to battle socket: ${client.id}`);
@@ -59,39 +129,104 @@ export class BattlesGateway
     this.metrics.socketDisconnected(client.id);
     this.logger.log(`Client disconnected: ${client.id}`);
 
-    // Identify which room client was in
+    // Identify which room client was in and route through Disruptor Ring Buffer
     for (const [battleId, room] of this.rooms.entries()) {
       for (const [userId, player] of Object.entries(room.players)) {
         if (player.socketId === client.id) {
-          this.logger.warn(
-            `Player ${player.username} (${userId}) disconnected from battle ${battleId}`,
-          );
-
-          // Broadcast temporary disconnect notice
-          this.server
-            .to(`battle:${battleId}`)
-            .emit('player_disconnect_warning', {
-              userId,
-              username: player.username,
-              reconnectWindowSeconds: 30,
-            });
-
-          // 30-second grace period before forfeiture
-          const timeout = setTimeout(() => {
-            delete room.players[userId];
-            this.server.to(`battle:${battleId}`).emit('player_forfeit', {
-              userId,
-              username: player.username,
-              message: 'Player failed to reconnect within 30 seconds.',
-            });
-            this.disconnectTimers.delete(client.id);
-          }, 30000);
-
-          this.disconnectTimers.set(client.id, timeout);
-          break;
+          this.ringBuffer.publish('disconnect', {
+            battleId,
+            userId,
+            socketId: client.id,
+            eventType: 'disconnect',
+            data: { username: player.username },
+            timestamp: Date.now(),
+          });
+          return;
         }
       }
     }
+  }
+
+  private handlePlayerDisconnectProcessing(socketId: string, userId: string, battleId: string) {
+    const room = this.rooms.get(battleId);
+    if (!room) return;
+    const player = room.players[userId];
+    if (!player) return;
+
+    this.logger.warn(
+      `Player ${player.username} (${userId}) disconnected from battle ${battleId}`,
+    );
+
+    // Broadcast temporary disconnect notice
+    this.server
+      ?.to(`battle:${battleId}`)
+      ?.emit('player_disconnect_warning', {
+        userId,
+        username: player.username,
+        reconnectWindowSeconds: 30,
+      });
+
+    // 30-second grace period before forfeiture
+    const timeout = setTimeout(() => {
+      delete room.players[userId];
+      this.server?.to(`battle:${battleId}`)?.emit('player_forfeit', {
+        userId,
+        username: player.username,
+        message: 'Player failed to reconnect within 30 seconds.',
+      });
+      this.disconnectTimers.delete(socketId);
+    }, 30000);
+
+    this.disconnectTimers.set(socketId, timeout);
+  }
+
+  /**
+   * Route incoming live keystrokes through the Lock-Free Disruptor Ring Buffer.
+   */
+  @SubscribeMessage('keystroke')
+  handleKeystroke(
+    @ConnectedSocket() client: Socket,
+    @MessageBody()
+    data: {
+      battleId: string;
+      userId: string;
+      delta: string;
+      cursorPosition?: number;
+    },
+  ) {
+    this.ringBuffer.publish('keystroke', {
+      battleId: data.battleId,
+      userId: data.userId,
+      socketId: client.id,
+      eventType: 'keystroke',
+      data,
+      timestamp: Date.now(),
+    });
+  }
+
+  /**
+   * Route test case evaluation events through the Disruptor Ring Buffer.
+   */
+  @SubscribeMessage('test_case_eval')
+  handleTestCaseEval(
+    @ConnectedSocket() client: Socket,
+    @MessageBody()
+    data: {
+      battleId: string;
+      userId: string;
+      passedCount: number;
+      totalCount: number;
+      executionTimeMs?: number;
+    },
+  ) {
+    this.ringBuffer.publish('test_case_eval', {
+      battleId: data.battleId,
+      userId: data.userId,
+      socketId: client.id,
+      eventType: 'test_case_eval',
+      data,
+      timestamp: Date.now(),
+    });
   }
 
   @SubscribeMessage('player_join')
