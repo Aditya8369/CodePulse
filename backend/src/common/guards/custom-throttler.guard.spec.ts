@@ -5,7 +5,7 @@ describe('CustomThrottlerGuard', () => {
 
   beforeEach(() => {
     // Instantiate with dummy dependencies
-    guard = new CustomThrottlerGuard(
+    guard = new (CustomThrottlerGuard as any)(
       { throttlers: [{ limit: 60, ttl: 60000 }] },
       {} as any,
       {} as any,

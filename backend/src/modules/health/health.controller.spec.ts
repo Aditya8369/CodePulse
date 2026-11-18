@@ -15,7 +15,7 @@ describe('HealthController - Multi-Cloud Disaster Recovery', () => {
   let controller: HealthController;
   let service: MultiCloudDrService;
 
-  const mockReport: MultiCloudDrReport = {
+  const mockReport: any = {
     generatedAt: new Date().toISOString(),
     primaryCloud: 'AWS',
     activeSecondaryClouds: ['GCP', 'AZURE'],
@@ -162,7 +162,7 @@ describe('HealthController - Game-Day Chaos Drills', () => {
 
   it('should get status and reports', async () => {
     const status = await controller.getStatus();
-    expect(status.lastDrillId).toBe('gameday-123');
+    expect((status as any).lastDrillId).toBe('gameday-123');
 
     const list = await controller.getReports();
     expect(list.count).toBe(1);
