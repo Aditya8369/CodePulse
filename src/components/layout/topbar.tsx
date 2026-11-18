@@ -28,6 +28,7 @@ import {
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { useLogout } from "@/hooks/api/use-auth";
+import { WebSocketStatusIndicator } from "@/components/providers/websocket-status-indicator";
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -104,7 +105,7 @@ function SearchTrigger({ onOpen }: SearchTriggerProps) {
 function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const { notifications, unreadCount, markAsRead, markAllAsRead } =
+  const { notifications, unreadCount, markAsRead, markAllAsRead, markCategoryAsRead } =
     useNotifications();
 
   // Close dropdown when clicking outside or pressing Escape
@@ -175,6 +176,7 @@ function NotificationBell() {
         unreadCount={unreadCount}
         onMarkAsRead={markAsRead}
         onMarkAllAsRead={markAllAsRead}
+        onMarkCategoryAsRead={markCategoryAsRead}
       />
     </div>
   );
@@ -364,6 +366,7 @@ export function Topbar({ onOpenCommandPalette }: TopbarProps) {
 
       {/* Right: Actions */}
       <div className="flex items-center gap-1.5">
+        <WebSocketStatusIndicator />
         <div className="hidden lg:block">
           <SearchTrigger onOpen={onOpenCommandPalette} />
         </div>

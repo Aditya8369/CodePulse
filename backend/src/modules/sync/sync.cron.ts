@@ -1,90 +1,45 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { PrismaService } from '../../prisma/prisma.service';
-import { SyncService } from './sync.service';
-
 @Injectable()
 export class SyncCronService {
   private readonly logger = new Logger(SyncCronService.name);
   private isRunning = false;
-
   constructor(
     private readonly prisma: PrismaService,
-    private readonly syncService: SyncService
+    @InjectQueue('github-sync') private readonly queue: Queue,
   ) {}
-
-  /**
-   * Daily Midnight Cron Worker:
-   * Selects active developers (logged in or active within last 30 days) and synchronizes
-   * GitHub contribution metrics, streaks, and ranking percentiles.
-   */
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async handleDailyContributionSync() {
-    if (this.isRunning) {
-      this.logger.warn('Previous contribution sync job is still running. Skipping execution.');
-      return;
-    }
-
+    if (this.isRunning) return;
     this.isRunning = true;
-    this.logger.log('Starting automated daily GitHub contribution sync worker...');
-
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-    let processedCount = 0;
-    let successCount = 0;
-    let failedCount = 0;
-    const failedUsers: string[] = [];
-
     try {
-      // Find active developers to refresh
-      const activeUsers = await this.prisma.user.findMany({
+      const now = new Date();
+      const users = await this.prisma.user.findMany({
         where: {
-          updatedAt: { gte: thirtyDaysAgo },
+          updatedAt: { gte: new Date(now.getTime() - 30 * 86400000) },
+          deletedAt: null,
         },
-        select: {
-          id: true,
-          username: true,
-        },
-        take: 200, // Safe batch limit
+        select: { id: true },
+        take: 200,
+        orderBy: { id: 'asc' },
       });
-
-      this.logger.log(`Found ${activeUsers.length} active developers to synchronize.`);
-
-      // Batch in chunks of 10 users with 2000ms delay between chunks to respect GitHub rate limits
-      const BATCH_SIZE = 10;
-      for (let i = 0; i < activeUsers.length; i += BATCH_SIZE) {
-        const batch = activeUsers.slice(i, i + BATCH_SIZE);
-
-        await Promise.all(
-          batch.map(async (user) => {
-            processedCount++;
-            try {
-              // Trigger user contribution refresh via SyncService
-              await this.syncService.syncUser(user.id);
-              successCount++;
-            } catch (err: any) {
-              failedCount++;
-              failedUsers.push(user.username);
-              this.logger.error(`Failed syncing user @${user.username}: ${err?.message}`);
-            }
-          })
+      for (const user of users) {
+        await this.queue.add(
+          'sync-user',
+          { userId: user.id },
+          { jobId: `daily-${now.toISOString().slice(0, 10)}-${user.id}` },
         );
-
-        // 2-second rate-limit throttle delay between batches
-        if (i + BATCH_SIZE < activeUsers.length) {
-          await new Promise((resolve) => setTimeout(resolve, 2000));
-        }
       }
-
       this.logger.log(
-        `Automated Sync Completed: ${processedCount} processed, ${successCount} successful, ${failedCount} failed.`
+        `Scheduled ${users.length} user sync jobs; workers report completion and terminal failures.`,
       );
-      if (failedUsers.length > 0) {
-        this.logger.warn(`Failed usernames: ${failedUsers.join(', ')}`);
-      }
-    } catch (globalErr: any) {
-      this.logger.error('Fatal error in daily contribution sync cron:', globalErr);
+    } catch {
+      this.logger.error(
+        'Could not enqueue the complete daily sync batch; existing jobs are retained.',
+      );
     } finally {
       this.isRunning = false;
     }

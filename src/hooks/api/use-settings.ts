@@ -1,14 +1,27 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient, extractData } from '@/lib/api-client';
+import { useState, useEffect, useCallback } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiClient, extractData } from "@/lib/api-client";
+import { useHasAuthToken } from "@/hooks/api/use-auth";
+import {
+  isColorVisionTheme,
+  type ColorVisionTheme,
+} from "@/lib/colorblind-themes";
+import {
+  isDeveloperTheme,
+  isReadableAccent,
+  type DeveloperTheme,
+} from "@/lib/developer-themes";
 
 // ==========================================
 // Types
 // ==========================================
 
 export interface AppearancePreferences {
-  theme: 'dark' | 'light' | 'system';
-  accentColor: 'purple' | 'blue' | 'emerald' | 'orange' | 'pink';
+  theme: "dark" | "light" | "system";
+  accentColor: "purple" | "blue" | "emerald" | "orange" | "pink";
+  colorVisionTheme: ColorVisionTheme;
+  developerTheme?: DeveloperTheme;
+  customAccent?: string | null;
   compactTableView: boolean;
   reducedMotion: boolean;
   defaultLandingTab: string;
@@ -33,11 +46,14 @@ export interface UserPreferences {
 // ==========================================
 
 export const DEFAULT_APPEARANCE_PREFERENCES: AppearancePreferences = {
-  theme: 'dark',
-  accentColor: 'purple',
+  theme: "dark",
+  accentColor: "purple",
+  colorVisionTheme: "normal",
+  developerTheme: "default",
+  customAccent: null,
   compactTableView: false,
   reducedMotion: false,
-  defaultLandingTab: 'dashboard',
+  defaultLandingTab: "dashboard",
 };
 
 export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
@@ -54,46 +70,59 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   notifications: DEFAULT_NOTIFICATION_PREFERENCES,
 };
 
-export const SETTINGS_STORAGE_KEY = 'devbattle_user_preferences';
+export const SETTINGS_STORAGE_KEY = "devbattle_user_preferences";
+export const SETTINGS_UPDATED_EVENT = "devbattle-preferences-updated";
 
 // ==========================================
 // Local Storage Helpers
 // ==========================================
 
-export function loadLocalPreferences(): UserPreferences {
-  if (typeof window === 'undefined') {
-    return DEFAULT_PREFERENCES;
-  }
+export function normalizePreferences(value: unknown): UserPreferences {
+  const parsed =
+    value && typeof value === "object" && !Array.isArray(value)
+      ? (value as Partial<UserPreferences>)
+      : {};
+  return {
+    appearance: {
+      ...DEFAULT_APPEARANCE_PREFERENCES,
+      ...(parsed.appearance || {}),
+      colorVisionTheme: isColorVisionTheme(parsed.appearance?.colorVisionTheme)
+        ? parsed.appearance.colorVisionTheme
+        : DEFAULT_APPEARANCE_PREFERENCES.colorVisionTheme,
+      developerTheme: isDeveloperTheme(parsed.appearance?.developerTheme)
+        ? parsed.appearance.developerTheme
+        : "default",
+      customAccent: isReadableAccent(parsed.appearance?.customAccent)
+        ? parsed.appearance.customAccent
+        : null,
+    },
+    notifications: {
+      ...DEFAULT_NOTIFICATION_PREFERENCES,
+      ...(parsed.notifications || {}),
+    },
+  };
+}
 
+export function loadLocalPreferences(): UserPreferences {
+  if (typeof window === "undefined") return DEFAULT_PREFERENCES;
   try {
     const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
-    if (!raw) {
-      return DEFAULT_PREFERENCES;
-    }
-
-    const parsed = JSON.parse(raw);
-    return {
-      appearance: {
-        ...DEFAULT_APPEARANCE_PREFERENCES,
-        ...(parsed.appearance || {}),
-      },
-      notifications: {
-        ...DEFAULT_NOTIFICATION_PREFERENCES,
-        ...(parsed.notifications || {}),
-      },
-    };
+    return raw ? normalizePreferences(JSON.parse(raw)) : DEFAULT_PREFERENCES;
   } catch (err) {
-    console.warn('Could not parse stored preferences, using defaults:', err);
+    console.warn("Could not parse stored preferences, using defaults:", err);
     return DEFAULT_PREFERENCES;
   }
 }
 
 export function saveLocalPreferences(prefs: UserPreferences): void {
-  if (typeof window === 'undefined') return;
+  if (typeof window === "undefined") return;
   try {
     localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(prefs));
+    if (typeof window.dispatchEvent === "function") {
+      window.dispatchEvent(new Event(SETTINGS_UPDATED_EVENT));
+    }
   } catch (err) {
-    console.warn('Failed to save preferences to localStorage:', err);
+    console.warn("Failed to save preferences to localStorage:", err);
   }
 }
 
@@ -102,18 +131,44 @@ export function saveLocalPreferences(prefs: UserPreferences): void {
 // ==========================================
 
 export function useUserPreferences() {
-  const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_PREFERENCES);
+  const [preferences, setPreferences] =
+    useState<UserPreferences>(DEFAULT_PREFERENCES);
   const [isLoaded, setIsLoaded] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const hasAuthToken = useHasAuthToken();
+  const remoteSettings = useSettings(hasAuthToken);
 
-  const updateSettingsMutation = useUpdateSettings();
+  const { mutate: persistSettings } = useUpdateSettings();
 
   // Hydrate preferences from localStorage on client mount
   useEffect(() => {
     const stored = loadLocalPreferences();
+    // Browser storage is only available after hydration.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPreferences(stored);
     setIsLoaded(true);
   }, []);
+
+  useEffect(() => {
+    if (!isLoaded || !hasAuthToken || !remoteSettings.isSuccess || lastSaved)
+      return;
+    if (remoteSettings.data) {
+      const hydrated = normalizePreferences(remoteSettings.data);
+      // The authenticated server record is the source of truth across devices.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setPreferences(hydrated);
+      saveLocalPreferences(hydrated);
+    } else {
+      persistSettings(loadLocalPreferences());
+    }
+  }, [
+    isLoaded,
+    hasAuthToken,
+    remoteSettings.isSuccess,
+    remoteSettings.data,
+    lastSaved,
+    persistSettings,
+  ]);
 
   // Update appearance settings
   const updateAppearance = useCallback(
@@ -128,13 +183,14 @@ export function useUserPreferences() {
 
         // Sync with backend asynchronously
         try {
-          updateSettingsMutation.mutate({ appearance: next.appearance });
+          if (hasAuthToken)
+            persistSettings({ appearance: next.appearance });
         } catch {}
 
         return next;
       });
     },
-    [updateSettingsMutation]
+    [hasAuthToken, persistSettings],
   );
 
   // Update notification settings
@@ -150,13 +206,16 @@ export function useUserPreferences() {
 
         // Sync with backend asynchronously
         try {
-          updateSettingsMutation.mutate({ notifications: next.notifications });
+          if (hasAuthToken)
+            persistSettings({
+              notifications: next.notifications,
+            });
         } catch {}
 
         return next;
       });
     },
-    [updateSettingsMutation]
+    [hasAuthToken, persistSettings],
   );
 
   // Reset all preferences back to defaults
@@ -166,11 +225,11 @@ export function useUserPreferences() {
     setLastSaved(new Date());
 
     try {
-      updateSettingsMutation.mutate(DEFAULT_PREFERENCES);
+      if (hasAuthToken) persistSettings(DEFAULT_PREFERENCES);
     } catch {}
 
     return DEFAULT_PREFERENCES;
-  }, [updateSettingsMutation]);
+  }, [hasAuthToken, persistSettings]);
 
   return {
     preferences,
@@ -186,25 +245,26 @@ export function useUserPreferences() {
 // Existing API Queries & Mutations
 // ==========================================
 
-export function useSettings() {
+export function useSettings(enabled = true) {
   return useQuery({
-    queryKey: ['settings'],
+    queryKey: ["settings"],
     queryFn: async () => {
-      const response = await apiClient.get('/settings');
-      return extractData(response);
+      const response = await apiClient.get("/settings");
+      return extractData<UserPreferences | null>(response);
     },
+    enabled,
   });
 }
 
 export function useUpdateSettings() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (data: any) => {
-      const response = await apiClient.put('/settings', data);
+    mutationFn: async (data: Partial<UserPreferences>) => {
+      const response = await apiClient.put("/settings", data);
       return extractData(response);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['settings'] });
+      queryClient.invalidateQueries({ queryKey: ["settings"] });
     },
   });
 }
@@ -212,12 +272,12 @@ export function useUpdateSettings() {
 export function useUpdateProfile() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (data: any) => {
-      const response = await apiClient.put('/users/profile', data);
+    mutationFn: async (data: Record<string, FormDataEntryValue>) => {
+      const response = await apiClient.put("/users/profile", data);
       return extractData(response);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['auth', 'current-user'] });
+      queryClient.invalidateQueries({ queryKey: ["auth", "current-user"] });
     },
   });
 }

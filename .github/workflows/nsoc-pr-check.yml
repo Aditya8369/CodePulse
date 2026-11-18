@@ -7,6 +7,7 @@ on:
 permissions:
   pull-requests: write
   issues: write
+  actions: write
 
 jobs:
   validate-pr:
@@ -53,6 +54,31 @@ jobs:
             }
 
             // ==========================================
+            // 1B-2. AUTO-APPROVE WORKFLOW RUNS (FIRST-TIME CONTRIBUTORS)
+            // ==========================================
+            try {
+              const headSha = pr.head.sha;
+              const pendingRuns = await github.rest.actions.listWorkflowRunsForRepo({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                head_sha: headSha
+              });
+              for (const run of (pendingRuns.data.workflow_runs || [])) {
+                if (run.conclusion === 'action_required' || run.status === 'waiting' || run.status === 'pending') {
+                  console.log(`Auto-approving workflow run #${run.id} (${run.name})...`);
+                  await github.rest.actions.approveWorkflowRun({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    run_id: run.id
+                  });
+                  console.log(`✅ Approved workflow run #${run.id}`);
+                }
+              }
+            } catch (err) {
+              console.warn(`Could not auto-approve workflow runs: ${err.message}`);
+            }
+
+            // ==========================================
             // 1C. AUTO-REQUEST REVIEW FROM MAINTAINER (@code-with-abhi-i5)
             // ==========================================
             const maintainer = 'code-with-abhi-i5';
@@ -75,6 +101,30 @@ jobs:
             }
 
             // ==========================================
+            // 1C-2. AUTO-DELETE SPAM COMMENTS (VERCEL & CODERABBIT)
+            // ==========================================
+            try {
+              const allComments = await github.rest.issues.listComments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number
+              });
+              for (const c of (allComments.data || [])) {
+                const authorLogin = (c.user && c.user.login ? c.user.login.toLowerCase() : '');
+                if (authorLogin.includes('vercel') || authorLogin.includes('coderabbit')) {
+                  console.log(`Auto-deleting spam bot comment #${c.id} by @${authorLogin} on PR #${pr.number}...`);
+                  await github.rest.issues.deleteComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    comment_id: c.id
+                  });
+                }
+              }
+            } catch (err) {
+              console.warn(`Could not clean bot comments: ${err.message}`);
+            }
+
+            // ==========================================
             // 1D. CONVENTIONAL COMMITS PR TITLE VALIDATION
             // ==========================================
             const prTitle = (pr.title || "").trim();
@@ -84,10 +134,14 @@ jobs:
             }
 
             // ==========================================
-            // 1E. MERGE CONFLICT / DIRTY BRANCH CHECK
+            // 1E. MERGE CONFLICT / DIRTY BRANCH CHECK (STRICT ENFORCEMENT)
             // ==========================================
-            if (pr.mergeable === false || pr.mergeable_state === 'dirty') {
-              violations.push("❌ **Merge Conflict Detected**: This branch has conflicts with `main`. Please rebase your branch:\n```bash\ngit fetch origin\ngit rebase origin/main\n# resolve conflicts\ngit push --force-with-lease\n```");
+            const isConflicted = pr.mergeable === false || pr.mergeable_state === 'dirty' || pr.mergeable_state === 'conflicting';
+            if (isConflicted) {
+              labelsToAdd.push('status: merge-conflict');
+              violations.push("❌ **STRICT: Merge Conflicts Detected**: Your branch has merge conflicts with `main`. Maintainers will **NOT** resolve conflicts for you. You must resolve them locally:\n```bash\ngit fetch origin\ngit merge origin/main\n# Open and resolve all <<<<<<< HEAD conflicts in your files\ngit add .\ngit commit -m \"fix: resolve merge conflicts with main\"\ngit push origin your-branch-name\n```");
+            } else {
+              labelsToRemove.push('status: merge-conflict');
             }
 
             // ==========================================

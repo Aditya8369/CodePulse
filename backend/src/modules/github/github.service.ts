@@ -262,13 +262,11 @@ export class GithubService {
     }
   }
 
-  /**
-   * Fetches public user activity events from GitHub REST API.
-   */
-  async fetchUserEvents(username: string, accessToken?: string, limit: number = 30, strict: boolean = false) {
+  /** Fetches user activity events, including private events for the authenticated user when requested. */
+  async fetchUserEvents(username: string, accessToken?: string, limit: number = 30, strict: boolean = false, includePrivate: boolean = false) {
     try {
       const response = await axios.get(
-        `https://api.github.com/users/${username}/events/public`,
+        `https://api.github.com/users/${username}/events${includePrivate && accessToken ? '' : '/public'}`,
         {
           headers: this.getHeaders(accessToken),
           params: { per_page: limit },
@@ -278,6 +276,31 @@ export class GithubService {
     } catch (error: any) {
       this.logger.error(`Error fetching GitHub events for ${username}:`, error.message);
       if (strict) throw error;
+      return [];
+    }
+  }
+
+  /** The Events API now omits commit details from PushEvent payloads. */
+  async fetchPushCommitMessages(repo: string, before: string, head: string, token?: string): Promise<string[]> {
+    if (!/^[\w.-]+\/[\w.-]+$/.test(repo) || !/^[0-9a-f]{40}$/i.test(head)) return [];
+    try {
+      if (!/^[0-9a-f]{40}$/i.test(before) || /^0{40}$/.test(before)) {
+        const response = await axios.get(`https://api.github.com/repos/${repo}/commits/${head}`, {
+          headers: this.getHeaders(token),
+        });
+        return typeof response.data?.commit?.message === 'string' ? [response.data.commit.message] : [];
+      }
+      const response = await axios.get(`https://api.github.com/repos/${repo}/compare/${before}...${head}`, {
+        headers: this.getHeaders(token),
+        params: { per_page: 100 },
+      });
+      return Array.isArray(response.data?.commits)
+        ? response.data.commits
+            .map((item: { commit?: { message?: unknown } }) => item.commit?.message)
+            .filter((message: unknown): message is string => typeof message === 'string' && message.trim().length > 0)
+        : [];
+    } catch (error: any) {
+      this.logger.warn(`Could not load push commits for ${repo}: ${error.message}`);
       return [];
     }
   }
@@ -411,6 +434,17 @@ export class GithubService {
       totalPRs = prsRes.data?.total_count || 0;
     } catch (e: any) {
       this.logger.warn(`Failed to fetch PR count for ${username}: ${e.message}`);
+    }
+
+    let totalReviews = 0;
+    try {
+      const reviewsRes = await axios.get('https://api.github.com/search/issues', {
+        headers,
+        params: { q: `type:pr reviewed-by:${userData.login}`, per_page: 1 },
+      });
+      totalReviews = reviewsRes.data?.total_count ?? 0;
+    } catch (error) {
+      this.logger.warn(`Failed to fetch review count for ${username}: ${error instanceof Error ? error.message : String(error)}`);
     }
 
     let totalIssues = 0;
@@ -601,6 +635,7 @@ export class GithubService {
       stats: {
         totalCommits,
         totalPRs,
+        totalReviews,
         totalIssues,
         totalStars,
         followers: userData.followers || 0,

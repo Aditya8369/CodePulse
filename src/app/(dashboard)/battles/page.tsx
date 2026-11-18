@@ -26,6 +26,7 @@ export default function BattlesPage() {
   const [isIntroFinished, setIsIntroFinished] = useState(false);
   const [battleHistory, setBattleHistory] = useState<HistoricalBattle[]>([]);
   const [isQueueOpen, setIsQueueOpen] = useState(false);
+  const [focusSetupOnReturn, setFocusSetupOnReturn] = useState(false);
 
   // Load history from localStorage
   useEffect(() => {
@@ -202,7 +203,8 @@ export default function BattlesPage() {
         {/* Global Sound Effects Mute Toggle Button */}
         <button
           onClick={toggleMute}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-border bg-card/60 backdrop-blur-md hover:bg-accent text-xs font-medium transition-all shadow-sm active:scale-95"
+          aria-pressed={isMuted}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-border bg-card/60 backdrop-blur-md hover:bg-accent text-xs font-medium transition-all shadow-sm active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           title={isMuted ? "Sound effects currently muted (click to unmute)" : "Sound effects enabled (click to mute)"}
           aria-label={isMuted ? "Sound effects muted" : "Sound effects enabled"}
         >
@@ -232,7 +234,7 @@ export default function BattlesPage() {
             <div className="flex justify-end">
               <Button
                 onClick={() => setIsQueueOpen(true)}
-                className="flex items-center gap-2 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-bold py-2.5 px-5 rounded-2xl shadow-lg"
+                className="flex items-center gap-2 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-bold py-2.5 px-5 rounded-2xl shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               >
                 <Swords className="w-4 h-4" />
                 <span>Quick Matchmaking Queue</span>
@@ -243,6 +245,7 @@ export default function BattlesPage() {
               onStart={startGhostBattle}
               initialPlayer1={initialP1}
               initialPlayer2={initialP2}
+              focusFirstInput={focusSetupOnReturn}
             />
 
             <BattleHistoryList
@@ -323,6 +326,7 @@ export default function BattlesPage() {
               onRematch={() => {
                 setGhostBattleData(null);
                 setSetupUsernames(null);
+                setFocusSetupOnReturn(true);
                 setPhase("SETUP");
               }}
             />

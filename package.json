@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "prepare": "husky"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
@@ -28,6 +29,7 @@
     "echarts": "^6.1.0",
     "echarts-for-react": "^3.0.6",
     "gsap": "^3.15.0",
+    "html-to-image": "^1.11.13",
     "html2canvas": "^1.4.1",
     "lucide-react": "^1.23.0",
     "motion": "^12.42.2",
@@ -42,6 +44,7 @@
     "react-resizable-panels": "^4.12.0",
     "recharts": "^3.9.2",
     "shadcn": "^4.12.0",
+    "socket.io-client": "^4.8.4",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.6.0",
     "three": "^0.185.1",
@@ -60,6 +63,7 @@
     "@vitejs/plugin-react": "^4.3.4",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
+    "husky": "^9.1.7",
     "jsdom": "^26.0.0",
     "tailwindcss": "^4",
     "typescript": "^5",

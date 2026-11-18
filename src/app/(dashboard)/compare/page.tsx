@@ -16,11 +16,13 @@ import {
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CompareShareCard } from "@/components/compare/compare-share-card";
+import { RadarExportModal } from "@/components/compare/radar-export-modal";
 
 // Types
 interface DevStats {
   totalCommits: number;
   totalPRs: number;
+  totalReviews?: number;
   totalIssues: number;
   totalStars: number;
   followers: number;
@@ -81,6 +83,7 @@ function CompareDashboard() {
   const [githubToken, setGithubToken] = useState("");
   const [showTokenInput, setShowTokenInput] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isRadarExportOpen, setIsRadarExportOpen] = useState(false);
   
   // Load recent comparisons from local storage
   useEffect(() => {
@@ -233,6 +236,9 @@ function CompareDashboard() {
   };
 
   const winner = getWinner();
+  const reviews1 = dev1?.stats.totalReviews ?? 0;
+  const reviews2 = dev2?.stats.totalReviews ?? 0;
+  const reviewLeader = reviews1 > reviews2 ? dev1 : reviews2 > reviews1 ? dev2 : null;
 
   const StatBar = ({ val1, val2, icon: Icon, label }: any) => {
     const total = val1 + val2;
@@ -638,13 +644,22 @@ function CompareDashboard() {
                       </div>
                     </motion.div>
                   ) : <div />}
-                  <button
-                    onClick={() => setIsShareModalOpen(true)}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold shadow-lg transition-all"
-                  >
-                    <Share2 className="w-4 h-4" />
-                    <span>Export Matchup Card</span>
-                  </button>
+                  <div className="flex flex-wrap justify-center gap-2">
+                    <button
+                      onClick={() => setIsRadarExportOpen(true)}
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold shadow-lg transition-all"
+                    >
+                      <Share2 className="w-4 h-4" />
+                      <span>Export Skill Radar</span>
+                    </button>
+                    <button
+                      onClick={() => setIsShareModalOpen(true)}
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold shadow-lg transition-all"
+                    >
+                      <Share2 className="w-4 h-4" />
+                      <span>Export Matchup Card</span>
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative">
@@ -799,17 +814,23 @@ function CompareDashboard() {
                         developers={[
                           {
                             name: dev1.username,
-                            values: [dev1.stats.totalCommits, dev1.stats.totalPRs, dev1.stats.totalIssues, dev1.stats.totalPRs, dev1.stats.totalStars, dev1.stats.streak],
+                            values: [dev1.stats.totalCommits, dev1.stats.totalPRs, dev1.stats.totalIssues, reviews1, dev1.stats.totalStars, dev1.stats.streak],
                             color: { line: '#8b5cf6', area: 'rgba(139, 92, 246, 0.2)' }
                           },
                           {
                             name: dev2.username,
-                            values: [dev2.stats.totalCommits, dev2.stats.totalPRs, dev2.stats.totalIssues, dev2.stats.totalPRs, dev2.stats.totalStars, dev2.stats.streak],
+                            values: [dev2.stats.totalCommits, dev2.stats.totalPRs, dev2.stats.totalIssues, reviews2, dev2.stats.totalStars, dev2.stats.streak],
                             color: { line: '#06b6d4', area: 'rgba(6, 182, 212, 0.2)' }
                           }
                         ]}
                       />
                     </div>
+                    <p className="text-center text-xs">
+                      Code Reviews: @{dev1.username} {reviews1.toLocaleString()} · @{dev2.username} {reviews2.toLocaleString()}
+                      <span className="block font-medium text-foreground">
+                        {reviewLeader ? `@${reviewLeader.username} leads in code reviews` : "Code reviews tied"}
+                      </span>
+                    </p>
                   </div>
                 </div>
 
@@ -875,6 +896,12 @@ function CompareDashboard() {
                 onClose={() => setIsShareModalOpen(false)}
                 dev1={dev1}
                 dev2={dev2}
+              />
+              <RadarExportModal
+                isOpen={isRadarExportOpen}
+                onClose={() => setIsRadarExportOpen(false)}
+                first={dev1}
+                second={dev2}
               />
             </motion.div>
           )
