@@ -11,6 +11,7 @@ import { BattlesLifecycleScheduler } from './battles-lifecycle.scheduler';
 import { BattlesLifecycleWorker } from './battles-lifecycle.worker';
 import { MetricsModule } from '../metrics/metrics.module';
 import { XpModule } from '../xp/xp.module';
+import { CryptoModule } from '../crypto/crypto.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { XpModule } from '../xp/xp.module';
     ),
     MetricsModule,
     XpModule,
+    CryptoModule,
   ],
   controllers: [BattlesController],
   providers: [

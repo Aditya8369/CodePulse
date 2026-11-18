@@ -10,6 +10,9 @@ import {
 import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { MetricsService } from '../metrics/metrics.service';
+import { Optional } from '@nestjs/common';
+import { ZkpVerifierService } from '../crypto/zkp-verifier.service';
+import type { ZkpVerificationRequest } from '../crypto/zkp-verifier.service';
 
 interface PlayerState {
   userId: string;
@@ -35,7 +38,10 @@ interface RoomState {
 export class BattlesGateway
   implements OnGatewayConnection, OnGatewayDisconnect
 {
-  constructor(private readonly metrics: MetricsService) {}
+  constructor(
+    private readonly metrics: MetricsService,
+    @Optional() private readonly zkpService?: ZkpVerifierService,
+  ) {}
 
   @WebSocketServer()
   server: Server;
@@ -190,6 +196,39 @@ export class BattlesGateway
       this.server.to(`battle:${battleId}`).emit('round_transition_sync', {
         round: nextRound,
         metric,
+      });
+    }
+  }
+
+  @SubscribeMessage('submit_zkp_solution')
+  async handleSubmitZkpSolution(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: ZkpVerificationRequest,
+  ) {
+    if (!this.zkpService) {
+      client.emit('zkp_verification_result', {
+        valid: false,
+        error: 'ZkpVerifierService not configured on gateway',
+      });
+      return;
+    }
+
+    try {
+      const result = await this.zkpService.verifyZkpProof(data);
+      client.emit('zkp_verification_result', result);
+
+      if (result.valid) {
+        this.server.to(`battle:${data.battleId}`).emit('player_solved_private_round', {
+          battleId: data.battleId,
+          userId: data.userId,
+          proofHash: result.proofHash,
+          verificationDurationMs: result.verificationDurationMs,
+        });
+      }
+    } catch (err: any) {
+      client.emit('zkp_verification_result', {
+        valid: false,
+        error: err.message,
       });
     }
   }
