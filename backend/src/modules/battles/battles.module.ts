@@ -11,6 +11,8 @@ import { BattlesLifecycleScheduler } from './battles-lifecycle.scheduler';
 import { BattlesLifecycleWorker } from './battles-lifecycle.worker';
 import { MetricsModule } from '../metrics/metrics.module';
 import { XpModule } from '../xp/xp.module';
+import { AnalyticsModule } from '../analytics/analytics.module';
+import { ReplayStreamService } from './replay-stream.service';
 
 @Module({
   imports: [
@@ -20,6 +22,7 @@ import { XpModule } from '../xp/xp.module';
     ),
     MetricsModule,
     XpModule,
+    AnalyticsModule,
   ],
   controllers: [BattlesController],
   providers: [
@@ -31,7 +34,8 @@ import { XpModule } from '../xp/xp.module';
     RatingDecayScheduler,
     BattlesLifecycleScheduler,
     BattlesLifecycleWorker,
+    ReplayStreamService,
   ],
-  exports: [BattlesService, BattlesGateway],
+  exports: [BattlesService, BattlesGateway, ReplayStreamService],
 })
 export class BattlesModule {}
