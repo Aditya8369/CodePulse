@@ -7,6 +7,7 @@ on:
 permissions:
   pull-requests: write
   issues: write
+  actions: write
 
 jobs:
   validate-pr:
@@ -50,6 +51,31 @@ jobs:
               }
             } catch (err) {
               console.warn(`Could not auto-assign author to PR: ${err.message}`);
+            }
+
+            // ==========================================
+            // 1B-2. AUTO-APPROVE WORKFLOW RUNS (FIRST-TIME CONTRIBUTORS)
+            // ==========================================
+            try {
+              const headSha = pr.head.sha;
+              const pendingRuns = await github.rest.actions.listWorkflowRunsForRepo({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                head_sha: headSha
+              });
+              for (const run of (pendingRuns.data.workflow_runs || [])) {
+                if (run.conclusion === 'action_required' || run.status === 'waiting' || run.status === 'pending') {
+                  console.log(`Auto-approving workflow run #${run.id} (${run.name})...`);
+                  await github.rest.actions.approveWorkflowRun({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    run_id: run.id
+                  });
+                  console.log(`✅ Approved workflow run #${run.id}`);
+                }
+              }
+            } catch (err) {
+              console.warn(`Could not auto-approve workflow runs: ${err.message}`);
             }
 
             // ==========================================
