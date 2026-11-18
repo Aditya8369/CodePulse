@@ -96,7 +96,21 @@ export class PrismaService
   }
 
   async onModuleInit() {
-    await this.$connect();
+    if (process.env.SKIP_DB_CONNECT === 'true') {
+      this.logger.log('PrismaService: SKIP_DB_CONNECT active. Skipping database connection.');
+      return;
+    }
+    try {
+      await this.$connect();
+    } catch (err: any) {
+      if (process.env.NODE_ENV === 'test') {
+        this.logger.warn(
+          `PrismaService: Database connection deferred in test/smoke environment: ${err?.message || err}`,
+        );
+        return;
+      }
+      throw err;
+    }
   }
 
   async onModuleDestroy() {

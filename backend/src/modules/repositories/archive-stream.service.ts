@@ -311,16 +311,16 @@ export class ArchiveStreamService {
       highWaterMark: options.highWaterMark || this.defaultHighWaterMark,
     });
 
-    archive.on('data', (chunk) => {
+    archive.on('data', (chunk: Buffer) => {
       bytesPiped += chunk.length;
     });
 
-    archive.on('warning', (err) => {
-      this.logger.warn(`Archiver warning: ${err.message}`);
+    archive.on('warning', (err: any) => {
+      this.logger.warn(`Archiver warning: ${err?.message || err}`);
     });
 
-    archive.on('error', (err) => {
-      this.logger.error(`Archiver stream error: ${err.message}`);
+    archive.on('error', (err: any) => {
+      this.logger.error(`Archiver stream error: ${err?.message || err}`);
       throw err;
     });
 
@@ -366,7 +366,7 @@ export class ArchiveStreamService {
       highWaterMark: options.highWaterMark || this.defaultHighWaterMark,
     });
 
-    archive.on('data', (chunk) => {
+    archive.on('data', (chunk: Buffer) => {
       bytesPiped += chunk.length;
     });
 

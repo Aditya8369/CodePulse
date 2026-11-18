@@ -75,6 +75,9 @@ try {
       try {
         execSync('npm --prefix backend run build', { stdio: 'inherit' });
         console.log('✅ Backend build passed!\n');
+        console.log('🛡️ Verifying Backend Dependency Injection & Route tree...');
+        execSync('node backend/scripts/smoke-boot.mjs', { stdio: 'inherit' });
+        console.log('✅ Backend DI and routes verified!\n');
       } catch {
         console.error(
           '\n❌ [CodePulse Pre-Push Failed]: Backend build or typecheck found errors.'

@@ -51,8 +51,18 @@ import { LoadShedderMiddleware } from './common/middleware/load-shedder.middlewa
       connection: {
         host: process.env.REDIS_HOST || 'localhost',
         port: parseInt(process.env.REDIS_PORT || '6379'),
+        username: process.env.REDIS_USERNAME || undefined,
         password: process.env.REDIS_PASSWORD || undefined,
         tls: process.env.REDIS_PASSWORD ? {} : undefined,
+        lazyConnect: true,
+        maxRetriesPerRequest: null,
+        enableOfflineQueue: false,
+        retryStrategy: (times) => {
+          if (process.env.CI_SMOKE_BOOT === 'true') {
+            return null;
+          }
+          return Math.min(times * 100, 3000);
+        },
       },
     }),
     CacheModule.register({
@@ -115,6 +125,6 @@ import { LoadShedderMiddleware } from './common/middleware/load-shedder.middlewa
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
-    consumer.apply(LoadShedderMiddleware).forRoutes('*');
+    consumer.apply(LoadShedderMiddleware).forRoutes('*path');
   }
 }

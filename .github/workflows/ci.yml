@@ -76,3 +76,9 @@ jobs:
 
       - name: 🚀 Verify Backend Build
         run: npm run build
+
+      - name: 🛡️ Verify Production Boot & Dependency Injection Graph
+        env:
+          NODE_ENV: "test"
+          JWT_SECRET: "ci-smoke-test-jwt-secret-xyz12345678901234567890"
+        run: npm run test:boot

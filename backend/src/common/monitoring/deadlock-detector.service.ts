@@ -94,6 +94,12 @@ export class DeadlockDetectorService implements OnModuleInit, OnModuleDestroy {
 
   startDetector(): void {
     if (this.timer) return;
+    if (process.env.CI_SMOKE_BOOT === 'true') {
+      this.logger.log(
+        'DeadlockDetectorService: CI smoke boot active, skipping continuous background probe.',
+      );
+      return;
+    }
 
     this.timer = setInterval(() => {
       if (this.isScanning) return;
