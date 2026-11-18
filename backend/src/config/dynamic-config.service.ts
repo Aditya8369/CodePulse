@@ -137,7 +137,7 @@ export class DynamicConfigService implements OnModuleInit, OnModuleDestroy {
     const validation = keySchema.safeParse(rawValue);
     if (!validation.success) {
       const issues = validation.error.issues
-        .map((i) => `${i.path.join('.') || key}: ${i.message}`)
+        .map((i: any) => `${i.path.join('.') || key}: ${i.message}`)
         .join('; ');
       const err = `Schema validation failed for "${key}": ${issues}`;
 

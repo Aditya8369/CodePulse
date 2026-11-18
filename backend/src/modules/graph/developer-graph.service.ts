@@ -149,7 +149,7 @@ export class DeveloperGraphService implements OnModuleInit, OnModuleDestroy {
       try {
         session = this.driver.session();
         const result = await session.run(query, params);
-        return result.records.map((record) => record.toObject() as T);
+        return result.records.map((record: any) => record.toObject() as T);
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
         this.logger.debug(
