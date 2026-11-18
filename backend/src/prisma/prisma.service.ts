@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { ReplicaBalancerService } from './replica-balancer.service';
+import { VaultService } from '../modules/security/vault.service';
 
 const DEFAULT_SLOW_QUERY_THRESHOLD_MS = 200;
 
@@ -15,6 +16,21 @@ function slowQueryThresholdMs(value: string | undefined): number {
   return Number.isFinite(parsed) && parsed > 0
     ? parsed
     : DEFAULT_SLOW_QUERY_THRESHOLD_MS;
+}
+
+function constructDatabaseUrlWithCredentials(
+  baseUrl: string,
+  user: string,
+  pass: string,
+): string {
+  try {
+    const parsed = new URL(baseUrl);
+    parsed.username = encodeURIComponent(user);
+    parsed.password = encodeURIComponent(pass);
+    return parsed.toString();
+  } catch {
+    return baseUrl;
+  }
 }
 
 @Injectable()
@@ -27,8 +43,25 @@ export class PrismaService
   constructor(
     @Optional()
     public readonly replicaBalancer?: ReplicaBalancerService,
+    @Optional()
+    public readonly vaultService?: VaultService,
   ) {
-    super({ log: [{ emit: 'event', level: 'query' }] });
+    const dynamicCreds = vaultService?.getCurrentDatabaseCredential();
+    const baseDbUrl = process.env.DATABASE_URL;
+
+    const datasourceUrl =
+      dynamicCreds && baseDbUrl
+        ? constructDatabaseUrlWithCredentials(
+            baseDbUrl,
+            dynamicCreds.username,
+            dynamicCreds.password,
+          )
+        : undefined;
+
+    super({
+      log: [{ emit: 'event', level: 'query' }],
+      ...(datasourceUrl ? { datasources: { db: { url: datasourceUrl } } } : {}),
+    });
 
     const thresholdMs = slowQueryThresholdMs(
       process.env.SLOW_QUERY_THRESHOLD_MS,

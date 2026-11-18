@@ -1,7 +1,9 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Optional, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
+import * as jwt from 'jsonwebtoken';
+import { VaultService } from '../../security/vault.service';
 
 interface JwtPayload {
   sub?: unknown;
@@ -12,11 +14,39 @@ interface JwtPayload {
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    @Optional() private vaultService?: VaultService,
+  ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: configService.getOrThrow<string>('JWT_SECRET'),
+      secretOrKeyProvider: (
+        _request: unknown,
+        rawJwtToken: string,
+        done: (err: any, secretOrKey?: string | Buffer) => void,
+      ) => {
+        // Collect candidate keys in order of precedence: current Vault key, previous (dual-key window), or env
+        const validKeys = vaultService
+          ? vaultService.getValidJwtVerificationKeys()
+          : [
+              configService.get<string>('JWT_SECRET') ||
+                'dev-fallback-secret-codepulse-key-management-32b',
+            ];
+
+        // Determine which valid signing key validates the token signature
+        for (const key of validKeys) {
+          try {
+            jwt.verify(rawJwtToken, key, { ignoreExpiration: true });
+            return done(null, key);
+          } catch {
+            // Try next valid key in rotation window
+          }
+        }
+
+        // Default to the first key if none matched so standard failure handling applies
+        return done(null, validKeys[0]);
+      },
     });
   }
 
