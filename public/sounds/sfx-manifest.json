@@ -1,0 +1,52 @@
+{
+  "name": "CodePulse Procedural Spatial Audio Soundscape",
+  "version": "1.0.0",
+  "description": "Procedural Web Audio API sound synthesis manifest with HRTF spatial binaural positioning",
+  "engine": "Web Audio API (Procedural Synthesizer)",
+  "panningModel": "HRTF",
+  "coordinates": {
+    "leftPlayer": { "x": -1.0, "y": 0.0, "z": 0.0 },
+    "rightPlayer": { "x": 1.0, "y": 0.0, "z": 0.0 },
+    "listener": { "x": 0.0, "y": 0.0, "z": 0.0 }
+  },
+  "soundEffects": [
+    {
+      "id": "keystroke_click",
+      "type": "procedural",
+      "oscillator": "triangle",
+      "frequency": "dynamic (280Hz - 420Hz)",
+      "decayMs": 35,
+      "description": "Sub-millisecond tactile mechanical keyboard click"
+    },
+    {
+      "id": "compile_error_buzzer",
+      "type": "procedural",
+      "oscillator": "sawtooth",
+      "frequency": "130Hz - 90Hz drop",
+      "decayMs": 280,
+      "description": "Dissonant compile or syntax error warning buzzer"
+    },
+    {
+      "id": "test_success_chime",
+      "type": "procedural",
+      "oscillator": "sine",
+      "frequency": "harmonic arpeggio (523Hz, 659Hz, 784Hz)",
+      "decayMs": 450,
+      "description": "Ascending crystalline test pass chime"
+    },
+    {
+      "id": "round_countdown_beep",
+      "type": "procedural",
+      "oscillator": "square",
+      "frequency": "880Hz / 1760Hz final",
+      "decayMs": 150,
+      "description": "Tournament countdown tick and battle start horn"
+    }
+  ],
+  "adrenalineModulation": {
+    "lowWpmCutoffHz": 800,
+    "highWpmCutoffHz": 12000,
+    "maxWpmThreshold": 150
+  }
+}
+
