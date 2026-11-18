@@ -6,9 +6,10 @@ import { MetricsInterceptor } from '../../common/interceptors/metrics.intercepto
 import { MetricsBasicAuthGuard } from './metrics-basic-auth.guard';
 import { MetricsController } from './metrics.controller';
 import { MetricsService } from './metrics.service';
+import { RedisStreamsModule } from '../../common/redis/redis-streams.module';
 
 @Module({
-  imports: [PrismaModule, QueuesModule],
+  imports: [PrismaModule, QueuesModule, RedisStreamsModule],
   controllers: [MetricsController],
   providers: [
     MetricsService,

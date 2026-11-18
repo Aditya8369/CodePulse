@@ -1,9 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { Gauge, Histogram, Registry, collectDefaultMetrics } from 'prom-client';
 import type { OpenMetricsContentType } from 'prom-client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { RedisStreamsService } from '../../common/redis/redis-streams.service';
 
 @Injectable()
 export class MetricsService {
@@ -14,6 +15,9 @@ export class MetricsService {
   private readonly activeConnections: Gauge;
   private readonly activeBattles: Gauge;
   private readonly waitingJobs: Gauge<'queue'>;
+  private readonly streamLag: Gauge<'stream' | 'group'>;
+  private readonly streamPending: Gauge<'stream' | 'group'>;
+  private readonly streamConsumers: Gauge<'stream' | 'group'>;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -21,6 +25,7 @@ export class MetricsService {
     @InjectQueue('leaderboard-sync') private readonly leaderboardSync: Queue,
     @InjectQueue('github-sync') private readonly githubSync: Queue,
     @InjectQueue('dead-letter') private readonly deadLetter: Queue,
+    @Optional() private readonly redisStreams?: RedisStreamsService,
   ) {
     this.registry.setContentType(Registry.OPENMETRICS_CONTENT_TYPE);
     collectDefaultMetrics({ register: this.registry });
@@ -79,6 +84,53 @@ export class MetricsService {
         }
       },
     });
+
+    this.streamLag = new Gauge<'stream' | 'group'>({
+      name: 'redis_stream_consumer_group_lag',
+      help: 'Lag in messages for Redis Stream consumer groups',
+      labelNames: ['stream', 'group'],
+      registers: [this.registry],
+      collect: async () => {
+        if (!this.redisStreams) return;
+        const monitoredStreams = [
+          {
+            stream: RedisStreamsService.STREAM_EVENTS_SYNC,
+            group: RedisStreamsService.GROUP_WORKERS_SYNC,
+          },
+          {
+            stream: RedisStreamsService.STREAM_EVENTS_BATTLES,
+            group: RedisStreamsService.GROUP_WORKERS_BATTLES,
+          },
+        ];
+        for (const { stream, group } of monitoredStreams) {
+          try {
+            const metrics = await this.redisStreams.getStreamMetrics(stream, group);
+            if (metrics) {
+              this.streamLag.set({ stream, group }, metrics.lag);
+              this.streamPending.set({ stream, group }, metrics.pendingCount);
+              this.streamConsumers.set({ stream, group }, metrics.consumersCount);
+            }
+          } catch (error) {
+            this.logger.warn(`Could not collect metrics for stream ${stream}: ${String(error)}`);
+          }
+        }
+      },
+    });
+
+    this.streamPending = new Gauge<'stream' | 'group'>({
+      name: 'redis_stream_pending_messages_total',
+      help: 'Total pending unacknowledged messages for Redis Stream consumer group',
+      labelNames: ['stream', 'group'],
+      registers: [this.registry],
+    });
+
+    this.streamConsumers = new Gauge<'stream' | 'group'>({
+      name: 'redis_stream_active_consumers_total',
+      help: 'Total active consumers registered in Redis Stream consumer group',
+      labelNames: ['stream', 'group'],
+      registers: [this.registry],
+    });
+
     this.activeConnections.set(0);
   }
 

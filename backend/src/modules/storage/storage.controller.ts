@@ -17,6 +17,8 @@ import { RocksDbService } from './rocksdb.service';
 import type { RocksDbStats } from './rocksdb.service';
 import { WorkspaceStateService } from './workspace-state.service';
 import type { UnsavedDraftState } from './workspace-state.service';
+import { HsmService } from './hsm.service';
+import type { StorageTierAuditReport } from './hsm.service';
 
 @ApiTags('storage')
 @Controller('storage')
@@ -25,6 +27,7 @@ export class StorageController {
     private readonly mmapStorage: MmapStorageService,
     private readonly rocksDb: RocksDbService,
     private readonly workspaceState: WorkspaceStateService,
+    private readonly hsmService: HsmService,
   ) {}
 
   @Get('rocksdb/stats')
@@ -69,6 +72,29 @@ export class StorageController {
     @Body('commitSha') commitSha?: string,
   ) {
     return this.workspaceState.flushCommittedDrafts(userId, fileIds, commitSha);
+  }
+
+  @Get('tiers/audit')
+  @ApiOperation({
+    summary:
+      'Audit multi-tier hierarchical storage distribution (Hot NVMe, Warm S3, Cold Glacier) and cost savings',
+  })
+  async getStorageTiersAudit(): Promise<StorageTierAuditReport> {
+    return this.hsmService.getStorageTierAudit();
+  }
+
+  @Get('commit/:repositoryId/:commitSha')
+  @ApiOperation({
+    summary:
+      'Transparently retrieve commit diff across Hot SSD, Warm S3, or Cold Glacier storage tiers',
+  })
+  @ApiParam({ name: 'repositoryId', description: 'Repository ID' })
+  @ApiParam({ name: 'commitSha', description: 'Commit SHA hash' })
+  async getCommitDiff(
+    @Param('repositoryId') repositoryId: string,
+    @Param('commitSha') commitSha: string,
+  ) {
+    return this.hsmService.getCommitDiff(repositoryId, commitSha);
   }
 
   @Get('monaco/stats')
