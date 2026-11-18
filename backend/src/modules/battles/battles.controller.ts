@@ -16,6 +16,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { BattlesService } from './battles.service';
 import { CreateBattleDto, UpdateBattleStatusDto } from './dto/battles.dto';
 import { SeasonResetService } from './season-reset.service';
+import { ReplayStreamService } from './replay-stream.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('battles')
@@ -24,6 +25,7 @@ export class BattlesController {
   constructor(
     private readonly battlesService: BattlesService,
     private readonly seasonReset: SeasonResetService,
+    private readonly replayStream: ReplayStreamService,
   ) {}
 
   @Get('season/leaderboard')
@@ -107,5 +109,19 @@ export class BattlesController {
   @ApiOperation({ summary: 'Forfeit an active battle' })
   async forfeitBattle(@Request() req: any, @Param('id') id: string) {
     return this.battlesService.forfeitBattle(id, req.user.id);
+  }
+
+  @Get(':id/replay')
+  @ApiOperation({ summary: 'Get high-frequency keystroke match replay timeline from ScyllaDB' })
+  async getBattleReplay(
+    @Param('id') id: string,
+    @Query('startTime') startTime?: string,
+    @Query('endTime') endTime?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const start = startTime ? new Date(startTime) : undefined;
+    const end = endTime ? new Date(endTime) : undefined;
+    const max = limit ? parseInt(limit, 10) : 10000;
+    return this.replayStream.getMatchReplayTimeline(id, start, end, max);
   }
 }
