@@ -49,7 +49,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: 📄 Generate Trivy SARIF Vulnerability Report (OS & Libraries)
-        uses: aquasecurity/trivy-action@v0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: 'image'
           image-ref: ${{ env.IMAGE_TAG }}
@@ -69,7 +69,7 @@ jobs:
           category: 'trivy-backend-container'
 
       - name: 🚨 Enforce Critical CVE Gate (Vendor-Fix Available)
-        uses: aquasecurity/trivy-action@v0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: 'image'
           image-ref: ${{ env.IMAGE_TAG }}
