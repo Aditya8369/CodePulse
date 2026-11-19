@@ -6,8 +6,10 @@ import { motion } from "motion/react";
 import { useQuery } from "@tanstack/react-query";
 import { RadarCompareChart } from "@/components/charts/radar-compare-chart";
 import { HeadToHeadCard, type HeadToHeadData } from "@/components/compare/head-to-head-card";
+import { ComparisonMetricsTable } from "@/components/compare/comparison-metrics-table";
 import { apiClient, extractData } from "@/lib/api-client";
 import { useCurrentUser } from "@/hooks/api/use-auth";
+import { toast } from "sonner";
 import { 
   Swords, Search, Trophy, CalendarDays, MapPin, Calendar, GitBranch, Star, Users, Flame,
   TrendingUp, GitCommitHorizontal, GitPullRequest, CircleDot, CodeXml, Coffee, Plus, Minus,
@@ -184,7 +186,6 @@ function CompareDashboard() {
       setDev1(d1);
       setDev2(d2);
       saveRecent(d1.username, d2.username);
-      
       // Update URL silently
       const params = new URLSearchParams(searchParams.toString());
       params.set('user1', q1);
@@ -194,6 +195,9 @@ function CompareDashboard() {
       window.history.replaceState(null, '', `?${params.toString()}`);
     } else {
       setError("Could not fetch one or both users. Check if usernames are correct and GitHub API limits.");
+      toast.error("Invalid username(s)", {
+        description: "Check if both GitHub usernames are correct and try again.",
+      });
     }
     setIsLoading(false);
   };
@@ -678,6 +682,12 @@ function CompareDashboard() {
                   history={headToHead.data}
                   isLoading={headToHead.isPending && headToHead.fetchStatus !== "idle"}
                   hasError={headToHead.isError}
+                />
+
+                <ComparisonMetricsTable
+                  dev1={dev1}
+                  dev2={dev2}
+                  headToHead={headToHead.data}
                 />
 
                 <div>
