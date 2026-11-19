@@ -35,6 +35,7 @@ import { StorageModule } from './modules/storage/storage.module';
 import { CryptoModule } from './modules/crypto/crypto.module';
 import { IdentityModule } from './modules/identity/identity.module';
 import { GraphqlGatewayModule } from './modules/graphql/graphql.module';
+import { LoggingModule } from './common/logging/logging.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import { BullModule } from '@nestjs/bullmq';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -114,6 +115,7 @@ import { LoadShedderMiddleware } from './common/middleware/load-shedder.middlewa
     CryptoModule,
     IdentityModule,
     GraphqlGatewayModule,
+    LoggingModule,
   ],
   controllers: [AppController],
   providers: [
