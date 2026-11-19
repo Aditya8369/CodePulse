@@ -87,7 +87,7 @@ jobs:
           exit-code: '1'
 
       - name: 🔍 Secondary Verification with Anchore Grype
-        uses: anchore/scan-action@v6
+        uses: anchore/scan-action@v7
         continue-on-error: true
         with:
           image: ${{ env.IMAGE_TAG }}
