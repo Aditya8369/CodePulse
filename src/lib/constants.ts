@@ -87,6 +87,7 @@ export const NAV_ITEMS = [
       { title: "Dashboard", href: "/dashboard", icon: "LayoutDashboard" },
       { title: "Analytics", href: "/analytics", icon: "BarChart3" },
       { title: "Repositories", href: "/repositories", icon: "GitBranch" },
+      { title: "Code Diff", href: "/code-diff", icon: "GitCompareArrows" },
     ],
   },
   {

@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { RARITY_COLORS } from "@/lib/constants";
 import { AnimatedRing } from "@/components/animations/animated-counter";
 import {
+  type LucideIcon,
   Lock,
   Zap,
   GitCommit,
@@ -21,7 +22,7 @@ import type { Achievement } from "@/types";
 // Icon map
 // ===========================
 
-const ICON_MAP: Record<string, React.ElementType> = {
+const ICON_MAP: Record<string, LucideIcon> = {
   GitCommit,
   Star,
   Flame,

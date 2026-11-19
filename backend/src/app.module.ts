@@ -34,6 +34,9 @@ import { ObservabilityModule } from './modules/observability/observability.modul
 import { StorageModule } from './modules/storage/storage.module';
 import { CryptoModule } from './modules/crypto/crypto.module';
 import { IdentityModule } from './modules/identity/identity.module';
+import { GraphqlGatewayModule } from './modules/graphql/graphql.module';
+import { McpModule } from './modules/mcp/mcp.module';
+import { WebhooksModule } from './modules/webhooks/webhooks.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import { BullModule } from '@nestjs/bullmq';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -44,6 +47,7 @@ import { TokenBucketRateLimitGuard } from './common/guards/token-bucket-rate-lim
 import { GuardsModule } from './common/guards/guards.module';
 import { SystemMetricsService } from './common/services/system-metrics.service';
 import { LoadShedderMiddleware } from './common/middleware/load-shedder.middleware';
+import { CommonModule } from './common/common.module';
 
 @Module({
   imports: [
@@ -115,6 +119,10 @@ import { LoadShedderMiddleware } from './common/middleware/load-shedder.middlewa
     CryptoModule,
     IdentityModule,
     GuardsModule,
+    CommonModule,
+    GraphqlGatewayModule,
+    McpModule,
+    WebhooksModule,
   ],
   controllers: [AppController],
   providers: [

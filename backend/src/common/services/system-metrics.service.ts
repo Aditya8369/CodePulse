@@ -14,6 +14,9 @@ export interface SystemMetricsSnapshot {
     heapUsed: number;
     heapTotal: number;
   };
+  heapUsedBytes: number;
+  heapTotalBytes: number;
+  heapUsagePercent: number;
   healthStatus: 'GREEN' | 'YELLOW' | 'RED';
   timestamp: string;
 }
@@ -24,6 +27,7 @@ export class SystemMetricsService implements OnModuleInit, OnModuleDestroy {
 
   private eventLoopLagMs = 0;
   private cpuUsagePercent = 0;
+  private simulatedHeapPercent: number | null = null;
   private timer: NodeJS.Timeout | null = null;
   private lastCpuTimes: { idle: number; total: number } | null = null;
   private samplingIntervalMs = 500; // Sample lag every 500ms
@@ -78,13 +82,32 @@ export class SystemMetricsService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * For testing and simulation purposes: allows explicitly setting simulated lag.
+   * For testing and simulation purposes: allows explicitly setting simulated lag, CPU, and heap usage.
    */
-  setSimulatedMetrics(lagMs: number, cpuPercent?: number): void {
+  setSimulatedMetrics(
+    lagMs: number,
+    cpuPercent?: number,
+    heapPercent?: number,
+  ): void {
     this.eventLoopLagMs = lagMs;
     if (cpuPercent !== undefined) {
       this.cpuUsagePercent = cpuPercent;
     }
+    if (heapPercent !== undefined) {
+      this.simulatedHeapPercent = heapPercent;
+    }
+  }
+
+  /**
+   * Returns V8 heap usage percentage (0 - 100).
+   */
+  getHeapUsagePercent(): number {
+    if (this.simulatedHeapPercent !== null) {
+      return this.simulatedHeapPercent;
+    }
+    const mem = process.memoryUsage();
+    if (mem.heapTotal <= 0) return 0;
+    return parseFloat(((mem.heapUsed / mem.heapTotal) * 100).toFixed(1));
   }
 
   /**
@@ -106,11 +129,20 @@ export class SystemMetricsService implements OnModuleInit, OnModuleDestroy {
    */
   getMetricsSnapshot(): SystemMetricsSnapshot {
     const mem = process.memoryUsage();
+    const heapPercent = this.getHeapUsagePercent();
 
     let healthStatus: SystemMetricsSnapshot['healthStatus'] = 'GREEN';
-    if (this.eventLoopLagMs >= 250 || this.cpuUsagePercent >= 90) {
+    if (
+      this.eventLoopLagMs >= 250 ||
+      this.cpuUsagePercent >= 90 ||
+      heapPercent >= 90
+    ) {
       healthStatus = 'RED';
-    } else if (this.eventLoopLagMs >= 100 || this.cpuUsagePercent >= 75) {
+    } else if (
+      this.eventLoopLagMs >= 50 ||
+      this.cpuUsagePercent >= 75 ||
+      heapPercent >= 75
+    ) {
       healthStatus = 'YELLOW';
     }
 
@@ -122,6 +154,9 @@ export class SystemMetricsService implements OnModuleInit, OnModuleDestroy {
         heapUsed: Math.round(mem.heapUsed / (1024 * 1024)),
         heapTotal: Math.round(mem.heapTotal / (1024 * 1024)),
       },
+      heapUsedBytes: mem.heapUsed,
+      heapTotalBytes: mem.heapTotal,
+      heapUsagePercent: heapPercent,
       healthStatus,
       timestamp: new Date().toISOString(),
     };

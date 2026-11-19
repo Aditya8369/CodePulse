@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
+  type LucideIcon,
   Flame,
   GitPullRequest,
   Eye,
@@ -38,7 +39,7 @@ interface CreateCustomChallengeModalProps {
   onQuestCreated?: (quest: CustomChallenge) => void;
 }
 
-const METRICS: { type: MetricType; label: string; icon: React.ElementType }[] = [
+const METRICS: { type: MetricType; label: string; icon: LucideIcon }[] = [
   { type: "Commits", label: "Commits", icon: Flame },
   { type: "PRs", label: "Pull Requests", icon: GitPullRequest },
   { type: "Code Reviews", label: "Code Reviews", icon: Eye },

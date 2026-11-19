@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import {
+  type LucideIcon,
   Trophy,
   Swords,
   Target,
@@ -26,7 +27,7 @@ import { categoryForNotification, notificationCategories, type NotificationCateg
 // ===========================
 
 interface CategoryConfig {
-  icon: React.ElementType;
+  icon: LucideIcon;
   color: string;
   bg: string;
   border: string;

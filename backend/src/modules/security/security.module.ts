@@ -4,6 +4,8 @@ import { TlsReloaderService } from '../../common/services/tls-reloader.service';
 import { VaultService } from './vault.service';
 import { PowService } from './pow.service';
 import { PowController } from './pow.controller';
+import { SecurityController } from './security.controller';
+import { TyposquatScannerService } from './typosquat-scanner.service';
 import { PowChallengeGuard } from '../../common/guards/pow-challenge.guard';
 import { ThreatDetectorService } from './threat-detector.service';
 import { ThreatMonitorInterceptor } from '../../common/interceptors/threat-monitor.interceptor';
@@ -14,7 +16,7 @@ import {
 
 @Global()
 @Module({
-  controllers: [PowController],
+  controllers: [PowController, SecurityController],
   providers: [
     AcmeCertService,
     TlsReloaderService,
@@ -25,6 +27,7 @@ import {
     ThreatMonitorInterceptor,
     MtlsMeshService,
     MtlsVerificationMiddleware,
+    TyposquatScannerService,
   ],
   exports: [
     AcmeCertService,
@@ -36,6 +39,7 @@ import {
     ThreatMonitorInterceptor,
     MtlsMeshService,
     MtlsVerificationMiddleware,
+    TyposquatScannerService,
   ],
 })
 export class SecurityModule {}
