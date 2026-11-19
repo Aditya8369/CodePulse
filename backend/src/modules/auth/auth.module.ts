@@ -10,6 +10,7 @@ import { TokenBlacklistService } from './token-blacklist.service';
 import { AttestationValidatorService } from './attestation-validator.service';
 import { PasskeyService } from './passkey.service';
 import { PasskeyController } from './passkey.controller';
+import { SamlSsoService } from './saml-sso.service';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { PasskeyController } from './passkey.controller';
     TokenBlacklistService,
     AttestationValidatorService,
     PasskeyService,
+    SamlSsoService,
   ],
   exports: [
     AuthService,
@@ -48,6 +50,7 @@ import { PasskeyController } from './passkey.controller';
     TokenBlacklistService,
     AttestationValidatorService,
     PasskeyService,
+    SamlSsoService,
   ],
 })
 export class AuthModule {}

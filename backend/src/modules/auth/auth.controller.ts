@@ -1,9 +1,13 @@
 import {
   Body,
   Controller,
+  Get,
+  Header,
   HttpCode,
   HttpStatus,
+  Optional,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -11,6 +15,8 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagg
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import type { Request } from 'express';
 import { AuthService } from './auth.service';
+import { SamlSsoService } from './saml-sso.service';
+import type { SamlTenantIdpConfig } from './saml-sso.service';
 import { PowChallengeGuard } from '../../common/guards/pow-challenge.guard';
 import {
   AuthResponseDto,
@@ -26,7 +32,10 @@ import {
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    @Optional() private readonly samlSsoService?: SamlSsoService,
+  ) {}
 
   @Post('github')
   @HttpCode(HttpStatus.OK)
@@ -127,5 +136,51 @@ export class AuthController {
       resetPasswordDto.password,
     );
     return { message: 'Your password has been updated.' };
+  }
+
+  @Get('saml/metadata')
+  @Header('Content-Type', 'application/samlmetadata+xml')
+  @ApiOperation({ summary: 'Export SAML 2.0 Service Provider (SP) XML metadata' })
+  getSamlMetadata(@Query('tenant') tenant?: string): string {
+    if (!this.samlSsoService) {
+      throw new Error('SamlSsoService is not initialized');
+    }
+    return this.samlSsoService.generateSpMetadataXml(tenant);
+  }
+
+  @Post('saml/tenants')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Configure Enterprise SAML 2.0 IdP metadata for a tenant' })
+  async configureSamlTenant(@Body() body: SamlTenantIdpConfig) {
+    if (!this.samlSsoService) {
+      throw new Error('SamlSsoService is not initialized');
+    }
+    return this.samlSsoService.configureTenantIdp(body);
+  }
+
+  @Get('saml/login')
+  @ApiOperation({ summary: 'Generate SP-initiated SAML 2.0 AuthnRequest redirect URL' })
+  async initiateSamlLogin(
+    @Query('tenant') tenant: string,
+    @Query('relayState') relayState?: string,
+  ) {
+    if (!this.samlSsoService) {
+      throw new Error('SamlSsoService is not initialized');
+    }
+    return this.samlSsoService.buildAuthnRequestRedirectUrl(tenant, relayState);
+  }
+
+  @Post('saml/acs')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'SAML 2.0 Assertion Consumer Service (ACS) callback with JIT provisioning' })
+  async handleSamlAcs(
+    @Query('tenant') queryTenant: string | undefined,
+    @Body() body: { SAMLResponse: string; tenant?: string },
+  ) {
+    if (!this.samlSsoService) {
+      throw new Error('SamlSsoService is not initialized');
+    }
+    const tenant = body.tenant || queryTenant || 'default';
+    return this.samlSsoService.handleAcsCallback(tenant, body.SAMLResponse);
   }
 }

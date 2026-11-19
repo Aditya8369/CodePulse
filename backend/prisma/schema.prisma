@@ -15,6 +15,8 @@ model User {
   name                String?
   email               String?
   authEmail           String?           @unique
+  samlSubjectId       String?           @unique
+  organizationRole    String?           @default("MEMBER")
   passwordHash        String?
   interests           String[]           @default([])
   avatar              String?
@@ -558,3 +560,19 @@ model CommitArchive {
   @@map("commit_archives")
 }
 
+
+model SamlTenantConfig {
+  id                  String   @id @default(uuid())
+  tenantSlug          String   @unique
+  providerName        String   // "okta" | "entra" | "google-workspace" | "custom"
+  idpEntityId         String
+  idpSsoUrl           String
+  idpCertificatePem   String   @db.Text
+  spEntityId          String
+  defaultRole         String   @default("MEMBER")
+  roleMapping         Json?
+  wantAssertionsSigned Boolean @default(true)
+  enabled             Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
