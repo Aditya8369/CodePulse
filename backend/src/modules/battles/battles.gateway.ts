@@ -15,6 +15,8 @@ import { ZkpVerifierService } from '../crypto/zkp-verifier.service';
 import type { ZkpVerificationRequest } from '../crypto/zkp-verifier.service';
 import { DisruptorRingBuffer } from '../../common/concurrency/disruptor-ring-buffer';
 import { WatermarkService } from './watermark.service';
+import { RaidBossService } from './raid-boss.service';
+import type { RaidBossArchetype, RaidPatchSubmission } from './raid-boss.service';
 
 interface PlayerState {
   userId: string;
@@ -57,6 +59,7 @@ export class BattlesGateway
     private readonly metrics: MetricsService,
     @Optional() private readonly zkpService?: ZkpVerifierService,
     @Optional() private readonly watermarkService?: WatermarkService,
+    @Optional() private readonly raidBossService?: RaidBossService,
   ) {}
 
   @WebSocketServer()
@@ -433,5 +436,74 @@ export class BattlesGateway
     }
 
     void client.join(`spectator:${data.battleId}`);
+  }
+
+  @SubscribeMessage('join_raid')
+  handleJoinRaid(
+    @ConnectedSocket() client: Socket,
+    @MessageBody()
+    data: {
+      raidId: string;
+      userId: string;
+      username: string;
+      archetype?: RaidBossArchetype;
+    },
+  ) {
+    const roomName = `raid:${data.raidId}`;
+    void client.join(roomName);
+    if (!this.raidBossService) return null;
+
+    this.raidBossService.getOrCreateEncounter(data.raidId, data.archetype);
+    const encounter = this.raidBossService.joinRaid(data.raidId, {
+      userId: data.userId,
+      username: data.username,
+    });
+    this.server?.to(roomName)?.emit('raid_state_sync', encounter);
+    return encounter;
+  }
+
+  @SubscribeMessage('submit_raid_patch')
+  handleSubmitRaidPatch(
+    @MessageBody() submission: RaidPatchSubmission,
+  ) {
+    if (!this.raidBossService) return null;
+    const outcome = this.raidBossService.applyCodePatchStrike(submission);
+    const roomName = `raid:${submission.raidId}`;
+
+    this.server?.to(roomName)?.emit('raid_state_sync', outcome.encounter);
+    if (outcome.phaseTransitioned) {
+      this.server?.to(roomName)?.emit('raid_phase_transition', {
+        raidId: submission.raidId,
+        newPhase: outcome.newPhase,
+        combatLog: outcome.combatLog,
+      });
+    }
+    if (outcome.encounter.status === 'VICTORY') {
+      this.server?.to(roomName)?.emit('raid_victory', {
+        raidId: submission.raidId,
+        rewards: outcome.encounter.rewards,
+      });
+    }
+    return outcome;
+  }
+
+  @SubscribeMessage('raid_tick')
+  handleRaidTick(
+    @MessageBody() data: { raidId: string; elapsedSeconds?: number },
+  ) {
+    if (!this.raidBossService) return null;
+    const encounter = this.raidBossService.tickRaidTimer(
+      data.raidId,
+      data.elapsedSeconds ?? 1,
+    );
+    const roomName = `raid:${data.raidId}`;
+    this.server?.to(roomName)?.emit('raid_state_sync', encounter);
+    if (encounter.status === 'WIPED') {
+      this.server?.to(roomName)?.emit('raid_wipe', {
+        raidId: data.raidId,
+        bossName: encounter.bossName,
+      });
+    }
+    return encounter;
   }
 }
