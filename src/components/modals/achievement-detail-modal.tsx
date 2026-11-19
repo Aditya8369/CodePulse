@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
+  type LucideIcon,
   Award,
   Lock,
   CheckCircle2,
@@ -29,7 +30,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import type { Achievement } from "@/types";
 
-const ICON_MAP: Record<string, React.ElementType> = {
+const ICON_MAP: Record<string, LucideIcon> = {
   GitCommit,
   Star,
   Flame,

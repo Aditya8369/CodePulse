@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import confetti from "canvas-confetti";
 import { motion } from "motion/react";
 import {
+  type LucideIcon,
   GitCommit,
   Star,
   Flame,
@@ -36,7 +37,7 @@ import type { Achievement } from "@/types";
 // Icon map
 // ===========================
 
-const ICON_MAP: Record<string, React.ElementType> = {
+const ICON_MAP: Record<string, LucideIcon> = {
   GitCommit,
   Star,
   Flame,
