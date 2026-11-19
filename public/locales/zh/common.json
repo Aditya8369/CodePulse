@@ -1,0 +1,20 @@
+{
+  "app.name": "CodePulse",
+  "app.tagline": "GitHub 开发者分析与游戏化平台",
+  "nav.dashboard": "仪表盘",
+  "nav.repositories": "代码仓库",
+  "nav.leaderboard": "排行榜",
+  "nav.battles": "代码对战",
+  "nav.challenges": "编程挑战",
+  "nav.analytics": "数据分析",
+  "nav.settings": "设置",
+  "topbar.searchPlaceholder": "搜索开发者、仓库或命令...",
+  "topbar.languageSelector": "选择语言",
+  "topbar.rtlBadge": "RTL",
+  "dashboard.welcome": "欢迎回来，{name}！",
+  "dashboard.commitSummary": "{count, plural, =0 {今日暂无提交} one {今日 # 次提交} other {今日 # 次提交}}",
+  "dashboard.streakStatus": "{days, plural, =0 {今天开始你的连续记录} one {连续活跃 # 天} other {连续活跃 # 天}}",
+  "dashboard.mentorGreeting": "{gender, select, female {她晋级了钻石联赛！} male {他晋级了钻石联赛！} other {他们晋级了钻石联赛！}}",
+  "battles.activeCount": "{count, plural, =0 {暂无进行中的对战} one {# 场进行中的对战} other {# 场进行中的对战}}",
+  "notifications.unread": "{count, plural, =0 {暂无未读通知} one {# 条未读通知} other {# 条未读通知}}"
+}
