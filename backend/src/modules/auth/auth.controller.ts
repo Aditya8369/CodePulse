@@ -1,3 +1,4 @@
+import { OpaEngineService } from '../../common/guards/opa-engine.service';
 import {
   Body,
   Controller,
@@ -182,5 +183,13 @@ export class AuthController {
     }
     const tenant = body.tenant || queryTenant || 'default';
     return this.samlSsoService.handleAcsCallback(tenant, body.SAMLResponse);
+  }
+
+  @Post('opa/preview')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Preview OPA Rego policy decision given sample input context' })
+  async previewOpaDecision(@Body() input: any) {
+    const engine = new OpaEngineService();
+    return engine.evaluate(input);
   }
 }
