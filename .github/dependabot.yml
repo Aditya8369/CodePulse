@@ -1,27 +1,23 @@
 version: 2
 updates:
-  # Maintain dependencies for the Next.js Frontend
+  # Maintain dependencies for the Next.js Frontend (Paused)
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "06:00"
-    open-pull-requests-limit: 3
+      interval: "monthly"
+    open-pull-requests-limit: 0
     labels:
       - "dependencies"
       - "frontend"
     commit-message:
       prefix: "chore(deps)"
 
-  # Maintain dependencies for the NestJS Backend
+  # Maintain dependencies for the NestJS Backend (Paused)
   - package-ecosystem: "npm"
     directory: "/backend"
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "06:00"
-    open-pull-requests-limit: 3
+      interval: "monthly"
+    open-pull-requests-limit: 0
     labels:
       - "dependencies"
       - "backend"
@@ -41,14 +37,12 @@ updates:
       - dependency-name: "archiver"
         update-types: ["version-update:semver-major"]
 
-  # Maintain GitHub Actions dependencies
+  # Maintain GitHub Actions dependencies (Paused)
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "06:00"
-    open-pull-requests-limit: 3
+      interval: "monthly"
+    open-pull-requests-limit: 0
     labels:
       - "dependencies"
       - "ci/cd"
