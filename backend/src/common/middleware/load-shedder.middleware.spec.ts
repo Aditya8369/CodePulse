@@ -24,6 +24,8 @@ describe('LoadShedderMiddleware', () => {
     url: string,
     headers: Record<string, string> = {},
   ) => {
+    const listeners: Record<string, Function[]> = {};
+
     const req = {
       url,
       originalUrl: url,
@@ -38,25 +40,55 @@ describe('LoadShedderMiddleware', () => {
       status: resStatus,
       setHeader: resSetHeader,
       json: resJson,
+      on: jest.fn((event: string, cb: Function) => {
+        listeners[event] = listeners[event] || [];
+        listeners[event].push(cb);
+      }),
+      removeListener: jest.fn(),
+      emit: (event: string) => {
+        if (listeners[event]) {
+          listeners[event].forEach((cb) => cb());
+        }
+      },
     } as unknown as Response;
 
-    const next: NextFunction = jest.fn();
+    const next: NextFunction = jest.fn(() => {
+      (res as any).emit('finish');
+    });
 
     return { req, res, next, resStatus, resJson, resSetHeader };
   };
 
-  it('should classify traffic priority tiers correctly', () => {
+  it('should classify traffic priority tiers correctly across all 4 priority bands', () => {
+    // 1. CRITICAL
     const wsReq = {
       url: '/battles/socket',
       headers: { upgrade: 'websocket' },
     } as Request;
     expect(middleware.classifyRequestPriority(wsReq)).toBe(
-      TrafficPriorityTier.TIER_1_CRITICAL,
+      TrafficPriorityTier.CRITICAL,
     );
 
+    const submitReq = {
+      url: '/api/v1/battles/submit',
+      headers: {},
+    } as Request;
+    expect(middleware.classifyRequestPriority(submitReq)).toBe(
+      TrafficPriorityTier.CRITICAL,
+    );
+
+    const keystrokeReq = {
+      url: '/api/v1/battles/keystroke',
+      headers: {},
+    } as Request;
+    expect(middleware.classifyRequestPriority(keystrokeReq)).toBe(
+      TrafficPriorityTier.CRITICAL,
+    );
+
+    // 2. HIGH
     const authReq = { url: '/api/v1/auth/login', headers: {} } as Request;
     expect(middleware.classifyRequestPriority(authReq)).toBe(
-      TrafficPriorityTier.TIER_2_HIGH,
+      TrafficPriorityTier.HIGH,
     );
 
     const matchmakingReq = {
@@ -64,17 +96,27 @@ describe('LoadShedderMiddleware', () => {
       headers: {},
     } as Request;
     expect(middleware.classifyRequestPriority(matchmakingReq)).toBe(
-      TrafficPriorityTier.TIER_2_HIGH,
+      TrafficPriorityTier.HIGH,
     );
 
+    // 3. NORMAL
     const profileReq = { url: '/api/v1/users/profile', headers: {} } as Request;
     expect(middleware.classifyRequestPriority(profileReq)).toBe(
-      TrafficPriorityTier.TIER_3_MEDIUM,
+      TrafficPriorityTier.NORMAL,
     );
 
-    const syncReq = { url: '/api/v1/sync/github', headers: {} } as Request;
-    expect(middleware.classifyRequestPriority(syncReq)).toBe(
-      TrafficPriorityTier.TIER_4_LOW,
+    const leaderboardReq = {
+      url: '/api/v1/leaderboards/global',
+      headers: {},
+    } as Request;
+    expect(middleware.classifyRequestPriority(leaderboardReq)).toBe(
+      TrafficPriorityTier.NORMAL,
+    );
+
+    // 4. LOW
+    const avatarReq = { url: '/api/v1/users/avatar', headers: {} } as Request;
+    expect(middleware.classifyRequestPriority(avatarReq)).toBe(
+      TrafficPriorityTier.LOW,
     );
 
     const analyticsReq = {
@@ -82,11 +124,16 @@ describe('LoadShedderMiddleware', () => {
       headers: {},
     } as Request;
     expect(middleware.classifyRequestPriority(analyticsReq)).toBe(
-      TrafficPriorityTier.TIER_4_LOW,
+      TrafficPriorityTier.LOW,
+    );
+
+    const syncReq = { url: '/api/v1/sync/github', headers: {} } as Request;
+    expect(middleware.classifyRequestPriority(syncReq)).toBe(
+      TrafficPriorityTier.LOW,
     );
   });
 
-  it('should admit all traffic under healthy system metrics (event loop lag < 100ms)', () => {
+  it('should admit all traffic under healthy system metrics (event loop lag < 50ms)', () => {
     metricsService.setSimulatedMetrics(25); // 25ms lag (Green)
 
     const { req, res, next } = createMockReqRes('/api/v1/sync/github');
@@ -101,10 +148,10 @@ describe('LoadShedderMiddleware', () => {
     expect(stats.currentSystemHealth).toBe('GREEN');
   });
 
-  it('should shed Tier 4 requests with HTTP 503 and Retry-After: 30 when lag >= 100ms', () => {
-    metricsService.setSimulatedMetrics(140); // 140ms lag (Yellow)
+  it('should shed LOW priority requests with HTTP 503 and Retry-After: 30 when lag >= 50ms', () => {
+    metricsService.setSimulatedMetrics(65); // 65ms lag (Yellow)
 
-    // Tier 4 (Sync/Analytics): Should be shed
+    // LOW (Avatar/Analytics/Sync): Shed
     const {
       req: lowReq,
       res: lowRes,
@@ -122,75 +169,91 @@ describe('LoadShedderMiddleware', () => {
     expect(resJson).toHaveBeenCalledWith(
       expect.objectContaining({
         statusCode: 503,
-        priorityTier: TrafficPriorityTier.TIER_4_LOW,
+        priorityTier: TrafficPriorityTier.LOW,
       }),
     );
 
-    // Tier 3 (Profile): Should still be admitted
+    // NORMAL (Profile/Dashboard): Still admitted
     const {
-      req: medReq,
-      res: medRes,
-      next: medNext,
+      req: normalReq,
+      res: normalRes,
+      next: normalNext,
     } = createMockReqRes('/api/v1/profile/pratik');
 
-    middleware.use(medReq, medRes, medNext);
-    expect(medNext).toHaveBeenCalled();
+    middleware.use(normalReq, normalRes, normalNext);
+    expect(normalNext).toHaveBeenCalled();
   });
 
-  it('should shed Tier 3 & Tier 4 requests when lag >= 250ms, while preserving Tier 1 & Tier 2', () => {
-    metricsService.setSimulatedMetrics(300); // 300ms lag (Red)
+  it('should escalate and shed NORMAL & LOW priority requests when lag >= 100ms, while preserving CRITICAL & HIGH', () => {
+    metricsService.setSimulatedMetrics(120); // 120ms lag (Red)
 
-    // Tier 3: Shed
+    // NORMAL: Shed
     const {
-      req: t3Req,
-      res: t3Res,
-      next: t3Next,
-      resStatus: t3Status,
+      req: normReq,
+      res: normRes,
+      next: normNext,
+      resStatus: normStatus,
     } = createMockReqRes('/api/v1/leaderboard');
-    middleware.use(t3Req, t3Res, t3Next);
-    expect(t3Next).not.toHaveBeenCalled();
-    expect(t3Status).toHaveBeenCalledWith(503);
+    middleware.use(normReq, normRes, normNext);
+    expect(normNext).not.toHaveBeenCalled();
+    expect(normStatus).toHaveBeenCalledWith(503);
 
-    // Tier 4: Shed
+    // LOW: Shed
     const {
-      req: t4Req,
-      res: t4Res,
-      next: t4Next,
-      resStatus: t4Status,
+      req: lowReq,
+      res: lowRes,
+      next: lowNext,
+      resStatus: lowStatus,
     } = createMockReqRes('/api/v1/sync/owner');
-    middleware.use(t4Req, t4Res, t4Next);
-    expect(t4Next).not.toHaveBeenCalled();
-    expect(t4Status).toHaveBeenCalledWith(503);
+    middleware.use(lowReq, lowRes, lowNext);
+    expect(lowNext).not.toHaveBeenCalled();
+    expect(lowStatus).toHaveBeenCalledWith(503);
 
-    // Tier 2 (Auth/Matchmaking): Admitted
+    // HIGH (Auth/Matchmaking): Admitted
     const {
-      req: t2Req,
-      res: t2Res,
-      next: t2Next,
+      req: highReq,
+      res: highRes,
+      next: highNext,
     } = createMockReqRes('/api/v1/auth/login');
-    middleware.use(t2Req, t2Res, t2Next);
-    expect(t2Next).toHaveBeenCalled();
+    middleware.use(highReq, highRes, highNext);
+    expect(highNext).toHaveBeenCalled();
 
-    // Tier 1 (Critical Battle WebSocket): NEVER shed
+    // CRITICAL (Battle Keystroke / WebSocket): NEVER shed under any circumstance
     const {
-      req: t1Req,
-      res: t1Res,
-      next: t1Next,
-    } = createMockReqRes('/battles/live/action', { upgrade: 'websocket' });
-    middleware.use(t1Req, t1Res, t1Next);
-    expect(t1Next).toHaveBeenCalled();
+      req: critReq,
+      res: critRes,
+      next: critNext,
+    } = createMockReqRes('/api/v1/battles/submit');
+    middleware.use(critReq, critRes, critNext);
+    expect(critNext).toHaveBeenCalled();
 
     const stats = middleware.getStats();
     expect(stats.currentSystemHealth).toBe('RED');
-    expect(stats.shedByTier[TrafficPriorityTier.TIER_3_MEDIUM]).toBe(1);
-    expect(stats.shedByTier[TrafficPriorityTier.TIER_4_LOW]).toBe(1);
-    expect(stats.shedByTier[TrafficPriorityTier.TIER_1_CRITICAL]).toBe(0);
-    expect(stats.shedByTier[TrafficPriorityTier.TIER_2_HIGH]).toBe(0);
+    expect(stats.shedByTier[TrafficPriorityTier.NORMAL]).toBe(1);
+    expect(stats.shedByTier[TrafficPriorityTier.LOW]).toBe(1);
+    expect(stats.shedByTier[TrafficPriorityTier.CRITICAL]).toBe(0);
+    expect(stats.shedByTier[TrafficPriorityTier.HIGH]).toBe(0);
+  });
+
+  it('should enforce Little Law adaptive concurrency limits under load surges', () => {
+    // Set low concurrency limit to simulate Little's Law saturation
+    middleware.setConcurrencyForTest(2, 2);
+
+    const { req, res, next, resStatus } = createMockReqRes('/api/v1/profile/view');
+    middleware.use(req, res, next);
+
+    expect(next).not.toHaveBeenCalled();
+    expect(resStatus).toHaveBeenCalledWith(503);
+
+    // Critical requests still bypass concurrency caps
+    const { req: cReq, res: cRes, next: cNext } = createMockReqRes('/api/v1/battles/action');
+    middleware.use(cReq, cRes, cNext);
+    expect(cNext).toHaveBeenCalled();
   });
 
   it('should simulate graduated recovery as system metrics return to green', () => {
-    // 1. Spike to 350ms (Red)
-    metricsService.setSimulatedMetrics(350);
+    // 1. High Spike: 150ms (Red)
+    metricsService.setSimulatedMetrics(150);
     const {
       req: spikeReq,
       res: spikeRes,
@@ -199,8 +262,8 @@ describe('LoadShedderMiddleware', () => {
     middleware.use(spikeReq, spikeRes, spikeNext);
     expect(spikeNext).not.toHaveBeenCalled();
 
-    // 2. Recovery to 30ms (Green)
-    metricsService.setSimulatedMetrics(30);
+    // 2. Recovery: 20ms (Green)
+    metricsService.setSimulatedMetrics(20);
     const {
       req: recReq,
       res: recRes,

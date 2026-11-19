@@ -45,6 +45,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { CustomThrottlerGuard } from './common/guards/custom-throttler.guard';
 import { SystemMetricsService } from './common/services/system-metrics.service';
 import { LoadShedderMiddleware } from './common/middleware/load-shedder.middleware';
+import { CommonModule } from './common/common.module';
 
 @Module({
   imports: [
@@ -115,6 +116,7 @@ import { LoadShedderMiddleware } from './common/middleware/load-shedder.middlewa
     StorageModule,
     CryptoModule,
     IdentityModule,
+    CommonModule,
     GraphqlGatewayModule,
     McpModule,
     WebhooksModule,
