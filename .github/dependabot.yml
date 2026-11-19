@@ -28,6 +28,10 @@ updates:
     commit-message:
       prefix: "chore(backend-deps)"
     ignore:
+      - dependency-name: "@prisma/*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "prisma"
+        update-types: ["version-update:semver-major"]
       - dependency-name: "@nestjs/*"
         update-types: ["version-update:semver-major"]
       - dependency-name: "typescript"
