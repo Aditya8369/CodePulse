@@ -1,0 +1,134 @@
+{
+  "$schema": "https://modelcontextprotocol.io/schema/manifest.json",
+  "name": "codepulse-mcp-server",
+  "version": "1.0.0",
+  "description": "Official CodePulse Model Context Protocol (MCP) Server for Developer Metrics, Challenges, and Repositories",
+  "author": "CodePulse Team",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/code-with-abhi-i5/CodePulse",
+  "transports": ["stdio", "sse"],
+  "server": {
+    "command": "node",
+    "args": ["dist/modules/mcp/codepulse-mcp.server.js"],
+    "env": {
+      "CODEPULSE_API_KEY": "${CODEPULSE_API_KEY}"
+    }
+  },
+  "capabilities": {
+    "tools": true,
+    "resources": true,
+    "prompts": false
+  },
+  "tools": [
+    {
+      "name": "get_developer_profile",
+      "description": "Fetch developer rating, rank, badges, and stats by username or ID",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "description": "CodePulse or GitHub developer username"
+          }
+        },
+        "required": ["username"]
+      }
+    },
+    {
+      "name": "query_repository_metrics",
+      "description": "Retrieve comprehensive telemetry, code health, and commit activity for a repository",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "repositoryId": {
+            "type": "string",
+            "description": "Unique identifier of the repository"
+          }
+        },
+        "required": ["repositoryId"]
+      }
+    },
+    {
+      "name": "list_active_challenges",
+      "description": "List currently active coding challenges and algorithmic battles with difficulty and points",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "difficulty": {
+            "type": "string",
+            "enum": ["EASY", "MEDIUM", "HARD", "EXPERT"],
+            "description": "Optional difficulty tier filter"
+          },
+          "limit": {
+            "type": "integer",
+            "description": "Maximum number of challenges to return"
+          }
+        }
+      }
+    },
+    {
+      "name": "submit_challenge_solution",
+      "description": "Submit a code solution to an active challenge and receive test case execution feedback",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "challengeId": {
+            "type": "string",
+            "description": "Challenge identifier"
+          },
+          "language": {
+            "type": "string",
+            "description": "Programming language (typescript, python, rust, go)"
+          },
+          "code": {
+            "type": "string",
+            "description": "Full source code solution"
+          }
+        },
+        "required": ["challengeId", "language", "code"]
+      }
+    },
+    {
+      "name": "run_code_benchmark",
+      "description": "Benchmark execution runtime, memory footprint, and time complexity in sandboxed runner",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "language": {
+            "type": "string",
+            "description": "Execution runner language"
+          },
+          "code": {
+            "type": "string",
+            "description": "Code to benchmark"
+          },
+          "iterations": {
+            "type": "integer",
+            "description": "Number of warm and measured iterations"
+          }
+        },
+        "required": ["language", "code"]
+      }
+    }
+  ],
+  "resources": [
+    {
+      "uriTemplate": "codepulse://repositories/{id}/analytics",
+      "name": "Repository Analytics Telemetry",
+      "mimeType": "application/json",
+      "description": "Live health telemetry, commit history, and pull request metrics for a repository"
+    },
+    {
+      "uriTemplate": "codepulse://battles/recent",
+      "name": "Recent Coding Battles",
+      "mimeType": "application/json",
+      "description": "List of recently concluded 1v1 battles and tournament scorecards"
+    },
+    {
+      "uriTemplate": "codepulse://badges/user",
+      "name": "User Badges & Achievements",
+      "mimeType": "application/json",
+      "description": "Current user earned badges, tiers, and trophy unlocks"
+    }
+  ]
+}
