@@ -27,7 +27,7 @@ export class CreateWebhookSubscriptionDto {
 
   @ApiPropertyOptional({
     description: 'Custom HMAC-SHA256 signing secret. If omitted, a secure 32-byte secret is generated.',
-    example: 'whsec_9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d',
+    example: 'whsec_sample_hmac_signing_secret_hex_key_32bytes',
   })
   @IsOptional()
   @IsString()
