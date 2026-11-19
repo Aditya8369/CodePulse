@@ -18,6 +18,13 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { triggerDualCannonConfetti, playVictorySound } from "@/lib/celebration";
+import { BattleTimeline } from "./battle-timeline";
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from "@/components/ui/tabs";
 
 interface DevData {
   username: string;
@@ -160,7 +167,13 @@ export function BattleReport({
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-1000">
-      {/* 4. Final Battle Result (Top Card) */}
+      <Tabs defaultValue="summary" className="w-full">
+        <TabsList className="w-full">
+          <TabsTrigger value="summary">Summary</TabsTrigger>
+          <TabsTrigger value="breakdown">View Round Breakdown</TabsTrigger>
+        </TabsList>
+        <TabsContent value="summary" className="space-y-8 pt-4">
+          {/* 4. Final Battle Result (Top Card) */}
       <div className="bg-card/50 backdrop-blur-xl border border-border rounded-3xl p-8 relative overflow-hidden shadow-2xl">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-amber-500 to-destructive" />
 
@@ -404,6 +417,16 @@ export function BattleReport({
           Rematch
         </button>
       </div>
+        </TabsContent>
+        <TabsContent value="breakdown" className="pt-4">
+          <BattleTimeline
+            player1={player1}
+            player2={player2}
+            battleType={battleType}
+            isMuted={internalMuted}
+          />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
