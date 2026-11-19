@@ -2,11 +2,18 @@ import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { SwaggerModule } from '@nestjs/swagger';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
+import {
+  buildOpenApi31Document,
+  exportOpenApi31SpecToFile,
+} from './openapi/openapi-31.builder';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const isSpecExportOnly = process.env.OPENAPI_EXPORT_ONLY === 'true';
+  const app = await NestFactory.create(AppModule, {
+    logger: isSpecExportOnly ? ['error'] : undefined,
+  });
 
   // Global Prefix
   app.setGlobalPrefix('api/v1', { exclude: ['metrics'] });
@@ -26,20 +33,19 @@ async function bootstrap() {
   // Global Interceptor for standard response
   app.useGlobalInterceptors(new TransformInterceptor());
 
-  // Swagger OpenAPI Configuration
-  const config = new DocumentBuilder()
-    .setTitle('CodePulse API')
-    .setDescription('The enterprise backend for CodePulse platform')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .build();
+  // Strict OpenAPI 3.1.0 Specification Generation & Export
+  const document = buildOpenApi31Document(app);
+  const specPath = exportOpenApi31SpecToFile(document);
+  SwaggerModule.setup('api/docs', app, document as never);
 
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
+  if (isSpecExportOnly) {
+    console.log(`Exported OpenAPI 3.1.0 schema to ${specPath}`);
+    process.exit(0);
+  }
 
   const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
   await app.listen(port, '0.0.0.0');
   console.log(`Application is running on: http://0.0.0.0:${port}/api/v1`);
-  console.log(`Swagger documentation available at: http://0.0.0.0:${port}/api/docs`);
+  console.log(`Swagger OpenAPI 3.1 docs available at: http://0.0.0.0:${port}/api/docs`);
 }
 void bootstrap();
