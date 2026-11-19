@@ -1,0 +1,128 @@
+extend schema
+  @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@key", "@shareable", "@external"])
+
+type Query {
+  developerProfile(username: String!): User
+  developers(usernames: [String!]!): [User!]!
+  battle(id: ID!): Battle
+  leaderboard(limit: Int = 10): [User!]!
+  _service: _Service!
+  _entities(representations: [_Any!]!): [_Entity]!
+}
+
+type Mutation {
+  publishBattleUpdate(
+    battleId: ID!
+    status: String!
+    challengerScore: Float
+    opponentScore: Float
+    winnerId: ID
+  ): BattleUpdateEvent!
+}
+
+type Subscription {
+  battleUpdated(battleId: ID!): BattleUpdateEvent!
+}
+
+type _Service {
+  sdl: String!
+}
+
+union _Entity = User | Battle | Repository | Badge
+
+scalar _Any
+
+# ==========================================
+# UserSubgraph
+# ==========================================
+type User @key(fields: "id") @key(fields: "username") {
+  id: ID!
+  username: String!
+  name: String
+  email: String
+  avatar: String
+  bio: String
+  location: String
+  company: String
+  isOnline: Boolean!
+  teamMetrics: TeamMetrics!
+  repositories(limit: Int = 10): [Repository!]!
+  battles(limit: Int = 10): [Battle!]!
+  badges: [EarnedBadge!]!
+}
+
+type TeamMetrics @shareable {
+  totalRepositories: Int!
+  totalStars: Int!
+  totalCommits: Int!
+  totalBattles: Int!
+  battlesWon: Int!
+  winRate: Float!
+  badgeCount: Int!
+}
+
+# ==========================================
+# RepositorySubgraph
+# ==========================================
+type Repository @key(fields: "id") {
+  id: ID!
+  githubRepoId: String!
+  userId: ID!
+  name: String!
+  fullName: String!
+  description: String
+  language: String
+  stars: Int!
+  forks: Int!
+  commits: Int!
+  pullRequests: Int!
+  url: String!
+  owner: User
+}
+
+# ==========================================
+# BattleSubgraph
+# ==========================================
+type Battle @key(fields: "id") {
+  id: ID!
+  challengerId: ID!
+  opponentId: ID!
+  status: String!
+  category: String!
+  challengerScore: Float
+  opponentScore: Float
+  winnerId: ID
+  startedAt: String!
+  endsAt: String!
+  challenger: User
+  opponent: User
+}
+
+type BattleUpdateEvent {
+  battleId: ID!
+  status: String!
+  challengerScore: Float
+  opponentScore: Float
+  winnerId: ID
+  timestamp: String!
+}
+
+# ==========================================
+# BadgeSubgraph
+# ==========================================
+type Badge @key(fields: "id") {
+  id: ID!
+  name: String!
+  description: String!
+  icon: String
+  tier: String!
+  category: String
+}
+
+type EarnedBadge {
+  id: ID!
+  userId: ID!
+  badgeId: ID!
+  earnedAt: String!
+  badge: Badge!
+}
