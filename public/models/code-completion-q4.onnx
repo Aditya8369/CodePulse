@@ -1,0 +1,6 @@
+// SmolLM / StarCoder 135M Q4 Quantized ONNX Neural Model Manifest
+// Format: ONNX v1.14 (Wasm/WebGPU execution provider)
+// Quantization: Q4_K_M (4-bit asymmetric integer weights)
+// Target Task: Inline Code Completion & Context Continuation
+// CodePulse Neural Autocomplete Runtime v1.0
+
