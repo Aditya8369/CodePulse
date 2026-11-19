@@ -46,7 +46,7 @@ interface ComparisonMetricsTableProps {
 
 interface Metric {
   label: string;
-  icon: React.ElementType;
+  icon: React.ComponentType<{ className?: string }>;
   dev1Value: number | string;
   dev2Value: number | string;
   higherIsBetter: boolean;
@@ -142,7 +142,7 @@ function MetricRow({
 
 interface MetricSectionProps {
   title: string;
-  icon: React.ElementType;
+  icon: React.ComponentType<{ className?: string }>;
   children: React.ReactNode;
 }
 

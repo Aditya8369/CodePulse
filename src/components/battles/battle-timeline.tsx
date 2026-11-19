@@ -63,7 +63,7 @@ const ROUND_FILTERS: Record<string, string[]> = {
   "Open Source Impact": ["repository", "activity"],
 };
 
-const ICON_MAP: Record<string, ElementType> = {
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Activity,
   Trophy,
   Zap,
@@ -270,7 +270,7 @@ export function BattleTimeline({ player1, player2, battleType }: BattleTimelineP
 
       <Accordion className="w-full">
         {rounds.map((round) => {
-          const IconComp: ElementType = ICON_MAP[round.icon] ?? Activity;
+          const IconComp = ICON_MAP[round.icon] ?? Activity;
           const p1Badge = badgeFor(round.timeP1);
           const p2Badge = badgeFor(round.timeP2);
           const faster = round.timeP1 < round.timeP2 ? player1.name : round.timeP2 < round.timeP1 ? player2.name : "Tie";
