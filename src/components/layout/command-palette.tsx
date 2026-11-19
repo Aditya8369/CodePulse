@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useCallback, useState, useMemo, type ElementType } from "react";
+import { useEffect, useCallback, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
+  type LucideIcon,
   LayoutDashboard,
   BarChart3,
   GitBranch,
@@ -48,7 +49,7 @@ import { toast } from "sonner";
 // Icon Map
 // ===========================
 
-const CMD_ICON_MAP: Record<string, ElementType> = {
+const CMD_ICON_MAP: Record<string, LucideIcon> = {
   LayoutDashboard,
   BarChart3,
   GitBranch,
