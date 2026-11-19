@@ -7,6 +7,8 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci || npm install
 COPY . .
-RUN npx prisma generate
+RUN npx prisma generate \
+    && chown -R node:node /app
+USER node
 EXPOSE 3001
 CMD ["sh", "scripts/docker-dev-entrypoint.sh"]
