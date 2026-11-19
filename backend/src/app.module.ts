@@ -34,6 +34,9 @@ import { ObservabilityModule } from './modules/observability/observability.modul
 import { StorageModule } from './modules/storage/storage.module';
 import { CryptoModule } from './modules/crypto/crypto.module';
 import { IdentityModule } from './modules/identity/identity.module';
+import { GraphqlGatewayModule } from './modules/graphql/graphql.module';
+import { McpModule } from './modules/mcp/mcp.module';
+import { WebhooksModule } from './modules/webhooks/webhooks.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import { BullModule } from '@nestjs/bullmq';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -114,6 +117,9 @@ import { CommonModule } from './common/common.module';
     CryptoModule,
     IdentityModule,
     CommonModule,
+    GraphqlGatewayModule,
+    McpModule,
+    WebhooksModule,
   ],
   controllers: [AppController],
   providers: [

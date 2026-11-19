@@ -1,0 +1,20 @@
+{
+  "app.name": "CodePulse",
+  "app.tagline": "Analítica y Gamificación para Desarrolladores de GitHub",
+  "nav.dashboard": "Panel",
+  "nav.repositories": "Repositorios",
+  "nav.leaderboard": "Clasificación",
+  "nav.battles": "Batallas",
+  "nav.challenges": "Desafíos",
+  "nav.analytics": "Analítica",
+  "nav.settings": "Configuración",
+  "topbar.searchPlaceholder": "Buscar desarrolladores, repositorios o comandos...",
+  "topbar.languageSelector": "Seleccionar idioma",
+  "topbar.rtlBadge": "RTL",
+  "dashboard.welcome": "¡Bienvenido de nuevo, {name}!",
+  "dashboard.commitSummary": "{count, plural, =0 {Sin commits hoy} one {# commit hoy} other {# commits hoy}}",
+  "dashboard.streakStatus": "{days, plural, =0 {Comienza tu racha hoy} one {Racha activa de # día} other {Racha activa de # días}}",
+  "dashboard.mentorGreeting": "{gender, select, female {¡Ella alcanzó la Liga Diamante!} male {¡Él alcanzó la Liga Diamante!} other {¡Alcanzaron la Liga Diamante!}}",
+  "battles.activeCount": "{count, plural, =0 {Sin batallas activas} one {# batalla activa} other {# batallas activas}}",
+  "notifications.unread": "{count, plural, =0 {Todo al día} one {# notificación sin leer} other {# notificaciones sin leer}}"
+}

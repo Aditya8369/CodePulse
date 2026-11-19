@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
+  type LucideIcon,
   GitCommit,
   GitPullRequest,
   CircleDot,
@@ -21,7 +22,7 @@ import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@/lib/utils";
 import type { Activity } from "@/types";
 
-const activityIcons: Record<string, { icon: React.ElementType; color: string; bg: string }> = {
+const activityIcons: Record<string, { icon: LucideIcon; color: string; bg: string }> = {
   commit: { icon: GitCommit, color: "text-purple-400", bg: "bg-purple-500/10" },
   pull_request: { icon: GitPullRequest, color: "text-blue-400", bg: "bg-blue-500/10" },
   issue: { icon: CircleDot, color: "text-emerald-400", bg: "bg-emerald-500/10" },

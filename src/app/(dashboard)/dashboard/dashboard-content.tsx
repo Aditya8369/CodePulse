@@ -15,10 +15,10 @@ import { useActiveChallenges } from "@/hooks/api/use-challenges";
 import { useLeaderboardInfinite } from "@/hooks/api/use-leaderboard";
 import { useSyncGitHub } from "@/hooks/api/use-sync";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
-import { GitCommit, GitPullRequest, Flame, Star, Loader2, Trophy, Swords, RefreshCw, ClipboardList } from "lucide-react";
+import { GitCommit, GitPullRequest, Flame, Star, Loader2, Trophy, Swords, RefreshCw, ClipboardList, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const iconMap: Record<string, React.ElementType> = {
+const iconMap: Record<string, LucideIcon> = {
   GitCommit,
   GitPullRequest,
   Flame,

@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, type ElementType } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { motion, AnimatePresence } from "motion/react";
 import {
+  type LucideIcon,
   LayoutDashboard,
   BarChart3,
   GitBranch,
@@ -44,7 +45,7 @@ import {
 // Icon Map
 // ===========================
 
-const ICON_MAP: Record<string, ElementType> = {
+const ICON_MAP: Record<string, LucideIcon> = {
   LayoutDashboard,
   BarChart3,
   GitBranch,

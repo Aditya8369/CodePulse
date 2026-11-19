@@ -1,16 +1,15 @@
 "use client";
 
-import type { ElementType } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, useReducedMotion } from "motion/react";
-import { Home, Swords, BarChart3, Trophy, User } from "lucide-react";
+import { Home, Swords, BarChart3, Trophy, User, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface MobileNavItem {
   title: string;
   href: string;
-  icon: ElementType;
+  icon: LucideIcon;
 }
 
 export const MOBILE_NAV_ITEMS: MobileNavItem[] = [

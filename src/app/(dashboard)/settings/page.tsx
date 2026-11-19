@@ -37,6 +37,7 @@ import { GithubIcon } from "@/components/icons/github";
 import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
 import { SoundSettingsCard } from "@/components/settings/sound-settings-card";
+import { WebhookDashboardSection } from "@/components/settings/webhook-dashboard";
 import { useCurrentUser } from "@/hooks/api/use-auth";
 import {
   buildUserDataExport,
@@ -958,6 +959,9 @@ export default function SettingsPage() {
                   );
                 })}
               </div>
+
+              {/* Developer Webhook Dispatcher & DLQ Telemetry */}
+              <WebhookDashboardSection />
             </motion.div>
           )}
         </div>
