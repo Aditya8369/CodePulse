@@ -576,3 +576,61 @@ model SamlTenantConfig {
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 }
+
+enum WebhookStatus {
+  ACTIVE
+  PAUSED
+  DISABLED
+}
+
+enum WebhookDeliveryStatus {
+  PENDING
+  SUCCESS
+  RETRYING
+  DEAD_LETTER
+}
+
+model WebhookSubscription {
+  id          String                @id @default(uuid())
+  userId      String?
+  url         String
+  secret      String                // HMAC secret key
+  description String?
+  events      String[]              // e.g. ["battle.ended", "pr.reviewed", "badge.awarded", "*"]
+  status      WebhookStatus         @default(ACTIVE)
+  deliveries  WebhookDeliveryLog[]
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@map("webhook_subscriptions")
+}
+
+model WebhookDeliveryLog {
+  id             String                @id @default(uuid())
+  subscriptionId String
+  subscription   WebhookSubscription   @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  event          String
+  payload        Json
+  status         WebhookDeliveryStatus @default(PENDING)
+  statusCode     Int?
+  latencyMs      Int?
+  attemptCount   Int                   @default(0)
+  maxAttempts    Int                   @default(5)
+  nextRetryAt    DateTime?
+  error          String?
+  responseBody   String?               @db.Text
+  isDeadLetter   Boolean               @default(false)
+  dlqReason      String?
+  deliveredAt    DateTime?
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  @@index([subscriptionId])
+  @@index([status])
+  @@index([isDeadLetter])
+  @@index([nextRetryAt])
+  @@map("webhook_delivery_logs")
+}
+
