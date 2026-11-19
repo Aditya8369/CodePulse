@@ -15,6 +15,7 @@ import { AnalyticsModule } from '../analytics/analytics.module';
 import { ReplayStreamService } from './replay-stream.service';
 import { CryptoModule } from '../crypto/crypto.module';
 import { WatermarkService } from './watermark.service';
+import { AntiSmurfService } from './anti-smurf.service';
 
 @Module({
   imports: [
@@ -39,7 +40,8 @@ import { WatermarkService } from './watermark.service';
     BattlesLifecycleWorker,
     ReplayStreamService,
     WatermarkService,
+    AntiSmurfService,
   ],
-  exports: [BattlesService, BattlesGateway, ReplayStreamService, WatermarkService],
+  exports: [BattlesService, BattlesGateway, ReplayStreamService, WatermarkService, AntiSmurfService],
 })
 export class BattlesModule {}

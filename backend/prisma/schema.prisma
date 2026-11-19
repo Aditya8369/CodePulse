@@ -634,3 +634,19 @@ model WebhookDeliveryLog {
   @@map("webhook_delivery_logs")
 }
 
+
+model SmurfDetectionAudit {
+  id               String   @id @default(uuid())
+  userId           String
+  battleId         String
+  smurfProbability Float
+  isFlagged        Boolean  @default(false)
+  mmrMultiplier    Int      @default(1)
+  recommendedTier  String
+  featureVector    Json
+  createdAt        DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([isFlagged, smurfProbability])
+  @@map("smurf_detection_audits")
+}
