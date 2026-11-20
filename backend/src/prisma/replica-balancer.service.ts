@@ -62,9 +62,16 @@ export class ReplicaBalancerService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(ReplicaBalancerService.name);
 
   // Configuration thresholds
-  private readonly MAX_REPLICATION_LAG_MS = 100; // Isolate replica if lag > 100ms
+  private maxReplicationLagMs = parseInt(
+    process.env.MAX_REPLICATION_LAG_MS || '100',
+    10,
+  ); // Isolate replica if lag exceeds threshold
   private readonly PROBE_INTERVAL_MS = 5000;
   private readonly PROBE_TIMEOUT_MS = 2000;
+
+  private currentPolicy: 'WEIGHTED_COST' | 'LEAST_CONNECTIONS' | 'ROUND_ROBIN' =
+    'WEIGHTED_COST';
+  private roundRobinIndex = 0;
 
   private probeTimer: NodeJS.Timeout | null = null;
   private clientAdapter: IReplicaClientAdapter;
@@ -77,6 +84,56 @@ export class ReplicaBalancerService implements OnModuleInit, OnModuleDestroy {
   constructor(@Optional() clientAdapter?: any) {
     this.clientAdapter = clientAdapter || this.createDefaultAdapter();
     this.initializeDefaultReplicaNodes();
+  }
+
+  setMaxReplicationLag(lagMs: number): void {
+    this.maxReplicationLagMs = lagMs;
+  }
+
+  getMaxReplicationLag(): number {
+    return this.maxReplicationLagMs;
+  }
+
+  setBalancingPolicy(
+    policy: 'WEIGHTED_COST' | 'LEAST_CONNECTIONS' | 'ROUND_ROBIN',
+  ): void {
+    this.currentPolicy = policy;
+  }
+
+  getBalancingPolicy(): 'WEIGHTED_COST' | 'LEAST_CONNECTIONS' | 'ROUND_ROBIN' {
+    return this.currentPolicy;
+  }
+
+  /**
+   * Identifies whether an operation or SQL statement is a write/mutating query.
+   * Guaranteed to route to the Primary database.
+   */
+  isWriteQuery(operationOrSql: string): boolean {
+    const s = operationOrSql.trim().toUpperCase();
+    const writeKeywords = [
+      'INSERT',
+      'UPDATE',
+      'DELETE',
+      'CREATE',
+      'DROP',
+      'ALTER',
+      'TRUNCATE',
+      'BEGIN',
+      'COMMIT',
+      'ROLLBACK',
+    ];
+    for (const kw of writeKeywords) {
+      if (s.startsWith(kw) || s.includes(` ${kw} `)) {
+        return true;
+      }
+    }
+    const lower = operationOrSql.toLowerCase();
+    return (
+      lower.includes('create') ||
+      lower.includes('update') ||
+      lower.includes('delete') ||
+      lower.includes('upsert')
+    );
   }
 
   private initializeDefaultReplicaNodes(): void {
@@ -258,7 +315,9 @@ export class ReplicaBalancerService implements OnModuleInit, OnModuleDestroy {
    * Selects the optimal read replica with the lowest instantaneous load score among healthy, un-isolated nodes.
    * If all replicas are isolated/lagging, falls back to the least-lagging replica or primary to avoid failing user requests.
    */
-  selectOptimalReplica(): ReplicaNodeStatus {
+  selectOptimalReplica(
+    policy: 'WEIGHTED_COST' | 'LEAST_CONNECTIONS' | 'ROUND_ROBIN' = this.currentPolicy,
+  ): ReplicaNodeStatus {
     const candidateNodes = Array.from(this.statuses.values()).filter(
       (node) => node.isHealthy && !node.isIsolated,
     );
@@ -273,6 +332,24 @@ export class ReplicaBalancerService implements OnModuleInit, OnModuleDestroy {
       return allNodes[0] || this.createMockFallbackNode();
     }
 
+    if (policy === 'ROUND_ROBIN') {
+      const selected =
+        candidateNodes[this.roundRobinIndex % candidateNodes.length];
+      this.roundRobinIndex = (this.roundRobinIndex + 1) % candidateNodes.length;
+      return selected;
+    }
+
+    if (policy === 'LEAST_CONNECTIONS') {
+      candidateNodes.sort((a, b) => {
+        if (a.activeQueriesCount !== b.activeQueriesCount) {
+          return a.activeQueriesCount - b.activeQueriesCount;
+        }
+        return a.replicationLagMs - b.replicationLagMs;
+      });
+      return candidateNodes[0];
+    }
+
+    // Default: WEIGHTED_COST
     // Sort by instantaneous load score (ascending), break ties by replication lag
     candidateNodes.sort((a, b) => {
       if (a.currentLoadScore !== b.currentLoadScore) {
@@ -361,10 +438,10 @@ export class ReplicaBalancerService implements OnModuleInit, OnModuleDestroy {
         status.replicationLagMs = lagMs;
         status.lastHealthProbeTimestamp = new Date().toISOString();
 
-        if (lagMs > this.MAX_REPLICATION_LAG_MS) {
+        if (lagMs > this.maxReplicationLagMs) {
           if (!status.isIsolated) {
             status.isIsolated = true;
-            status.isolationReason = `Replication lag excessive: ${lagMs}ms exceeds threshold of ${this.MAX_REPLICATION_LAG_MS}ms`;
+            status.isolationReason = `Replication lag excessive: ${lagMs}ms exceeds threshold of ${this.maxReplicationLagMs}ms`;
             this.logger.warn(
               `[Replica Balancer] Isolated replica "${status.name}" (${id}): ${status.isolationReason}`,
             );
@@ -410,9 +487,9 @@ export class ReplicaBalancerService implements OnModuleInit, OnModuleDestroy {
     if (!isHealthy) {
       status.isIsolated = true;
       status.isolationReason = 'Simulated node outage';
-    } else if (lagMs > this.MAX_REPLICATION_LAG_MS) {
+    } else if (lagMs > this.maxReplicationLagMs) {
       status.isIsolated = true;
-      status.isolationReason = `Replication lag ${lagMs}ms exceeds ${this.MAX_REPLICATION_LAG_MS}ms`;
+      status.isolationReason = `Replication lag ${lagMs}ms exceeds ${this.maxReplicationLagMs}ms`;
     } else {
       status.isIsolated = false;
       status.isolationReason = undefined;
