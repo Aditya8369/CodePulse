@@ -132,13 +132,10 @@ import { CommonModule } from './common/common.module';
     McpModule,
     WebhooksModule,
     CollabModule,
-<<<<<<< HEAD
     LoggingModule,
     MentorshipModule,
     GamificationModule,
-=======
     EsportsModule,
->>>>>>> pr-762
   ],
   controllers: [AppController],
   providers: [

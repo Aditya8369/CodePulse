@@ -68,7 +68,6 @@ export class BattlesGateway
     @Optional() private readonly raidBossService?: RaidBossService,
     @Optional() private readonly predictionMarket?: PredictionMarketService,
   ) {}
-  ) {}
 
   @WebSocketServer()
   server: Server;
@@ -485,47 +484,17 @@ export class BattlesGateway
     void client.join(`spectator:${data.battleId}`);
   }
 
-/**
+  /**
    * Spectator emoji reaction handler
    * Buffers reactions without individual fan-out broadcasts to conserve bandwidth
    */
   @SubscribeMessage('spectator:react')
   handleSpectatorReaction(
-
-  @SubscribeMessage('place_prediction')
-  async handlePlacePrediction(
     @ConnectedSocket() client: Socket,
     @MessageBody()
     data: {
       battleId: string;
       userId: string;
-      outcomeKey: string;
-      stakeBits: number;
-    },
-  ) {
-    if (!this.predictionMarket) return null;
-    const outcome = await this.predictionMarket.placePrediction(data);
-    this.server
-      ?.to(`spectator:${data.battleId}`)
-      ?.to(`battle:${data.battleId}`)
-      ?.emit('prediction_odds_updated', {
-        battleId: data.battleId,
-        poolId: outcome.pool.poolId,
-        odds: outcome.pool.odds,
-        outcomePools: outcome.pool.outcomePools,
-        totalPoolBits: outcome.pool.totalPoolBits,
-      });
-    client.emit('prediction_placed', outcome);
-    return outcome;
-  }
-}
-
-    @ConnectedSocket() client: Socket,
-    @MessageBody()
-    data: {
-      battleId: string;
-      userId: string;
-<<<<<<< HEAD
       emoji: EmojiType;
     },
   ) {
@@ -643,7 +612,14 @@ export class BattlesGateway
     }
     return encounter;
   }
-=======
+
+  @SubscribeMessage('place_prediction')
+  async handlePlacePrediction(
+    @ConnectedSocket() client: Socket,
+    @MessageBody()
+    data: {
+      battleId: string;
+      userId: string;
       outcomeKey: string;
       stakeBits: number;
     },
@@ -663,5 +639,4 @@ export class BattlesGateway
     client.emit('prediction_placed', outcome);
     return outcome;
   }
->>>>>>> pr-762
 }
