@@ -7,6 +7,7 @@ import { PrAnalyticsController } from './pr-analytics.controller';
 import { BusFactorService } from './bus-factor.service';
 import { RepositoryAuthorshipController } from './repository-authorship.controller';
 import { ScyllaKeystrokeService } from './scylla-keystroke.service';
+import { ScyllaDbTelemetryService } from './scylladb-telemetry.service';
 
 @Module({
   controllers: [
@@ -20,7 +21,13 @@ import { ScyllaKeystrokeService } from './scylla-keystroke.service';
     PrAnalyticsService,
     BusFactorService,
     ScyllaKeystrokeService,
+    ScyllaDbTelemetryService,
   ],
-  exports: [AnalyticsService, DifferentialPrivacyService, ScyllaKeystrokeService],
+  exports: [
+    AnalyticsService,
+    DifferentialPrivacyService,
+    ScyllaKeystrokeService,
+    ScyllaDbTelemetryService,
+  ],
 })
 export class AnalyticsModule {}
