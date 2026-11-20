@@ -13,6 +13,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiHeader } from '@nest
 import type { Response } from 'express';
 import { RepositoriesService } from './repositories.service';
 import { ArchiveStreamService } from './archive-stream.service';
+import { ZeroCopyStreamService } from './zero-copy-stream.service';
 import { QueryRepositoriesDto } from './dto/repositories.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
@@ -22,6 +23,7 @@ export class RepositoriesController {
   constructor(
     private readonly repositoriesService: RepositoriesService,
     private readonly archiveStreamService: ArchiveStreamService,
+    private readonly zeroCopyStreamService: ZeroCopyStreamService,
   ) {}
 
   @Get()
@@ -86,6 +88,30 @@ export class RepositoriesController {
         acceptEncoding,
       },
     );
+  }
+
+  @Get(':id/archive')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Download repository archive as a zero-copy stream (tar.gz or zip) with HTTP Range support',
+  })
+  @ApiParam({ name: 'id', description: 'Repository ID' })
+  async streamRepositoryArchive(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Res() res: Response,
+    @Query('format') format?: 'tar.gz' | 'zip' | 'tar',
+    @Headers('range') rangeHeader?: string,
+    @Headers('accept-encoding') acceptEncoding?: string,
+  ) {
+    const userId = req.user?.id || req.user?.sub || 'anonymous';
+    return this.zeroCopyStreamService.streamArchive(userId, id, res, {
+      format,
+      rangeHeader,
+      acceptEncoding,
+    });
   }
 
   @Post(':id/sync')
