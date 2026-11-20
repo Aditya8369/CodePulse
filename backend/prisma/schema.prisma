@@ -53,6 +53,9 @@ model User {
   mentorSessions      ShadowCodingSession[] @relation("MentorSessions")
   apprenticeSessions  ShadowCodingSession[] @relation("ApprenticeSessions")
 
+    guildMemberships    GuildMember[]
+  ownedGuilds         Guild[]
+
   @@map("users")
 }
 
@@ -837,4 +840,84 @@ model PredictionWager {
   @@index([battleId, userId])
   @@index([poolId, outcomeKey])
   @@map("prediction_wagers")
+}
+
+enum GuildRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+model Guild {
+  id          String        @id @default(uuid())
+  name        String
+  slug        String        @unique
+  tag         String
+  description String?
+  avatarUrl   String?
+  bannerUrl   String?
+  ownerId     String
+  totalXp     Int           @default(0)
+  level       Int           @default(1)
+  maxMembers  Int           @default(25)
+  isPrivate   Boolean       @default(false)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  owner       User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  members     GuildMember[]
+  invites     GuildInvite[]
+
+  @@index([totalXp(sort: Desc)])
+  @@index([slug])
+  @@map("guilds")
+}
+
+model GuildMember {
+  id            String    @id @default(uuid())
+  guildId       String
+  userId        String
+  role          GuildRole @default(MEMBER)
+  joinedAt      DateTime  @default(now())
+  xpContributed Int       @default(0)
+
+  guild         Guild     @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([guildId, userId])
+  @@index([guildId, role])
+  @@map("guild_members")
+}
+
+model GuildInvite {
+  id         String    @id @default(uuid())
+  guildId    String
+  inviteCode String    @unique
+  expiresAt  DateTime
+  maxUses    Int       @default(1)
+  usesCount  Int       @default(0)
+  createdAt  DateTime  @default(now())
+
+  guild      Guild     @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@index([inviteCode])
+  @@map("guild_invites")
+}
+
+model CompetitiveRating {
+  id                         String    @id @default(uuid())
+  userId                     String    @unique
+  eloRating                  Float     @default(1200.0)
+  ratingDeviation            Float     @default(350.0)
+  volatility                 Float     @default(0.06)
+  placementMatchesRemaining  Int       @default(5)
+  peakRating                 Float     @default(1200.0)
+  seasonId                   String    @default("season_2026_s1")
+  lastMatchAt                DateTime?
+  createdAt                  DateTime  @default(now())
+  updatedAt                  DateTime  @updatedAt
+
+  @@index([eloRating(sort: Desc)])
+  @@index([seasonId, eloRating(sort: Desc)])
+  @@map("competitive_ratings")
 }
