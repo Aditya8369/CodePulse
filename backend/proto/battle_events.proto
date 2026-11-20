@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package battle;
+
+message KeystrokeDelta {
+  string battleId = 1;
+  string playerId = 2;
+  int32 cursorPosition = 3;
+  string textDelta = 4;
+  int64 timestamp = 5;
+}
+
+message TestResultUpdate {
+  string battleId = 1;
+  int32 testCaseIndex = 2;
+  bool passed = 3;
+  int32 durationMs = 4;
+}
+
+message RoomState {
+  string battleId = 1;
+  int32 currentRound = 2;
+  int32 totalRounds = 3;
+  map<string, int32> scores = 4;
+}
