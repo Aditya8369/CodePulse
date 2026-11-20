@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { BattlesController } from './battles.controller';
+import { TournamentsController } from './tournaments.controller';
 import { BattlesService } from './battles.service';
 import { BattlesGateway } from './battles.gateway';
 import { SeasonResetService } from './season-reset.service';
@@ -15,19 +16,21 @@ import { AnalyticsModule } from '../analytics/analytics.module';
 import { ReplayStreamService } from './replay-stream.service';
 import { CryptoModule } from '../crypto/crypto.module';
 import { WatermarkService } from './watermark.service';
+import { TournamentEngineService } from './tournament-engine.service';
 
 @Module({
   imports: [
     BullModule.registerQueue(
       { name: 'rating-decay' },
       { name: 'battles-lifecycle' },
+      { name: 'tournament-engine' },
     ),
     MetricsModule,
     XpModule,
     AnalyticsModule,
     CryptoModule,
   ],
-  controllers: [BattlesController],
+  controllers: [BattlesController, TournamentsController],
   providers: [
     BattlesService,
     BattlesGateway,
@@ -39,7 +42,14 @@ import { WatermarkService } from './watermark.service';
     BattlesLifecycleWorker,
     ReplayStreamService,
     WatermarkService,
+    TournamentEngineService,
   ],
-  exports: [BattlesService, BattlesGateway, ReplayStreamService, WatermarkService],
+  exports: [
+    BattlesService,
+    BattlesGateway,
+    ReplayStreamService,
+    WatermarkService,
+    TournamentEngineService,
+  ],
 })
 export class BattlesModule {}
