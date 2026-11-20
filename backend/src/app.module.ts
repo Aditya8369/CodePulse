@@ -39,6 +39,7 @@ import { McpModule } from './modules/mcp/mcp.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
 import { CollabModule } from './modules/collab/collab.module';
 import { LoggingModule } from './common/logging/logging.module';
+import { MentorshipModule } from './modules/mentorship/mentorship.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import { BullModule } from '@nestjs/bullmq';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -127,6 +128,7 @@ import { CommonModule } from './common/common.module';
     WebhooksModule,
     CollabModule,
     LoggingModule,
+    MentorshipModule,
   ],
   controllers: [AppController],
   providers: [
