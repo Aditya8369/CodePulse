@@ -15,6 +15,8 @@ import {
   tierForElo,
 } from './season-rating';
 import { decayFloorForElo } from './rating-decay';
+import { AntiSmurfService } from './anti-smurf.service';
+import type { MatchResultTelemetryDto } from './dto/match-result.dto';
 
 export interface EloOutcome {
   winnerRating: number;
@@ -31,6 +33,7 @@ export class BattlesService {
     private readonly prisma: PrismaService,
     @Optional() private readonly seasonReset?: SeasonResetService,
     @Optional() private readonly xpService?: XpService,
+    @Optional() private readonly antiSmurfService?: AntiSmurfService,
   ) {}
 
   /**
@@ -41,6 +44,7 @@ export class BattlesService {
     loserRating: number,
     winnerKFactor = 32,
     loserKFactor = winnerKFactor,
+    winnerMmrMultiplier = 1,
   ): EloOutcome {
     // Expected score formula: EA = 1 / (1 + 10^((RB - RA) / 400))
     const expectedWinner =
@@ -49,11 +53,11 @@ export class BattlesService {
       1 / (1 + Math.pow(10, (winnerRating - loserRating) / 400));
 
     // Underdog multiplier gives an extra proportionate reward if a lower-rated player defeats a titan
-    let winnerDelta = Math.round(winnerKFactor * (1 - expectedWinner));
+    let winnerDelta = Math.round(winnerKFactor * winnerMmrMultiplier * (1 - expectedWinner));
     const loserDelta = Math.round(loserKFactor * (0 - expectedLoser));
 
     // Ensure winner always gains at least 8 ELO and loser loses at most proportional points
-    winnerDelta = Math.max(8, winnerDelta);
+    winnerDelta = Math.max(8 * winnerMmrMultiplier, winnerDelta);
 
     const winnerXpGain = 150;
     const loserXpGain = 25; // Participation reward
@@ -838,5 +842,13 @@ export class BattlesService {
     }
 
     return { expiredCount, forfeitedCount };
+  }
+
+  async evaluatePlacementAntiSmurf(
+    telemetry: MatchResultTelemetryDto,
+    currentElo = 1200,
+  ) {
+    if (!this.antiSmurfService) return null;
+    return this.antiSmurfService.evaluateAndRecordPlacement(telemetry, currentElo);
   }
 }
