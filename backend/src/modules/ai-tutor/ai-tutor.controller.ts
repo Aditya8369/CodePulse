@@ -1,6 +1,7 @@
 import { Controller, Post, Body, Sse, MessageEvent } from '@nestjs/common';
 import { Observable, map } from 'rxjs';
-import { AiTutorService, ExplanationRequest } from './ai-tutor.service';
+import { AiTutorService } from './ai-tutor.service';
+import type { ExplanationRequest } from './ai-tutor.service';
 
 @Controller('ai-tutor')
 export class AiTutorController {

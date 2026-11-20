@@ -93,16 +93,6 @@ export class AnalyticsService {
     return { repositoryId, timezone, matrix, sampledCommits: cached.timestamps.length, truncated: cached.truncated };
   }
 
-  async getPlatformStats() {
-    // Mock implementation for platform stats
-    return {
-      activeDevelopers: 250000,
-      commitsAnalyzed: 12000000,
-      battlesFought: 500000,
-      uptime: '99.9%',
-    };
-  }
-
   async getUserAnalytics(username: string) {
     const user = await this.prisma.user.findUnique({
       where: { username },
@@ -170,6 +160,8 @@ export class AnalyticsService {
             noiseMechanism: `Laplace(sensitivity=1000, epsilon=${epsilon})`,
           },
     };
+  }
+
   async getPlatformStats() {
     const cacheKey = 'cache:platform:kpis';
     const cached = await this.cache.get(cacheKey);
