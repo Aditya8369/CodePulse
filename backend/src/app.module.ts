@@ -39,6 +39,7 @@ import { GraphqlGatewayModule } from './modules/graphql/graphql.module';
 import { McpModule } from './modules/mcp/mcp.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
 import { CollabModule } from './modules/collab/collab.module';
+import { AudioModule } from './modules/audio/audio.module';
 
 import { LoggingModule } from './common/logging/logging.module';
 import { MentorshipModule } from './modules/mentorship/mentorship.module';
@@ -135,7 +136,7 @@ import { CommonModule } from './common/common.module';
     LoggingModule,
     MentorshipModule,
     GamificationModule,
-    EsportsModule,
+    AudioModule,
   ],
   controllers: [AppController],
   providers: [
