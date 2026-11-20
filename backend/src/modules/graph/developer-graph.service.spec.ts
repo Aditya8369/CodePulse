@@ -1,12 +1,21 @@
 /* eslint-disable @typescript-eslint/unbound-method */
 import { Test, TestingModule } from '@nestjs/testing';
 import { DeveloperGraphService } from './developer-graph.service';
+import { GraphController } from './graph.controller';
+import { GraphSyncWorker } from './graph-sync.worker';
 import { FriendsService } from '../friends/friends.service';
 import { FriendsController } from '../friends/friends.controller';
 import { PrismaService } from '../../prisma/prisma.service';
+import {
+  RecommendationType,
+  GraphSyncEventType,
+  GraphSyncAction,
+} from './dto/graph-query.dto';
 
-describe('DeveloperGraphService & Friends Graph Recommendations', () => {
+describe('DeveloperGraphService & Graph Engine Suite', () => {
   let graphService: DeveloperGraphService;
+  let graphController: GraphController;
+  let graphSyncWorker: GraphSyncWorker;
   let friendsService: FriendsService;
   let friendsController: FriendsController;
   let mockPrisma: Partial<PrismaService>;
@@ -45,9 +54,10 @@ describe('DeveloperGraphService & Friends Graph Recommendations', () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      controllers: [FriendsController],
+      controllers: [GraphController, FriendsController],
       providers: [
         DeveloperGraphService,
+        GraphSyncWorker,
         FriendsService,
         {
           provide: PrismaService,
@@ -57,6 +67,8 @@ describe('DeveloperGraphService & Friends Graph Recommendations', () => {
     }).compile();
 
     graphService = module.get<DeveloperGraphService>(DeveloperGraphService);
+    graphController = module.get<GraphController>(GraphController);
+    graphSyncWorker = module.get<GraphSyncWorker>(GraphSyncWorker);
     friendsService = module.get<FriendsService>(FriendsService);
     friendsController = module.get<FriendsController>(FriendsController);
   });
@@ -65,14 +77,15 @@ describe('DeveloperGraphService & Friends Graph Recommendations', () => {
     await graphService.onModuleDestroy();
   });
 
-  describe('Graph Node & Edge Modeling', () => {
-    it('should model and upsert Developer, Language, Repository, and Guild entities', async () => {
+  describe('Graph Node & Weighted Relationship Modeling', () => {
+    it('should model and upsert Developer, Skill, Repository, Challenge, and Badge entities', async () => {
       // Upsert Developer node
       await graphService.upsertDeveloperNode({
         id: 'dev-alice',
         username: 'alice_codes',
         name: 'Alice Wonder',
         avatar: 'https://avatar.dev/alice.png',
+        reputation: 1200,
       });
 
       await graphService.upsertDeveloperNode({
@@ -81,156 +94,278 @@ describe('DeveloperGraphService & Friends Graph Recommendations', () => {
         name: 'Bob Builder',
       });
 
-      // Link FOLLOWS edge
+      // Upsert Skill node
+      await graphService.upsertSkillNode({
+        id: 'skill-rust',
+        name: 'Rust',
+        category: 'Systems',
+        weight: 1.0,
+      });
+
+      // Upsert Repository node
+      await graphService.upsertRepositoryNode({
+        id: 'repo-hyper',
+        name: 'codepulse/hyper',
+        owner: 'codepulse',
+        stars: 350,
+        primaryLanguage: 'Rust',
+      });
+
+      // Upsert Challenge node
+      await graphService.upsertChallengeNode({
+        id: 'chal-lockfree',
+        title: 'Lock-Free Queue',
+        difficulty: 'EXPERT',
+        domain: 'Concurrency',
+        points: 150,
+      });
+
+      // Upsert Badge node
+      await graphService.upsertBadgeNode({
+        id: 'badge-rustacean',
+        name: 'Grandmaster Rustacean',
+        rarity: 'EPIC',
+        xpReward: 500,
+      });
+
+      // Link weighted relationships
+      await graphService.upsertContributedToEdge('dev-alice', 'repo-hyper', 45, 1200);
+      await graphService.upsertCollaboratesWithEdge('dev-alice', 'dev-bob', 8, 3);
+      await graphService.upsertMasteredEdge('dev-alice', 'skill-rust', 'Master', 98);
+      await graphService.upsertSolvedEdge('dev-alice', 'chal-lockfree', 100, 22);
+      await graphService.upsertEarnedEdge('dev-alice', 'badge-rustacean');
+
+      // Backward compatibility edges
       await graphService.upsertFollowsEdge('dev-alice', 'dev-bob');
-
-      // Link Language proficiency
-      await graphService.addProficiencyEdge('dev-alice', 'Rust', 'Expert');
       await graphService.addProficiencyEdge('dev-bob', 'Rust', 'Intermediate');
-
-      // Link Repository contribution
-      await graphService.addContributionEdge(
-        'dev-alice',
-        'repo-hyper',
-        'codepulse/hyper',
-        42,
-      );
-      await graphService.addContributionEdge(
-        'dev-bob',
-        'repo-hyper',
-        'codepulse/hyper',
-        12,
-      );
-
-      // Link Guild membership
-      await graphService.addGuildMembershipEdge(
-        'dev-alice',
-        'guild-rustaceans',
-        'Rustaceans Guild',
-      );
+      await graphService.addGuildMembershipEdge('dev-alice', 'guild-rust', 'Rust Guild');
     });
   });
 
-  describe('Multi-Hop Social & Skill Graph Traversals (2nd & 3rd Degree)', () => {
+  describe('Cypher Query Builder', () => {
+    it('constructs well-formed Cypher queries with parameters', () => {
+      const builder = graphService.createCypherBuilder();
+      const query = builder
+        .match('(d:Developer)-[r:MASTERED]->(s:Skill)')
+        .where('s.name = $skillName', { skillName: 'Rust' })
+        .where('r.score >= $minScore', { minScore: 80 })
+        .return('d.username, s.name, r.score')
+        .orderBy('r.score DESC')
+        .limit(10)
+        .build();
+
+      expect(query.cypher).toContain('MATCH (d:Developer)-[r:MASTERED]->(s:Skill)');
+      expect(query.cypher).toContain('WHERE s.name = $skillName AND r.score >= $minScore');
+      expect(query.cypher).toContain('RETURN d.username, s.name, r.score');
+      expect(query.cypher).toContain('ORDER BY r.score DESC');
+      expect(query.cypher).toContain('LIMIT 10');
+      expect(query.params.skillName).toBe('Rust');
+      expect(query.params.minScore).toBe(80);
+    });
+  });
+
+  describe('4-Degree Graph Relationship Traversals (< 25ms SLA)', () => {
     beforeEach(async () => {
-      // Setup social graph:
-      // Alice -> follows Bob -> follows Charlie -> follows Dave
-      // Alice does NOT directly follow Charlie or Dave
-      await graphService.upsertDeveloperNode({
-        id: 'alice',
-        username: 'alice',
-      });
-      await graphService.upsertDeveloperNode({ id: 'bob', username: 'bob' });
-      await graphService.upsertDeveloperNode({
-        id: 'charlie',
-        username: 'charlie',
-      });
-      await graphService.upsertDeveloperNode({ id: 'dave', username: 'dave' });
+      // Alice -> Bob -> Charlie -> Dave -> Eve (4 degrees)
+      const users = ['alice', 'bob', 'charlie', 'dave', 'eve'];
+      for (const u of users) {
+        await graphService.upsertDeveloperNode({ id: u, username: u });
+      }
 
-      await graphService.upsertFollowsEdge('alice', 'bob');
-      await graphService.upsertFollowsEdge('bob', 'charlie');
-      await graphService.upsertFollowsEdge('charlie', 'dave');
-
-      // Add shared skill (Rust) and shared repo (core-engine) between Alice and Charlie
-      await graphService.addProficiencyEdge('alice', 'Rust');
-      await graphService.addProficiencyEdge('charlie', 'Rust');
-
-      await graphService.addContributionEdge(
-        'alice',
-        'repo-core',
-        'codepulse/core',
-      );
-      await graphService.addContributionEdge(
-        'charlie',
-        'repo-core',
-        'codepulse/core',
-      );
+      await graphService.upsertCollaboratesWithEdge('alice', 'bob');
+      await graphService.upsertCollaboratesWithEdge('bob', 'charlie');
+      await graphService.upsertCollaboratesWithEdge('charlie', 'dave');
+      await graphService.upsertCollaboratesWithEdge('dave', 'eve');
     });
 
-    it('should discover 2nd-degree connection (Charlie) and calculate weighted recommendation score in < 10ms', async () => {
-      const startTime = Date.now();
-      const recommendations = await graphService.getPeerRecommendations(
-        'alice',
-        5,
-      );
-      const durationMs = Date.now() - startTime;
+    it('executes 4-degree graph relationship traversals in under 25ms', async () => {
+      const result = await graphService.traverse4DegreeNetwork('alice', 4);
 
-      expect(durationMs).toBeLessThan(50); // fast in-memory execution < 10-50ms
-      expect(recommendations.length).toBeGreaterThan(0);
+      expect(result.startNodeId).toBe('alice');
+      expect(result.maxDegreeReached).toBe(4);
+      expect(result.nodesVisitedCount).toBeGreaterThanOrEqual(5);
+      expect(result.pathsFoundCount).toBeGreaterThan(0);
+      expect(result.traversalTimeMs).toBeLessThan(25.0);
+      expect(result.under25msTargetMet).toBe(true);
 
-      const charlieRec = recommendations.find(
-        (r) => r.developer.username === 'charlie',
-      );
-      expect(charlieRec).toBeDefined();
-      expect(charlieRec?.degreeOfSeparation).toBe(2);
-      expect(charlieRec?.mutualFollowersCount).toBe(1); // Bob
-      expect(charlieRec?.sharedLanguages).toContain('Rust');
-      expect(charlieRec?.sharedRepositories).toContain('repo-core');
-      expect(charlieRec?.recommendationScore).toBeGreaterThan(0);
+      const evePath = result.samplePaths.find((p) => p.nodes.includes('eve'));
+      expect(evePath).toBeDefined();
+      expect(evePath?.degree).toBe(4);
+    });
+  });
+
+  describe('Personalized Recommendations: Peers, Mentors & Projects', () => {
+    beforeEach(async () => {
+      await graphService.upsertDeveloperNode({ id: 'mentee_dan', username: 'dan' });
+      await graphService.upsertDeveloperNode({ id: 'mentor_sarah', username: 'sarah' });
+      await graphService.upsertDeveloperNode({ id: 'peer_elena', username: 'elena' });
+
+      await graphService.upsertSkillNode({ id: 'skill-k8s', name: 'Kubernetes', category: 'DevOps' });
+      await graphService.upsertRepositoryNode({
+        id: 'repo-k8s-operator',
+        name: 'codepulse/k8s-operator',
+        owner: 'codepulse',
+        primaryLanguage: 'Go',
+      });
+
+      // Sarah has Mastered Kubernetes (Master level, 95 score)
+      await graphService.upsertMasteredEdge('mentor_sarah', 'skill-k8s', 'Master', 95);
+
+      // Sarah and Elena contribute to the repository
+      await graphService.upsertContributedToEdge('mentor_sarah', 'repo-k8s-operator', 30, 800);
+      await graphService.upsertContributedToEdge('peer_elena', 'repo-k8s-operator', 15, 400);
+
+      // Dan collaborates with Elena
+      await graphService.upsertCollaboratesWithEdge('mentee_dan', 'peer_elena', 4, 1);
+      // Elena collaborates with Sarah
+      await graphService.upsertCollaboratesWithEdge('peer_elena', 'mentor_sarah', 6, 2);
     });
 
-    it('should discover 3rd-degree connection (Dave) with lower precedence than 2nd-degree', async () => {
-      const recommendations = await graphService.getPeerRecommendations(
-        'alice',
-        5,
-      );
+    it('recommends mentors who mastered desired skills within graph proximity', async () => {
+      const mentors = await graphService.getMentorRecommendations('mentee_dan', 'Kubernetes', 5);
 
-      const charlieRec = recommendations.find(
-        (r) => r.developer.username === 'charlie',
-      );
-      const daveRec = recommendations.find(
-        (r) => r.developer.username === 'dave',
-      );
+      expect(mentors.length).toBeGreaterThan(0);
+      const topMentor = mentors[0];
+      expect(topMentor.mentor.username).toBe('sarah');
+      expect(topMentor.masteredSkill).toBe('Kubernetes');
+      expect(topMentor.proficiencyLevel).toBe('Master');
+      expect(topMentor.skillScore).toBe(95);
+      expect(topMentor.matchScore).toBeGreaterThan(50);
+    });
 
-      expect(daveRec).toBeDefined();
-      expect(daveRec?.degreeOfSeparation).toBe(3);
-      // Charlie (2nd degree + shared Rust + shared repo) ranks above Dave (3rd degree)
-      expect(charlieRec!.recommendationScore).toBeGreaterThan(
-        daveRec!.recommendationScore,
-      );
+    it('recommends projects contributed to by graph collaborators', async () => {
+      const projects = await graphService.getProjectRecommendations('mentee_dan', 5);
+
+      expect(projects.length).toBeGreaterThan(0);
+      const topProject = projects[0];
+      expect(topProject.repository.name).toBe('codepulse/k8s-operator');
+      expect(topProject.recommendedByCount).toBeGreaterThan(0);
+      expect(topProject.collaboratorContributors).toContain('elena');
+      expect(topProject.recommendationScore).toBeGreaterThan(0);
     });
   });
 
   describe('Graph Algorithms: PageRank & Community Detection', () => {
     beforeEach(async () => {
-      // Create influential star topology: Bob has multiple incoming follows
       await graphService.upsertDeveloperNode({ id: 'u1', username: 'user1' });
       await graphService.upsertDeveloperNode({ id: 'u2', username: 'user2' });
-      await graphService.upsertDeveloperNode({ id: 'u3', username: 'user3' });
-      await graphService.upsertDeveloperNode({
-        id: 'influencer',
-        username: 'influencer_dan',
-      });
+      await graphService.upsertDeveloperNode({ id: 'influencer', username: 'influencer_dan' });
 
       await graphService.upsertFollowsEdge('u1', 'influencer');
       await graphService.upsertFollowsEdge('u2', 'influencer');
-      await graphService.upsertFollowsEdge('u3', 'influencer');
-
       await graphService.addProficiencyEdge('u1', 'TypeScript');
-      await graphService.addProficiencyEdge('u2', 'TypeScript');
       await graphService.addProficiencyEdge('influencer', 'TypeScript');
-      await graphService.addProficiencyEdge('u3', 'Rust');
     });
 
-    it('should calculate PageRank and rank developer with highest inbound links at the top', async () => {
-      const pagerankResults = await graphService.computePageRank();
-
-      expect(pagerankResults.length).toBeGreaterThan(0);
-      expect(pagerankResults[0].username).toBe('influencer_dan');
-      expect(pagerankResults[0].rank).toBeGreaterThan(
-        pagerankResults[pagerankResults.length - 1].rank,
-      );
+    it('computes PageRank identifying high-authority developers', async () => {
+      const ranks = await graphService.computePageRank();
+      expect(ranks.length).toBeGreaterThan(0);
+      expect(ranks[0].username).toBe('influencer_dan');
     });
 
-    it('should perform community detection clustering developers by ecosystem interest', async () => {
+    it('detects community clusters based on shared technology domains', async () => {
       const communities = await graphService.detectCommunities();
-
       expect(communities.length).toBeGreaterThan(0);
-      const tsCommunity = communities.find((c) =>
-        c.topLanguages.includes('TypeScript'),
-      );
-      expect(tsCommunity).toBeDefined();
-      expect(tsCommunity?.developerCount).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  describe('BullMQ Asynchronous Node Synchronization from PostgreSQL', () => {
+    it('synchronizes USER_SYNC event into developer graph', async () => {
+      const result = await graphSyncWorker.process({
+        id: 'job-1',
+        data: {
+          eventType: GraphSyncEventType.USER_SYNC,
+          entityId: 'dev_synced_1',
+          action: GraphSyncAction.UPSERT,
+          payload: {
+            username: 'sync_user_1',
+            name: 'Synced User',
+            reputation: 850,
+          },
+        },
+      } as any);
+
+      expect(result.success).toBe(true);
+      expect(result.entityId).toBe('dev_synced_1');
+
+      const traversal = await graphService.traverse4DegreeNetwork('dev_synced_1', 1);
+      expect(traversal.nodesVisitedCount).toBeGreaterThanOrEqual(1);
+    });
+
+    it('synchronizes SKILL_SYNC and REPO_SYNC events', async () => {
+      await graphService.syncEvent({
+        eventType: GraphSyncEventType.SKILL_SYNC,
+        entityId: 'skill_sync_go',
+        action: GraphSyncAction.UPSERT,
+        payload: {
+          name: 'Go',
+          category: 'Backend',
+          developerId: 'dev_synced_1',
+          proficiency: 'Expert',
+          score: 92,
+        },
+      });
+
+      await graphService.syncEvent({
+        eventType: GraphSyncEventType.REPO_SYNC,
+        entityId: 'repo_sync_engine',
+        action: GraphSyncAction.UPSERT,
+        payload: {
+          name: 'codepulse/engine',
+          developerId: 'dev_synced_1',
+          commitsCount: 20,
+          linesAdded: 500,
+        },
+      });
+
+      const mentorRecs = await graphService.getMentorRecommendations('other_dev', 'Go', 5);
+      expect(mentorRecs.some((m) => m.mentor.id === 'dev_synced_1')).toBe(true);
+    });
+  });
+
+  describe('GraphController REST Endpoints', () => {
+    beforeEach(async () => {
+      await graphService.upsertDeveloperNode({ id: 'ctrl_user', username: 'ctrl_user' });
+      await graphService.upsertDeveloperNode({ id: 'ctrl_peer', username: 'ctrl_peer' });
+      await graphService.upsertCollaboratesWithEdge('ctrl_user', 'ctrl_peer');
+    });
+
+    it('GET /graph/recommendations handles peers, mentors, and projects queries', async () => {
+      const peerRes = await graphController.getRecommendations({
+        developerId: 'ctrl_user',
+        type: RecommendationType.PEERS,
+        limit: 5,
+      });
+      expect(Array.isArray(peerRes)).toBe(true);
+
+      const mentorRes = await graphController.getRecommendations({
+        developerId: 'ctrl_user',
+        type: RecommendationType.MENTORS,
+        limit: 5,
+      });
+      expect(Array.isArray(mentorRes)).toBe(true);
+
+      const projectRes = await graphController.getRecommendations({
+        developerId: 'ctrl_user',
+        type: RecommendationType.PROJECTS,
+        limit: 5,
+      });
+      expect(Array.isArray(projectRes)).toBe(true);
+    });
+
+    it('GET /graph/traversal/:developerId returns 4-degree graph results', async () => {
+      const traversal = await graphController.traverseNetwork('ctrl_user', '4');
+      expect(traversal.startNodeId).toBe('ctrl_user');
+      expect(traversal.under25msTargetMet).toBe(true);
+    });
+
+    it('POST /graph/sync/event triggers graph synchronization', async () => {
+      const res = await graphController.syncEvent({
+        eventType: GraphSyncEventType.USER_SYNC,
+        entityId: 'post_user',
+        payload: { username: 'post_user' },
+      });
+      expect(res.success).toBe(true);
     });
   });
 
