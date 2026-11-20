@@ -773,3 +773,22 @@ model UserInventoryItem {
   @@map("user_inventory_items")
 }
 
+model CommitSignatureAudit {
+  id                    String    @id @default(uuid())
+  commitSha             String    @unique
+  repositoryId          String?
+  authorEmail           String
+  verificationType      String    @default("NONE") // 'GPG' | 'SIGSTORE' | 'NONE'
+  status                String    // 'VERIFIED_GPG' | 'VERIFIED_SIGSTORE' | 'UNVERIFIED' | 'TAMPERED'
+  keyId                 String?   // PGP Key ID or Fulcio Cert Serial
+  certificateThumbprint String?
+  signerIdentity        String?   // OIDC issuer or PGP user ID
+  rekorLogIndex         String?
+  rekorIntegratedTime   DateTime?
+  verifiedAt            DateTime  @default(now())
+  details               String?
+
+  @@index([authorEmail])
+  @@index([status])
+  @@map("commit_signature_audits")
+}
