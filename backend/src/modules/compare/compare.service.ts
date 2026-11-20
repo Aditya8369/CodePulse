@@ -38,8 +38,8 @@ export class CompareService {
       },
     }).catch(() => []);
 
-    const dev1Wins = mutualBattles.filter(b => b.winnerId === dev1.id).length;
-    const dev2Wins = mutualBattles.filter(b => b.winnerId === dev2.id).length;
+    const dev1Wins = (mutualBattles as any[]).filter((b: any) => b.winnerId === dev1.id).length;
+    const dev2Wins = (mutualBattles as any[]).filter((b: any) => b.winnerId === dev2.id).length;
 
     return {
       developer1: {
