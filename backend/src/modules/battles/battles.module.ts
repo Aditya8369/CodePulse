@@ -18,6 +18,7 @@ import { CryptoModule } from '../crypto/crypto.module';
 import { WatermarkService } from './watermark.service';
 import { HypeMeterService } from './hype-meter.service';
 import { TournamentEngineService } from './tournament-engine.service';
+import { EsportsModule } from '../esports/esports.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { TournamentEngineService } from './tournament-engine.service';
     XpModule,
     AnalyticsModule,
     CryptoModule,
+    EsportsModule,
   ],
   controllers: [BattlesController, TournamentsController],
   providers: [

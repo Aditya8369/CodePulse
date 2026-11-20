@@ -16,6 +16,8 @@ import type { ZkpVerificationRequest } from '../crypto/zkp-verifier.service';
 import { DisruptorRingBuffer } from '../../common/concurrency/disruptor-ring-buffer';
 import { WatermarkService } from './watermark.service';
 import { HypeMeterService, EmojiType } from './hype-meter.service';
+import { AiShoutcasterService } from '../esports/ai-shoutcaster.service';
+import type { CommentaryStyle, ShoutcasterMatchEvent } from '../esports/ai-shoutcaster.service';
 
 interface PlayerState {
   userId: string;
@@ -59,6 +61,7 @@ export class BattlesGateway
     @Optional() private readonly zkpService?: ZkpVerifierService,
     @Optional() private readonly watermarkService?: WatermarkService,
     @Optional() private readonly hypeMeterService?: HypeMeterService,
+    @Optional() private readonly shoutcasterService?: AiShoutcasterService,
   ) {}
 
   @WebSocketServer()
@@ -115,6 +118,18 @@ export class BattlesGateway
           cursorPosition: data?.cursorPosition,
           timestamp: event.timestamp,
         });
+      if (this.shoutcasterService) {
+        const burst = this.shoutcasterService.recordKeystrokeAndDetectBurst(battleId, event.timestamp);
+        if (burst.isBurst) {
+          void this.broadcastShoutcasterEvent({
+            battleId,
+            eventType: 'fast_typing_burst',
+            actorUsername: this.rooms.get(battleId)?.players[userId]?.username ?? userId,
+            wpm: burst.estimatedWpm,
+            timestampMs: event.timestamp,
+          });
+        }
+      }
     } else if (eventType === 'test_case_eval') {
       this.server
         ?.to(`battle:${battleId}`)
@@ -125,6 +140,19 @@ export class BattlesGateway
           totalCount: data?.totalCount,
           executionTimeMs: data?.executionTimeMs,
         });
+      if (this.shoutcasterService && typeof data?.passedCount === 'number' && typeof data?.totalCount === 'number') {
+        const actorName = this.rooms.get(battleId)?.players[userId]?.username ?? userId;
+        const isAllPassed = data.passedCount === data.totalCount && data.totalCount > 0;
+        void this.broadcastShoutcasterEvent({
+          battleId,
+          eventType: isAllPassed ? 'optimization_breakthrough' : 'failing_test_cases',
+          actorUsername: actorName,
+          passedTests: data.passedCount,
+          totalTests: data.totalCount,
+          complexityAfter: isAllPassed ? 'O(N)' : undefined,
+          timestampMs: event.timestamp,
+        });
+      }
     } else if (eventType === 'disconnect') {
       this.handlePlayerDisconnectProcessing(event.socketId, userId, battleId);
     }
@@ -467,5 +495,40 @@ export class BattlesGateway
     }
 
     return { status: 'buffered' };
+  }
+
+  async broadcastShoutcasterEvent(event: ShoutcasterMatchEvent) {
+    if (!this.shoutcasterService) return null;
+    const outcome = await this.shoutcasterService.processMatchEvent(event);
+    if (!outcome.throttled) {
+      for (const chunk of outcome.chunks) {
+        this.server
+          ?.to(`battle:${event.battleId}`)
+          ?.to(`spectator:${event.battleId}`)
+          ?.emit('shoutcaster_commentary_chunk', chunk);
+      }
+    }
+    return outcome;
+  }
+
+  @SubscribeMessage('set_commentary_style')
+  handleSetCommentaryStyle(
+    @MessageBody() data: { battleId: string; style: CommentaryStyle },
+  ) {
+    if (!this.shoutcasterService) return { style: data.style };
+    const updated = this.shoutcasterService.setBattleStyle(data.battleId, data.style);
+    this.server
+      ?.to(`battle:${data.battleId}`)
+      ?.to(`spectator:${data.battleId}`)
+      ?.emit('shoutcaster_style_updated', { battleId: data.battleId, style: updated });
+    return { battleId: data.battleId, style: updated };
+  }
+
+  @SubscribeMessage('trigger_shoutcaster_event')
+  async handleTriggerShoutcasterEvent(
+    @MessageBody() event: ShoutcasterMatchEvent,
+  ) {
+    return this.broadcastShoutcasterEvent(event);
+  }
   }
 }
