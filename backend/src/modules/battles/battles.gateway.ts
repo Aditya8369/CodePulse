@@ -15,6 +15,7 @@ import { ZkpVerifierService } from '../crypto/zkp-verifier.service';
 import type { ZkpVerificationRequest } from '../crypto/zkp-verifier.service';
 import { DisruptorRingBuffer } from '../../common/concurrency/disruptor-ring-buffer';
 import { WatermarkService } from './watermark.service';
+import { HypeMeterService, EmojiType } from './hype-meter.service';
 
 interface PlayerState {
   userId: string;
@@ -57,6 +58,7 @@ export class BattlesGateway
     private readonly metrics: MetricsService,
     @Optional() private readonly zkpService?: ZkpVerifierService,
     @Optional() private readonly watermarkService?: WatermarkService,
+    @Optional() private readonly hypeMeterService?: HypeMeterService,
   ) {}
 
   @WebSocketServer()
@@ -68,6 +70,12 @@ export class BattlesGateway
 
   afterInit() {
     this.startDisruptorConsumerLoop();
+    if (this.hypeMeterService) {
+      this.hypeMeterService.onTick((snapshot) => {
+        // Broadcast single aggregated 100ms hype tick to all spectators
+        this.server.to(`spectator:${snapshot.battleId}`).emit('hype:tick', snapshot);
+      });
+    }
     this.logger.log('BattlesGateway initialized with LMAX Disruptor lock-free ring buffer');
   }
 
@@ -433,5 +441,31 @@ export class BattlesGateway
     }
 
     void client.join(`spectator:${data.battleId}`);
+  }
+
+  /**
+   * Spectator emoji reaction handler
+   * Buffers reactions without individual fan-out broadcasts to conserve bandwidth
+   */
+  @SubscribeMessage('spectator:react')
+  handleSpectatorReaction(
+    @ConnectedSocket() client: Socket,
+    @MessageBody()
+    data: {
+      battleId: string;
+      userId: string;
+      emoji: EmojiType;
+    },
+  ) {
+    if (this.hypeMeterService) {
+      this.hypeMeterService.recordReaction({
+        battleId: data.battleId,
+        userId: data.userId || client.id,
+        emoji: data.emoji,
+        timestamp: Date.now(),
+      });
+    }
+
+    return { status: 'buffered' };
   }
 }
