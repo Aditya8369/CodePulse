@@ -634,3 +634,18 @@ model WebhookDeliveryLog {
   @@map("webhook_delivery_logs")
 }
 
+model BattleWhiteboard {
+  id          String   @id @default(uuid())
+  battleId    String   @unique
+  snapshot    Json
+  svgExport   String?  @db.Text
+  mermaidSpec String?  @db.Text
+  version     Int      @default(1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([battleId])
+  @@map("battle_whiteboards")
+}
+
+
