@@ -634,3 +634,50 @@ model WebhookDeliveryLog {
   @@map("webhook_delivery_logs")
 }
 
+
+model BattlePassSeason {
+  id           String   @id @default(uuid())
+  seasonNumber Int      @unique
+  title        String
+  theme        String
+  startsAt     DateTime
+  endsAt       DateTime
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  @@map("battle_pass_seasons")
+}
+
+model UserBattlePassProgress {
+  id              String   @id @default(uuid())
+  userId          String
+  seasonNumber    Int      @default(1)
+  totalXp         Int      @default(0)
+  currentTier     Int      @default(1)
+  isEliteUnlocked Boolean  @default(false)
+  claimedFree     Int[]    @default([])
+  claimedElite    Int[]    @default([])
+  questProgress   Json     @default("{}")
+  updatedAt       DateTime @updatedAt
+
+  @@unique([userId, seasonNumber])
+  @@index([seasonNumber, totalXp])
+  @@map("user_battle_pass_progress")
+}
+
+model UserInventoryItem {
+  id           String   @id @default(uuid())
+  userId       String
+  cosmeticCode String
+  category     String
+  label        String
+  rarity       String
+  seasonNumber Int
+  isPermanent  Boolean  @default(true)
+  equipped     Boolean  @default(false)
+  unlockedAt   DateTime @default(now())
+
+  @@unique([userId, cosmeticCode])
+  @@index([userId, category])
+  @@map("user_inventory_items")
+}

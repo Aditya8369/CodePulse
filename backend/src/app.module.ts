@@ -38,6 +38,7 @@ import { GraphqlGatewayModule } from './modules/graphql/graphql.module';
 import { McpModule } from './modules/mcp/mcp.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
 import { CollabModule } from './modules/collab/collab.module';
+import { GamificationModule } from './modules/gamification/gamification.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import { BullModule } from '@nestjs/bullmq';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -125,6 +126,7 @@ import { CommonModule } from './common/common.module';
     McpModule,
     WebhooksModule,
     CollabModule,
+    GamificationModule,
   ],
   controllers: [AppController],
   providers: [
