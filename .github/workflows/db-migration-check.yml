@@ -1,0 +1,49 @@
+name: Zero-Downtime DB Migration Check
+
+on:
+  pull_request:
+    paths:
+      - 'backend/prisma/**'
+      - '.github/workflows/db-migration-check.yml'
+
+jobs:
+  verify-migrations:
+    name: Verify Prisma Migrations & Schema Compatibility
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: codepulse_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: |
+          npm ci
+          cd backend && npm install
+
+      - name: Run Zero-Downtime Migration Verification Script
+        env:
+          DATABASE_URL: "postgresql://test_user:test_password@localhost:5432/codepulse_test?schema=public"
+        run: |
+          chmod +x backend/scripts/migrate-verify.sh
+          ./backend/scripts/migrate-verify.sh
