@@ -41,6 +41,7 @@ import { WebhooksModule } from './modules/webhooks/webhooks.module';
 import { CollabModule } from './modules/collab/collab.module';
 import { LoggingModule } from './common/logging/logging.module';
 import { MentorshipModule } from './modules/mentorship/mentorship.module';
+import { GamificationModule } from './modules/gamification/gamification.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import { BullModule } from '@nestjs/bullmq';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -131,6 +132,7 @@ import { CommonModule } from './common/common.module';
     CollabModule,
     LoggingModule,
     MentorshipModule,
+    GamificationModule,
   ],
   controllers: [AppController],
   providers: [
