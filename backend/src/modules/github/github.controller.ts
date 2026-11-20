@@ -24,6 +24,7 @@ import {
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { GithubService } from './github.service';
+import { CommitVerifierService } from './commit-verifier.service';
 import {
   SyncGitHubProfileDto,
   GitHubQueryDto,
@@ -36,7 +37,10 @@ import { CustomThrottlerGuard } from '../../common/guards/custom-throttler.guard
 @Controller('github')
 @UseGuards(CustomThrottlerGuard)
 export class GithubController {
-  constructor(private readonly githubService: GithubService) {}
+  constructor(
+    private readonly githubService: GithubService,
+    private readonly commitVerifier: CommitVerifierService,
+  ) {}
 
   @Get('developer')
   @ApiOperation({
@@ -189,6 +193,15 @@ export class GithubController {
   ) {
     const token = this.extractToken(authHeader);
     return this.githubService.syncUser(syncDto.username, token);
+  }
+
+  @Post('commits/verify')
+  @ApiOperation({
+    summary:
+      'Verify git commit cryptographic signature (GPG armored or Sigstore keyless bundle)',
+  })
+  async verifyCommitSignature(@Body() commitPayload: any) {
+    return this.commitVerifier.verifyCommitSignature(commitPayload);
   }
 
   /** x-cache: HIT (fresh cache), STALE-FALLBACK (stale copy or fallback data), MISS (fetched from GitHub). */

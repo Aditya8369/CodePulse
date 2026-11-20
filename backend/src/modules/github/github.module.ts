@@ -5,6 +5,7 @@ import { GithubController } from './github.controller';
 import { GithubService } from './github.service';
 import { GithubWebhookController } from './github-webhook.controller';
 import { CircuitBreakerService } from './circuit-breaker.service';
+import { CommitVerifierService } from './commit-verifier.service';
 import { GITHUB_STALE_REDIS, GithubStaleStore } from './github-stale.store';
 import { CustomThrottlerGuard } from '../../common/guards/custom-throttler.guard';
 
@@ -14,6 +15,7 @@ import { CustomThrottlerGuard } from '../../common/guards/custom-throttler.guard
   providers: [
     GithubService,
     CircuitBreakerService,
+    CommitVerifierService,
     GithubStaleStore,
     CustomThrottlerGuard,
     {
@@ -39,6 +41,6 @@ import { CustomThrottlerGuard } from '../../common/guards/custom-throttler.guard
       },
     },
   ],
-  exports: [GithubService],
+  exports: [GithubService, CommitVerifierService],
 })
 export class GithubModule {}

@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException } from '@nestjs/common';
 import { GithubController } from './github.controller';
 import { GithubService } from './github.service';
+import { CommitVerifierService } from './commit-verifier.service';
 import { CustomThrottlerGuard } from '../../common/guards/custom-throttler.guard';
 
 describe('GithubController', () => {
@@ -31,6 +32,12 @@ describe('GithubController', () => {
         {
           provide: GithubService,
           useValue: githubServiceMock,
+        },
+        {
+          provide: CommitVerifierService,
+          useValue: {
+            verifyCommitSignature: jest.fn(),
+          },
         },
       ],
     })
