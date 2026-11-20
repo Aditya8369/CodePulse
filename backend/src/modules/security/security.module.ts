@@ -2,6 +2,7 @@ import { Global, Module } from '@nestjs/common';
 import { AcmeCertService } from './acme-cert.service';
 import { TlsReloaderService } from '../../common/services/tls-reloader.service';
 import { VaultService } from './vault.service';
+import { VaultRotationService } from './vault-rotation.service';
 import { PowService } from './pow.service';
 import { PowController } from './pow.controller';
 import { SecurityController } from './security.controller';
@@ -21,6 +22,7 @@ import {
     AcmeCertService,
     TlsReloaderService,
     VaultService,
+    VaultRotationService,
     PowService,
     PowChallengeGuard,
     ThreatDetectorService,
@@ -33,6 +35,7 @@ import {
     AcmeCertService,
     TlsReloaderService,
     VaultService,
+    VaultRotationService,
     PowService,
     PowChallengeGuard,
     ThreatDetectorService,
@@ -43,3 +46,4 @@ import {
   ],
 })
 export class SecurityModule {}
+
