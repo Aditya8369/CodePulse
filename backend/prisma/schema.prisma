@@ -406,3 +406,21 @@ model XpTransaction {
   @@index([userId, createdAt(sort: Desc)])
   @@map("xp_transactions")
 }
+
+model CompetitiveRating {
+  id                         String    @id @default(uuid())
+  userId                     String    @unique
+  eloRating                  Float     @default(1200.0)
+  ratingDeviation            Float     @default(350.0)
+  volatility                 Float     @default(0.06)
+  placementMatchesRemaining  Int       @default(5)
+  peakRating                 Float     @default(1200.0)
+  seasonId                   String    @default("season_2026_s1")
+  lastMatchAt                DateTime?
+  createdAt                  DateTime  @default(now())
+  updatedAt                  DateTime  @updatedAt
+
+  @@index([eloRating(sort: Desc)])
+  @@index([seasonId, eloRating(sort: Desc)])
+  @@map("competitive_ratings")
+}
