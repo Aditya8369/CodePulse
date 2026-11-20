@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useId } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Search, ChevronDown, Wand2, Swords, Sparkles, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -9,6 +9,7 @@ interface BattleSetupProps {
   onStart: (p1: string, p2: string, battleType: string) => void;
   initialPlayer1?: string;
   initialPlayer2?: string;
+  focusFirstInput?: boolean;
 }
 
 const BATTLE_TYPES = [
@@ -20,10 +21,13 @@ const BATTLE_TYPES = [
   { id: "AI Battle", icon: Sparkles, color: "text-cyan-500" },
 ];
 
+const GITHUB_USERNAME = /^(?=.{1,39}$)[a-z0-9]+(?:-[a-z0-9]+)*$/i;
+
 export function BattleSetup({
   onStart,
   initialPlayer1 = "",
   initialPlayer2 = "",
+  focusFirstInput = false,
 }: BattleSetupProps) {
   const [player1, setPlayer1] = useState(initialPlayer1);
   const [player2, setPlayer2] = useState(initialPlayer2);
@@ -42,12 +46,16 @@ export function BattleSetup({
   // focused states for some extra glow
   const [focusedInput, setFocusedInput] = useState<1 | 2 | null>(null);
 
+  const challengerId = useId();
+  const opponentId = useId();
+  const validPlayer1 = GITHUB_USERNAME.test(player1.trim());
+  const validPlayer2 = GITHUB_USERNAME.test(player2.trim());
+  const canStart = validPlayer1 && validPlayer2;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const p1 = player1.trim();
-    const p2 = player2.trim();
-    if (p1 && p2) {
-      onStart(p1, p2, battleType.id);
+    if (canStart) {
+      onStart(player1.trim(), player2.trim(), battleType.id);
     }
   };
 
@@ -114,7 +122,7 @@ export function BattleSetup({
               
               {/* Player 1 Input */}
               <div className="space-y-3">
-                <label className="flex items-center gap-2 text-sm font-bold text-blue-500 uppercase tracking-widest ml-1">
+                <label htmlFor={challengerId} className="flex items-center gap-2 text-sm font-bold text-blue-500 uppercase tracking-widest ml-1">
                   <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
                   Challenger
                 </label>
@@ -129,18 +137,20 @@ export function BattleSetup({
                     </div>
                     <input
                       type="text"
+                      autoFocus={focusFirstInput}
+                      id={challengerId}
                       value={player1}
                       onFocus={() => setFocusedInput(1)}
                       onBlur={() => setFocusedInput(null)}
                       onChange={(e) => setPlayer1(e.target.value)}
                       placeholder="GitHub Username"
-                      className="w-full py-5 pl-2 pr-5 text-lg md:text-xl font-medium bg-transparent focus:outline-none transition-all placeholder:text-muted-foreground/40"
+                      className="w-full py-5 pl-2 pr-5 text-lg md:text-xl font-medium bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-all placeholder:text-muted-foreground/40"
                       required
                     />
-                    {player1 && (
+                    {validPlayer1 && (
                       <div className="absolute right-4 top-1/2 -translate-y-1/2">
                         <img 
-                          src={`https://github.com/${player1}.png?size=60`}
+                          src={`https://github.com/${player1.trim()}.png?size=60`}
                           alt={player1}
                           className="w-8 h-8 rounded-full border-2 border-blue-500/50 shadow-lg object-cover bg-muted"
                           onError={(e) => (e.currentTarget.style.display = 'none')}
@@ -163,7 +173,7 @@ export function BattleSetup({
 
               {/* Player 2 Input */}
               <div className="space-y-3">
-                <label className="flex items-center justify-end gap-2 text-sm font-bold text-pink-500 uppercase tracking-widest mr-1">
+                <label htmlFor={opponentId} className="flex items-center justify-end gap-2 text-sm font-bold text-pink-500 uppercase tracking-widest mr-1">
                   Opponent
                   <span className="w-2 h-2 rounded-full bg-pink-500 animate-pulse" />
                 </label>
@@ -178,18 +188,19 @@ export function BattleSetup({
                     </div>
                     <input
                       type="text"
+                      id={opponentId}
                       value={player2}
                       onFocus={() => setFocusedInput(2)}
                       onBlur={() => setFocusedInput(null)}
                       onChange={(e) => setPlayer2(e.target.value)}
                       placeholder="GitHub Username"
-                      className="w-full py-5 pl-2 pr-5 text-lg md:text-xl font-medium bg-transparent focus:outline-none transition-all placeholder:text-muted-foreground/40 text-left"
+                      className="w-full py-5 pl-2 pr-5 text-lg md:text-xl font-medium bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-all placeholder:text-muted-foreground/40 text-left"
                       required
                     />
-                    {player2 && (
+                    {validPlayer2 && (
                       <div className="absolute right-4 top-1/2 -translate-y-1/2">
                         <img 
-                          src={`https://github.com/${player2}.png?size=60`}
+                          src={`https://github.com/${player2.trim()}.png?size=60`}
                           alt={player2}
                           className="w-8 h-8 rounded-full border-2 border-pink-500/50 shadow-lg object-cover bg-muted"
                           onError={(e) => (e.currentTarget.style.display = 'none')}
@@ -208,7 +219,9 @@ export function BattleSetup({
                 <button
                   type="button"
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="w-full sm:w-72 flex items-center justify-between bg-background/50 dark:bg-zinc-900/50 border border-border/50 hover:border-border rounded-xl px-5 py-4 text-base font-medium transition-all group"
+                  aria-expanded={isDropdownOpen}
+                  aria-label={`Battle type: ${battleType.id}`}
+                  className="w-full sm:w-72 flex items-center justify-between bg-background/50 dark:bg-zinc-900/50 border border-border/50 hover:border-border rounded-xl px-5 py-4 text-base font-medium transition-all group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
                   <div className="flex items-center gap-3">
                     <battleType.icon className={cn("w-5 h-5", battleType.color)} />
@@ -220,6 +233,9 @@ export function BattleSetup({
                 <AnimatePresence>
                   {isDropdownOpen && (
                     <motion.div 
+                      id="battle-type-options"
+                      role="group"
+                      aria-label="Choose battle type"
                       initial={{ opacity: 0, y: 10, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 10, scale: 0.95 }}
@@ -230,12 +246,13 @@ export function BattleSetup({
                         <button
                           key={type.id}
                           type="button"
+                          aria-pressed={battleType.id === type.id}
                           onClick={() => {
                             setBattleType(type);
                             setIsDropdownOpen(false);
                           }}
                           className={cn(
-                            "w-full flex items-center gap-3 px-5 py-4 text-left text-sm hover:bg-accent/50 transition-colors",
+                            "w-full flex items-center gap-3 px-5 py-4 text-left text-sm hover:bg-accent/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset",
                             battleType.id === type.id && "bg-accent/30"
                           )}
                         >
@@ -255,7 +272,7 @@ export function BattleSetup({
                   type="button"
                   onClick={handleRandom}
                   aria-label="Pick random developers"
-                  className="flex-1 sm:flex-none px-6 py-4 rounded-xl font-semibold text-sm border border-border/50 bg-background/50 hover:bg-accent/50 hover:border-border transition-all flex items-center justify-center gap-2 group focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                  className="flex-1 sm:flex-none px-6 py-4 rounded-xl font-semibold text-sm border border-border/50 bg-background/50 hover:bg-accent/50 hover:border-border transition-all flex items-center justify-center gap-2 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
                   <Wand2 className="w-4 h-4 text-purple-500 group-hover:rotate-12 transition-transform" aria-hidden="true" />
                   Random
@@ -263,23 +280,23 @@ export function BattleSetup({
 
                 <button
                   type="submit"
-                  disabled={!player1.trim() || !player2.trim()}
+                  disabled={!canStart}
                   aria-label="Start battle between developers"
                   className={cn(
-                    "flex-[2] sm:flex-none relative group overflow-hidden px-8 py-4 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-primary/50",
-                    !player1.trim() || !player2.trim()
+                    "flex-[2] sm:flex-none relative group overflow-hidden px-8 py-4 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                    !canStart
                       ? "bg-muted text-muted-foreground cursor-not-allowed"
                       : "text-white shadow-xl hover:shadow-primary/25 active:scale-[0.98]"
                   )}
                 >
-                  {player1.trim() && player2.trim() && (
+                  {canStart && (
                     <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 group-hover:scale-105 transition-transform duration-500" />
                   )}
-                  {!player1.trim() || !player2.trim() ? (
+                  {!canStart ? (
                     <div className="absolute inset-0 bg-muted" />
                   ) : null}
                   <span className="relative z-10 flex items-center gap-2">
-                    <Swords className={cn("w-4 h-4", player1.trim() && player2.trim() && "animate-bounce")} aria-hidden="true" />
+                    <Swords className={cn("w-4 h-4", canStart && "animate-bounce")} aria-hidden="true" />
                     Start Battle
                   </span>
                 </button>

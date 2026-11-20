@@ -11,6 +11,8 @@ import { useCurrentUser } from "@/hooks/api/use-auth";
 import type { Repository } from "@/types";
 import { RepoStarGrowthChart } from "@/components/charts/repo-star-growth-chart";
 import { RepoCloneDropdown } from "@/components/repositories/repo-clone-dropdown";
+import { RepoHealthScorecard } from "@/components/repositories/repo-health-scorecard";
+import { CommitPunchcard } from "@/components/repositories/commit-punchcard";
 import {
   Tooltip,
   TooltipTrigger,
@@ -378,6 +380,8 @@ export default function RepositoryDeepAnalysisPage() {
         </div>
       </motion.div>
 
+      <RepoHealthScorecard fullName={repo.fullName || repo.url?.replace("https://github.com/", "")} />
+
       {/* ─── Tab Selector ─── */}
       <div className="flex gap-2 bg-white/[0.02] p-1.5 rounded-2xl border border-white/5 w-fit">
         {tabs.map(tab => (
@@ -598,6 +602,9 @@ export default function RepositoryDeepAnalysisPage() {
             transition={{ duration: 0.3 }}
           >
             <StaggerContainer className="space-y-8">
+              <StaggerItem>
+                <CommitPunchcard repositoryId={repo.id} />
+              </StaggerItem>
               {/* ── Monthly Activity Chart ── */}
               <StaggerItem>
                 <div className="glass-card rounded-[28px] p-8 border border-white/5 relative overflow-hidden">

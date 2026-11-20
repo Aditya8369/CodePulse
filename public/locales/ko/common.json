@@ -1,0 +1,20 @@
+{
+  "app.name": "CodePulse",
+  "app.tagline": "GitHub 개발자 분석 및 게이미피케이션 플랫폼",
+  "nav.dashboard": "대시보드",
+  "nav.repositories": "리포지토리",
+  "nav.leaderboard": "리더보드",
+  "nav.battles": "코드 배틀",
+  "nav.challenges": "챌린지",
+  "nav.analytics": "분석",
+  "nav.settings": "설정",
+  "topbar.searchPlaceholder": "개발자, 리포지토리 또는 명령어 검색...",
+  "topbar.languageSelector": "언어 선택",
+  "topbar.rtlBadge": "RTL",
+  "dashboard.welcome": "다시 오신 것을 환영합니다, {name}님!",
+  "dashboard.commitSummary": "{count, plural, =0 {오늘 커밋 없음} one {오늘 #개의 커밋} other {오늘 #개의 커밋}}",
+  "dashboard.streakStatus": "{days, plural, =0 {오늘 스트릭을 시작하세요} one {#일 연속 활동} other {#일 연속 활동}}",
+  "dashboard.mentorGreeting": "{gender, select, female {그녀가 다이아몬드 리그에 도달했습니다!} male {그가 다이아몬드 리그에 도달했습니다!} other {다이아몬드 리그에 도달했습니다!}}",
+  "battles.activeCount": "{count, plural, =0 {진행 중인 배틀 없음} one {#개의 활성 배틀} other {#개의 활성 배틀}}",
+  "notifications.unread": "{count, plural, =0 {읽지 않은 알림 없음} one {#개의 읽지 않은 알림} other {#개의 읽지 않은 알림}}"
+}

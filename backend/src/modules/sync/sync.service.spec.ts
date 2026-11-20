@@ -13,7 +13,10 @@ function fixture() {
     },
     user: { update: jest.fn() },
     languageStat: { upsert: jest.fn() },
-    developerRating: { upsert: jest.fn() },
+    developerRating: {
+      findUnique: jest.fn().mockResolvedValue({ gamificationXp: 0, overall: 0 }),
+      upsert: jest.fn(),
+    },
     repository: {
       upsert: jest.fn(async ({ where, create, update }: any) => {
         const key = where.userId_githubRepoId;
@@ -107,6 +110,7 @@ function fixture() {
   const github: any = {
     fetchUserData: jest.fn(async () => data),
     fetchUserEvents: jest.fn(async () => events),
+    fetchPushCommitMessages: jest.fn(async () => []),
   };
   return {
     service: new SyncService(prisma as PrismaService, github as GithubService),
@@ -120,6 +124,37 @@ function fixture() {
 }
 
 describe('differential GitHub sync', () => {
+  it('stores real push messages and preserves local metadata on later syncs', async () => {
+    const f = fixture();
+    f.events[0].payload.commits = [{ message: 'Fix login\n\nBody' }, { message: 'Add regression test' }];
+    await f.service.syncUserData('u1', 'owner', 'token');
+    expect(f.state().activities[0].metadata).toEqual({
+      commitMessages: ['Fix login\n\nBody', 'Add regression test'],
+    });
+    f.state().activities[0].metadata.bookmark = true;
+    f.events[0].payload.commits = [{ message: 'Fix login' }];
+    await f.service.syncUserData('u1', 'owner', 'token');
+    expect(f.state().activities[0].metadata).toEqual({
+      bookmark: true,
+      commitMessages: ['Fix login'],
+    });
+  });
+
+  it('enriches a current PushEvent that omits commits from the Events API', async () => {
+    const f = fixture();
+    f.events[0].created_at = new Date().toISOString();
+    f.events[0].payload = {
+      before: 'a'.repeat(40),
+      head: 'b'.repeat(40),
+    };
+    f.github.fetchPushCommitMessages.mockResolvedValue(['Fix retry handling']);
+    await f.service.syncUserData('u1', 'owner', 'token');
+    expect(f.github.fetchPushCommitMessages).toHaveBeenCalledWith(
+      'owner/demo', 'a'.repeat(40), 'b'.repeat(40), 'token',
+    );
+    expect(f.state().activities[0].metadata).toEqual({ commitMessages: ['Fix retry handling'] });
+  });
+
   it('repeated sync updates GitHub stats while preserving IDs, local metadata and old activities', async () => {
     const f = fixture();
     await f.service.syncUserData('u1', 'owner', 'test-token');
@@ -143,7 +178,8 @@ describe('differential GitHub sync', () => {
     expect(f.github.fetchUserEvents).toHaveBeenCalledWith(
       'owner',
       'test-token',
-      30,
+      100,
+      true,
       true,
     );
     expect(f.tx.$queryRaw).toHaveBeenCalledTimes(2);

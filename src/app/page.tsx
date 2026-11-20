@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -65,6 +65,8 @@ const stats = [
 ];
 
 export default function LandingPage() {
+  const shouldReduceMotion = useReducedMotion();
+
   return (
     <div className="min-h-screen text-slate-200 bg-[#020617] relative" style={{
       backgroundImage: "linear-gradient(180deg, #000000 0%, #0c1f3d 25%, #020617 70%, #000000 100%)"
@@ -84,7 +86,7 @@ export default function LandingPage() {
         style={{
           backgroundImage: `linear-gradient(rgba(56,189,248,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(56,189,248,0.5) 1px, transparent 1px)`,
           backgroundSize: "60px 60px",
-          transform: "perspective(1000px) rotateX(60deg) translateY(-100px) scale(3)",
+          transform: shouldReduceMotion ? "none" : "perspective(1000px) rotateX(60deg) translateY(-100px) scale(3)",
           transformOrigin: "top center",
         }}
       />
@@ -92,9 +94,9 @@ export default function LandingPage() {
       {/* Header Landmark & Navigation */}
       <motion.header
         role="banner"
-        initial={{ y: -100, opacity: 0 }}
+        initial={shouldReduceMotion ? false : { y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ type: "spring", stiffness: 100, damping: 20 }}
+        transition={shouldReduceMotion ? { duration: 0 } : { type: "spring", stiffness: 100, damping: 20 }}
         className="fixed top-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-5xl px-6"
       >
         <nav
@@ -173,18 +175,18 @@ export default function LandingPage() {
             {stats.map((stat, i) => (
               <motion.div
                 key={i}
-                initial={{ opacity: 0, y: 20 }}
+                initial={shouldReduceMotion ? false : { opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
+                transition={shouldReduceMotion ? { duration: 0 } : { delay: i * 0.1 }}
                 className="text-center rounded-2xl p-6 relative overflow-hidden group"
                 style={{
                   background: "linear-gradient(135deg, rgba(15, 23, 42, 0.8), rgba(2, 6, 23, 0.9))",
                   border: "1px solid rgba(56, 189, 248, 0.2)",
                   boxShadow: "0 0 20px rgba(0,0,0,0.5)",
-                  transformStyle: "preserve-3d",
+                  transformStyle: shouldReduceMotion ? "flat" : "preserve-3d",
                 }}
-                whileHover={{
+                whileHover={shouldReduceMotion ? undefined : {
                   scale: 1.05,
                   rotateX: 10,
                   rotateY: -10,
@@ -209,9 +211,10 @@ export default function LandingPage() {
           </div>
           <div className="max-w-6xl mx-auto relative z-10">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={shouldReduceMotion ? false : { opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
+              transition={shouldReduceMotion ? { duration: 0 } : undefined}
               className="text-center mb-16"
             >
               <h2 id="features-heading" className="text-4xl md:text-5xl font-bold mb-4">
@@ -230,19 +233,19 @@ export default function LandingPage() {
                 return (
                   <motion.div
                     key={i}
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={shouldReduceMotion ? false : { opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    transition={{ delay: i * 0.1 }}
+                    transition={shouldReduceMotion ? { duration: 0 } : { delay: i * 0.1 }}
                     className="rounded-3xl p-8 relative group"
                     style={{
                       background: "linear-gradient(135deg, rgba(15, 23, 42, 0.8), rgba(2, 6, 23, 0.9))",
                       border: "1px solid rgba(56, 189, 248, 0.2)",
                       boxShadow: "0 10px 30px rgba(0, 0, 0, 0.5)",
-                      transformStyle: "preserve-3d",
-                      perspective: "1000px"
+                      transformStyle: shouldReduceMotion ? "flat" : "preserve-3d",
+                      perspective: shouldReduceMotion ? "none" : "1000px"
                     }}
-                    whileHover={{
+                    whileHover={shouldReduceMotion ? undefined : {
                       scale: 1.05,
                       rotateX: 5,
                       rotateY: -5,
@@ -255,7 +258,7 @@ export default function LandingPage() {
 
                     <motion.div
                       className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6 relative"
-                      style={{ transform: "translateZ(30px)" }}
+                      style={{ transform: shouldReduceMotion ? "none" : "translateZ(30px)" }}
                     >
                       <div className="absolute inset-0 bg-gradient-to-br from-sky-400/20 to-blue-600/20 rounded-2xl group-hover:scale-110 transition-transform duration-500" aria-hidden="true" />
                       <Icon className="w-7 h-7 text-sky-400 relative z-10" aria-hidden="true" />
@@ -263,13 +266,13 @@ export default function LandingPage() {
 
                     <motion.h3
                       className="text-xl font-semibold mb-3 text-white"
-                      style={{ transform: "translateZ(20px)" }}
+                      style={{ transform: shouldReduceMotion ? "none" : "translateZ(20px)" }}
                     >
                       {feature.title}
                     </motion.h3>
                     <motion.p
                       className="text-sm text-slate-400 leading-relaxed"
-                      style={{ transform: "translateZ(10px)" }}
+                      style={{ transform: shouldReduceMotion ? "none" : "translateZ(10px)" }}
                     >
                       {feature.description}
                     </motion.p>
@@ -284,9 +287,10 @@ export default function LandingPage() {
         <section id="testimonials" aria-labelledby="testimonials-heading" className="py-24 px-6 relative">
           <div className="max-w-6xl mx-auto relative z-10">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={shouldReduceMotion ? false : { opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
+              transition={shouldReduceMotion ? { duration: 0 } : undefined}
               className="text-center mb-16"
             >
               <h2 id="testimonials-heading" className="text-4xl md:text-5xl font-bold mb-4">
@@ -320,10 +324,10 @@ export default function LandingPage() {
               ].map((testimonial, i) => (
                 <motion.div
                   key={i}
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={shouldReduceMotion ? false : { opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
+                  transition={shouldReduceMotion ? { duration: 0 } : { delay: i * 0.1 }}
                   className="rounded-[24px] p-7 relative"
                   style={{
                     background: "linear-gradient(135deg, rgba(15, 23, 42, 0.8), rgba(30, 41, 59, 0.6))",
@@ -361,9 +365,10 @@ export default function LandingPage() {
           <div className="max-w-4xl mx-auto text-center relative">
             <div className="absolute inset-0 bg-sky-500/10 rounded-[32px] blur-3xl" aria-hidden="true" />
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={shouldReduceMotion ? false : { opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
+              transition={shouldReduceMotion ? { duration: 0 } : undefined}
               className="rounded-[32px] p-12 md:p-16 relative"
               style={{
                 background: "linear-gradient(135deg, rgba(15, 23, 42, 0.8), rgba(30, 41, 59, 0.6))",
@@ -384,8 +389,8 @@ export default function LandingPage() {
                 className="inline-block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#020617]"
               >
                 <motion.div
-                  whileHover={{ scale: 1.04, boxShadow: "0 12px 40px rgba(14, 165, 233, 0.4)" }}
-                  whileTap={{ scale: 0.97 }}
+                  whileHover={shouldReduceMotion ? undefined : { scale: 1.04, boxShadow: "0 12px 40px rgba(14, 165, 233, 0.4)" }}
+                  whileTap={shouldReduceMotion ? undefined : { scale: 0.97 }}
                   className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl text-white font-semibold text-lg transition-all"
                   style={{
                     background: "linear-gradient(135deg, #0ea5e9, #3b82f6)",

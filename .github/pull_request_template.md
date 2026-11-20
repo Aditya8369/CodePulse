@@ -1,5 +1,10 @@
 ## 🎯 Nexus Spring of Code (NSoC'26) Pull Request
 
+> ⚠️ **MANDATORY CI REQUIREMENT:**
+> Before requesting review, make sure all **GitHub Actions CI checks (Frontend & Backend)** are **GREEN ✅**.
+> - PRs with red failing CI checks will **NOT** be reviewed or merged.
+> - Run `npm run build` & `npx tsc --noEmit` locally to ensure 0 errors before pushing.
+
 ### 🔗 Related Issue
 <!-- You MUST be officially assigned to this issue before opening this PR. -->
 Closes #<!-- Type issue number here, e.g. Closes #12 -->

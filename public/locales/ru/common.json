@@ -1,0 +1,20 @@
+{
+  "app.name": "CodePulse",
+  "app.tagline": "Аналитика и геймификация для разработчиков GitHub",
+  "nav.dashboard": "Панель управления",
+  "nav.repositories": "Репозитории",
+  "nav.leaderboard": "Таблица лидеров",
+  "nav.battles": "Баттлы",
+  "nav.challenges": "Челленджи",
+  "nav.analytics": "Аналитика",
+  "nav.settings": "Настройки",
+  "topbar.searchPlaceholder": "Поиск разработчиков, репозиториев или команд...",
+  "topbar.languageSelector": "Выбрать язык",
+  "topbar.rtlBadge": "RTL",
+  "dashboard.welcome": "С возвращением, {name}!",
+  "dashboard.commitSummary": "{count, plural, =0 {Сегодня нет коммитов} one {# коммит сегодня} few {# коммита сегодня} many {# коммитов сегодня} other {# коммитов сегодня}}",
+  "dashboard.streakStatus": "{days, plural, =0 {Начните серию сегодня} one {# день активной серии} few {# дня активной серии} many {# дней активной серии} other {# дней активной серии}}",
+  "dashboard.mentorGreeting": "{gender, select, female {Она достигла Алмазной лиги!} male {Он достиг Алмазной лиги!} other {Они достигли Алмазной лиги!}}",
+  "battles.activeCount": "{count, plural, =0 {Нет активных баттлов} one {# активный баттл} few {# активных баттла} many {# активных баттлов} other {# активных баттлов}}",
+  "notifications.unread": "{count, plural, =0 {Нет непрочитанных уведомлений} one {# непрочитанное уведомление} few {# непрочитанных уведомления} many {# непрочитанных уведомлений} other {# непрочитанных уведомлений}}"
+}

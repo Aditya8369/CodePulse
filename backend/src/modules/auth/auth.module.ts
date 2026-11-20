@@ -1,37 +1,56 @@
 import { Module } from '@nestjs/common';
-import {
-  JwtModule,
-  type JwtModuleOptions,
-  type JwtSignOptions,
-} from '@nestjs/jwt';
+import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { ThrottlerModule } from '@nestjs/throttler';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
-
 import { SyncModule } from '../sync/sync.module';
+import { TokenBlacklistService } from './token-blacklist.service';
+import { AttestationValidatorService } from './attestation-validator.service';
+import { PasskeyService } from './passkey.service';
+import { PasskeyController } from './passkey.controller';
+import { SamlSsoService } from './saml-sso.service';
 
 @Module({
   imports: [
-    SyncModule,
-    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 10 }]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService): JwtModuleOptions => ({
-        secret: configService.getOrThrow<string>('JWT_SECRET'),
-        signOptions: {
-          expiresIn: (configService.get<string>('JWT_EXPIRATION') ||
-            '7d') as JwtSignOptions['expiresIn'],
-        },
-      }),
       inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        const secret = configService.get<string>('JWT_SECRET');
+        if (!secret) {
+          throw new Error(
+            'FATAL: JWT_SECRET environment variable is required to start the application.',
+          );
+        }
+        return {
+          secret,
+          signOptions: {
+            expiresIn: configService.get('JWT_EXPIRES_IN', '15m'),
+          },
+        };
+      },
     }),
+    SyncModule,
   ],
-  controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
-  exports: [AuthService, JwtStrategy, PassportModule],
+  controllers: [AuthController, PasskeyController],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    TokenBlacklistService,
+    AttestationValidatorService,
+    PasskeyService,
+    SamlSsoService,
+  ],
+  exports: [
+    AuthService,
+    JwtModule,
+    TokenBlacklistService,
+    AttestationValidatorService,
+    PasskeyService,
+    SamlSsoService,
+  ],
 })
 export class AuthModule {}

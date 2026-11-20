@@ -1,0 +1,36 @@
+{
+  "name": "codepulse",
+  "version": "1.0.0",
+  "description": "Official CodePulse CLI for Terminal-Based Coding Battles, Local CI Tests & Real-Time Sync",
+  "bin": {
+    "codepulse": "./dist/main.js"
+  },
+  "main": "./dist/main.js",
+  "types": "./dist/main.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "start": "node ./dist/main.js",
+    "test": "vitest run"
+  },
+  "keywords": [
+    "codepulse",
+    "cli",
+    "coding-battles",
+    "terminal",
+    "esports",
+    "developer-tools"
+  ],
+  "author": "CodePulse Team",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "commander": "^12.1.0",
+    "dotenv": "^16.4.5",
+    "githubabhi": "file:.."
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.9",
+    "typescript": "^5.5.2",
+    "vitest": "^1.6.0"
+  }
+}

@@ -1,0 +1,29 @@
+name: Continuous Localization (i18n) Audit & AI Sync
+
+on:
+  pull_request:
+    paths:
+      - "public/locales/**"
+      - "src/lib/i18n/**"
+      - "scripts/i18n-sync.mjs"
+  push:
+    branches:
+      - main
+    paths:
+      - "public/locales/**"
+
+jobs:
+  verify-locales:
+    name: Verify 12 Locales Completeness
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "20"
+
+      - name: Run i18n missing-key linter
+        run: node scripts/i18n-sync.mjs --check

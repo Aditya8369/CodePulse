@@ -1,0 +1,336 @@
+name: 📢 CI & Merge Status Feedback Bot
+
+on:
+  workflow_run:
+    workflows: ["🧪 CI — Build, Tests & Typecheck Verification"]
+    types: [completed]
+
+permissions:
+  pull-requests: write
+  issues: write
+  actions: read
+  checks: read
+  contents: read
+
+jobs:
+  notify-pr:
+    name: 📝 Post Strict CI & Conflict Feedback
+    # Run on any workflow_run event triggered by a PR or fork PR
+    if: ${{ github.event.workflow_run.event == 'pull_request' || github.event.workflow_run.head_branch != 'main' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🤖 Process CI & Conflict Status
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const maintainer = 'code-with-abhi-i5';
+            const headSha = context.payload.workflow_run.head_sha;
+            const headBranch = context.payload.workflow_run.head_branch;
+            const runId = context.payload.workflow_run.id;
+            const conclusion = context.payload.workflow_run.conclusion;
+            const isCiSuccess = conclusion === 'success';
+
+            console.log(`[CI Feedback Bot] Processing run #${runId} (Event: ${context.payload.workflow_run.event}, SHA: ${headSha}, Branch: ${headBranch}, Conclusion: ${conclusion})...`);
+
+            // Step 1: Discover the Pull Request
+            let prNumber = null;
+            let prAuthor = 'contributor';
+            let prData = null;
+
+            // Strategy A: Check payload pull_requests array (populated for internal branches)
+            const payloadPulls = context.payload.workflow_run.pull_requests;
+            if (payloadPulls && payloadPulls.length > 0) {
+              prNumber = payloadPulls[0].number;
+              prAuthor = (payloadPulls[0].head && payloadPulls[0].head.user && payloadPulls[0].head.user.login) ||
+                         (payloadPulls[0].user && payloadPulls[0].user.login) || 'contributor';
+            }
+
+            // Strategy B: Search open PRs by commit SHA (works reliably for fork PRs)
+            if (!prNumber && headSha) {
+              try {
+                const searchRes = await github.rest.search.issuesAndPullRequests({
+                  q: `repo:${owner}/${repo} type:pr state:open ${headSha}`,
+                });
+                if (searchRes.data && searchRes.data.items && searchRes.data.items.length > 0) {
+                  prNumber = searchRes.data.items[0].number;
+                  prAuthor = searchRes.data.items[0].user?.login || 'contributor';
+                }
+              } catch (err) {
+                console.warn(`Search for PR by SHA ${headSha} failed: ${err.message}`);
+              }
+            }
+
+            // Strategy C: Query open PRs list and match head.sha or head.ref
+            if (!prNumber) {
+              try {
+                const pullsRes = await github.rest.pulls.list({
+                  owner,
+                  repo,
+                  state: 'open',
+                  per_page: 50,
+                });
+                const match = pullsRes.data.find(p => p.head && (p.head.sha === headSha || p.head.ref === headBranch));
+                if (match) {
+                  prNumber = match.number;
+                  prAuthor = match.user?.login || 'contributor';
+                }
+              } catch (err) {
+                console.warn(`Listing open PRs failed: ${err.message}`);
+              }
+            }
+
+            if (!prNumber) {
+              console.log(`No open pull request found for SHA ${headSha} / Branch ${headBranch}. Skipping notification.`);
+              return;
+            }
+
+            console.log(`Found target PR #${prNumber} by @${prAuthor}`);
+
+            // Step 2: Fetch PR details to verify mergeable / conflict status
+            try {
+              const prRes = await github.rest.pulls.get({
+                owner,
+                repo,
+                pull_number: prNumber,
+              });
+              prData = prRes.data;
+              if (prData.user && prData.user.login) {
+                prAuthor = prData.user.login;
+              }
+            } catch (err) {
+              console.warn(`Could not fetch PR #${prNumber} details: ${err.message}`);
+            }
+
+            const hasConflict = prData && (prData.mergeable === false || prData.mergeable_state === 'dirty' || prData.mergeable_state === 'conflicting');
+
+            // Step 3: Fetch workflow run jobs and failure annotations
+            let frontendFailed = false;
+            let backendFailed = false;
+            const failedSteps = [];
+            const failureAnnotations = [];
+
+            try {
+              const jobsRes = await github.rest.actions.listJobsForWorkflowRun({
+                owner,
+                repo,
+                run_id: runId,
+              });
+              const jobs = jobsRes.data.jobs || [];
+              const failedJobs = jobs.filter(j => j.conclusion === 'failure');
+
+              frontendFailed = failedJobs.some(j => j.name.toLowerCase().includes('frontend'));
+              backendFailed = failedJobs.some(j => j.name.toLowerCase().includes('backend'));
+
+              for (const job of failedJobs) {
+                const steps = (job.steps || []).filter(s => s.conclusion === 'failure');
+                for (const step of steps) {
+                  failedSteps.push(`- **${job.name}** ➔ \`${step.name}\``);
+                }
+
+                // Fetch check run annotations for actionable error snippets
+                try {
+                  const annotRes = await github.rest.checks.listAnnotations({
+                    owner,
+                    repo,
+                    check_run_id: job.id,
+                  });
+                  const annots = (annotRes.data || []).filter(a => a.annotation_level === 'failure');
+                  for (const a of annots.slice(0, 5)) {
+                    failureAnnotations.push(`- \`${a.path || 'file'}:${a.start_line || 0}\`: ${a.message.split('\n')[0]}`);
+                  }
+                } catch (annotErr) {
+                  console.warn(`Failed fetching annotations for job ${job.id}: ${annotErr.message}`);
+                }
+              }
+            } catch (err) {
+              console.warn(`Failed fetching workflow jobs: ${err.message}`);
+              if (!isCiSuccess) {
+                frontendFailed = true;
+                backendFailed = true;
+              }
+            }
+
+            const bothFailed = frontendFailed && backendFailed;
+            const onlyFrontend = frontendFailed && !backendFailed;
+            const onlyBackend = backendFailed && !frontendFailed;
+
+            // Step 4: Sync PR labels
+            const labelsToAdd = [];
+            const labelsToRemove = [];
+
+            if (!isCiSuccess) {
+              labelsToAdd.push('status: failing-ci');
+            } else {
+              labelsToRemove.push('status: failing-ci');
+            }
+
+            if (hasConflict) {
+              labelsToAdd.push('status: merge-conflict');
+            } else {
+              labelsToRemove.push('status: merge-conflict');
+            }
+
+            if (labelsToAdd.length > 0) {
+              try {
+                await github.rest.issues.addLabels({
+                  owner,
+                  repo,
+                  issue_number: prNumber,
+                  labels: labelsToAdd,
+                });
+                console.log(`Added labels [${labelsToAdd.join(', ')}] to PR #${prNumber}`);
+              } catch (e) {
+                console.warn(`Could not add labels: ${e.message}`);
+              }
+            }
+
+            for (const rem of labelsToRemove) {
+              try {
+                await github.rest.issues.removeLabel({
+                  owner,
+                  repo,
+                  issue_number: prNumber,
+                  name: rem,
+                });
+                console.log(`Removed label '${rem}' from PR #${prNumber}`);
+              } catch (e) {
+                // Ignore if label did not exist
+              }
+            }
+
+            // Step 5: Check existing comment to update or create
+            const commentsRes = await github.rest.issues.listComments({
+              owner,
+              repo,
+              issue_number: prNumber,
+            });
+            const identifier = "<!-- CODEPULSE-CI-FEEDBACK-BOT -->";
+            const existingComment = commentsRes.data.find(c => c.body && c.body.includes(identifier));
+
+            // SCENARIO 1: ALL CHECKS GREEN & CLEAN
+            if (isCiSuccess && !hasConflict) {
+              const successMsg = `${identifier}\n` +
+                `### 🎉 All CI Checks & Merge Status Passed!\n\n` +
+                `Hello @${prAuthor}, your pull request has **PASSED** all automated CI verifications:\n` +
+                `- ✅ **Frontend Typecheck & Build:** Passed\n` +
+                `- ✅ **Backend Typecheck, Tests & Boot Smoke:** Passed\n` +
+                `- ✅ **Merge Conflict Check:** Clean (up to date with \`main\`)\n\n` +
+                `Maintainer (@${maintainer}) can now proceed with final code review and merge. Thank you for your contribution!`;
+
+              if (existingComment) {
+                await github.rest.issues.updateComment({
+                  owner,
+                  repo,
+                  comment_id: existingComment.id,
+                  body: successMsg,
+                });
+                console.log(`Updated CI feedback comment to success on PR #${prNumber}`);
+              }
+              return;
+            }
+
+            // SCENARIO 2: CI FAILED OR CONFLICT DETECTED
+            let title = `### ❌ [ACTION REQUIRED] CI Verification & Merge Status Alert`;
+            if (bothFailed) {
+              title = `### 🚨 [CRITICAL] Both Frontend & Backend CI Verification Failed`;
+            } else if (onlyBackend) {
+              title = `### ⚙️ [ACTION REQUIRED] Backend CI Verification Failed`;
+            } else if (onlyFrontend) {
+              title = `### 🎨 [ACTION REQUIRED] Frontend CI Verification Failed`;
+            } else if (hasConflict && isCiSuccess) {
+              title = `### 💥 [STRICT REQUIREMENT] Merge Conflicts Detected with \`main\``;
+            }
+
+            let commentBody = `${identifier}\n` +
+              `${title}\n\n` +
+              `Hello @${prAuthor}, automated verification detected issues that **MUST be resolved** before this PR can be reviewed or merged by @${maintainer}.\n\n` +
+              `#### 📊 Verification Breakdown:\n` +
+              `- 🎨 **Frontend CI:** ${frontendFailed ? '❌ **FAILED**' : '✅ **PASSED**'}\n` +
+              `- ⚙️ **Backend CI:** ${backendFailed ? '❌ **FAILED**' : '✅ **PASSED**'}\n` +
+              `- 🔀 **Merge Status:** ${hasConflict ? '❌ **CONFLICTS WITH MAIN**' : '✅ **Clean**'}\n\n`;
+
+            if (failedSteps.length > 0) {
+              commentBody += `#### 🛑 Failed Steps:\n` + failedSteps.join('\n') + `\n\n`;
+            }
+
+            if (failureAnnotations.length > 0) {
+              commentBody += `#### 🔍 Detected Compiler / Test Errors:\n` + failureAnnotations.join('\n') + `\n\n`;
+            }
+
+            commentBody += `---\n\n`;
+
+            // STRICT MERGE CONFLICT SECTION
+            if (hasConflict) {
+              commentBody += `### 💥 STRICT NOTICE: MERGE CONFLICTS MUST BE RESOLVED\n\n` +
+                `> ⚠️ **IMPORTANT:** Your branch is conflicting with the latest \`main\` branch. Maintainers will NOT resolve conflicts for you. Please resolve them locally:\n\n` +
+                `\`\`\`bash\n` +
+                `git fetch https://github.com/${owner}/${repo}.git main\n` +
+                `git merge FETCH_HEAD\n` +
+                `# Resolve conflicting files in your editor, then commit:\n` +
+                `git add .\n` +
+                `git commit -m "fix(merge): resolve merge conflicts with main"\n` +
+                `git push origin HEAD\n` +
+                `\`\`\`\n\n` +
+                `---\n\n`;
+            }
+
+            // FRONTEND FIX INSTRUCTIONS
+            if (frontendFailed) {
+              commentBody += `### 🎨 Frontend CI Error Fix Instructions\n\n` +
+                `The frontend build or TypeScript verification failed. Test and fix locally in the root directory:\n` +
+                `\`\`\`bash\n` +
+                `# 1. Run root TypeScript verification to see all compiler errors\n` +
+                `npx tsc --noEmit\n\n` +
+                `# 2. Run frontend unit & component tests\n` +
+                `npx vitest run\n\n` +
+                `# 3. Test production build locally\n` +
+                `npm run build\n` +
+                `\`\`\`\n\n` +
+                `> 💡 **Notice:** Frontend code in \`src/\` must NOT import backend packages or backend files. Backend tests belong in \`backend/src/\`, not in root \`src/\`.\n\n` +
+                `---\n\n`;
+            }
+
+            // BACKEND FIX INSTRUCTIONS
+            if (backendFailed) {
+              commentBody += `### ⚙️ Backend CI Error Fix Instructions\n\n` +
+                `The backend build or NestJS runtime verification failed. Test and fix locally inside \`backend/\`:\n` +
+                `\`\`\`bash\n` +
+                `cd backend\n` +
+                `npx prisma generate\n` +
+                `npm run build\n` +
+                `npm run test:boot\n` +
+                `npm test\n` +
+                `\`\`\`\n\n` +
+                `---\n\n`;
+            }
+
+            // CLOSING NOTE
+            commentBody += `### 🚀 How to submit your fixes:\n` +
+              `After fixing errors locally and verifying that tests pass:\n` +
+              `\`\`\`bash\n` +
+              `git add .\n` +
+              `git commit -m "fix: resolve CI verification errors"\n` +
+              `git push origin HEAD\n` +
+              `\`\`\`\n` +
+              `*GitHub Actions will automatically re-run checks as soon as you push.*\n\n` +
+              `> 💡 **Your PR is NOT closed.** Please resolve these checks promptly so maintainers can review and merge your work!`;
+
+            if (existingComment) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existingComment.id,
+                body: commentBody,
+              });
+              console.log(`Updated CI feedback comment on PR #${prNumber}`);
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: prNumber,
+                body: commentBody,
+              });
+              console.log(`Created new CI feedback comment on PR #${prNumber}`);
+            }

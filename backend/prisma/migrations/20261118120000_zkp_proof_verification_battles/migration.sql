@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "battles" ADD COLUMN IF NOT EXISTS "zkpProofHash" TEXT,
+ADD COLUMN IF NOT EXISTS "zkpVerifiedAt" TIMESTAMP(3);
+

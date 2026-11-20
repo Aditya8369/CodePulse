@@ -15,6 +15,8 @@ model User {
   name                String?
   email               String?
   authEmail           String?           @unique
+  samlSubjectId       String?           @unique
+  organizationRole    String?           @default("MEMBER")
   passwordHash        String?
   interests           String[]           @default([])
   avatar              String?
@@ -25,6 +27,7 @@ model User {
   githubUrl           String?
   isOnline            Boolean           @default(false)
   socialLinks         Json?
+  settings            Json?
   joinedAt            DateTime          @default(now())
   updatedAt           DateTime          @updatedAt
   deletedAt           DateTime?
@@ -34,6 +37,7 @@ model User {
   battlesAsOpponent   Battle[]          @relation("BattleOpponent")
   wonBattles          Battle[]          @relation("BattleWinner")
   rating              DeveloperRating?
+  battleRating        BattleRating?
   stats               DeveloperStats?
   following           Follows[]         @relation("follower")
   followers           Follows[]         @relation("following")
@@ -44,8 +48,25 @@ model User {
   badges              UserBadge[]
   challenges          UserChallenge[]
   passwordResetTokens PasswordResetToken[]
+  refreshTokens       RefreshToken[]
 
   @@map("users")
+}
+
+model RefreshToken {
+  id                String    @id @default(uuid())
+  userId            String
+  tokenHash         String    @unique
+  familyId          String
+  deviceFingerprint String?
+  expiresAt         DateTime
+  revokedAt         DateTime?
+  createdAt         DateTime  @default(now())
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, familyId])
+  @@index([tokenHash])
+  @@map("refresh_tokens")
 }
 
 model PasswordResetToken {
@@ -77,6 +98,8 @@ model DeveloperRating {
   userId          String   @unique
   overall         Float    @default(0)
   level           Int      @default(1)
+  githubXp        Int      @default(0)
+  gamificationXp  Int      @default(0)
   xp              Int      @default(0)
   xpToNextLevel   Int      @default(100)
   rank            Int      @default(0)
@@ -86,7 +109,55 @@ model DeveloperRating {
   updatedAt       DateTime @updatedAt
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([overall, tier])
+  @@index([rank])
+  @@index([userId, xp(sort: Desc)])
   @@map("developer_ratings")
+}
+
+/// Competitive MMR is independent of the GitHub activity score in DeveloperRating.
+model BattleRating {
+  userId                    String   @id
+  elo                       Float    @default(1200)
+  placementMatchesRemaining Int      @default(0)
+  seasonNumber              Int      @default(1)
+  lastBattleAt              DateTime?
+  decayPeriodsApplied       Int      @default(0)
+  decayFloor                Float?
+  decayWarnedFor            DateTime?
+  updatedAt                 DateTime @updatedAt
+  user                      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([seasonNumber, elo])
+  @@index([lastBattleAt])
+  @@map("battle_ratings")
+}
+
+model BattleSeason {
+  number    Int       @id
+  startedAt DateTime
+  endsAt    DateTime
+  closedAt  DateTime?
+  standings SeasonArchive[]
+
+  @@map("battle_seasons")
+}
+
+/// Snapshot names and ratings so Hall of Fame entries survive profile deletion.
+model SeasonArchive {
+  id          String       @id @default(uuid())
+  seasonNumber Int
+  playerId    String
+  username    String
+  finalElo    Float
+  rank        Int
+  tier        Tier
+  archivedAt  DateTime     @default(now())
+  season      BattleSeason @relation(fields: [seasonNumber], references: [number])
+
+  @@unique([seasonNumber, playerId])
+  @@index([seasonNumber, rank])
+  @@map("season_archives")
 }
 
 model DeveloperStats {
@@ -141,9 +212,36 @@ model Repository {
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   archivedAt    DateTime?
+  prMetrics     PullRequestMetric[]
 
   @@unique([userId, githubRepoId])
+  @@index([userId])
+  @@index([userId, language])
+  @@index([userId, stars(sort: Desc)])
+  @@index([userId, forks(sort: Desc)])
+  @@index([userId, updatedAt(sort: Desc)])
   @@map("repositories")
+}
+
+model PullRequestMetric {
+  id                  String     @id @default(uuid())
+  repositoryId        String
+  prNumber            Int
+  authorLogin         String
+  createdAt           DateTime
+  firstReviewedAt     DateTime?
+  mergedAt            DateTime?
+  reviewCommentsCount Int        @default(0)
+  timeToFirstReviewMs Float?
+  timeToMergeMs       Float?
+  reviewers           Json       @default("[]")
+  partial             Boolean    @default(false)
+  refreshedAt         DateTime   @updatedAt
+  repository          Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+  @@unique([repositoryId, prNumber])
+  @@index([createdAt])
+  @@map("pull_request_metrics")
 }
 
 model LanguageStat {
@@ -174,20 +272,26 @@ model Challenge {
   createdAt   DateTime        @default(now())
   users       UserChallenge[]
 
+  @@index([expiresAt])
+  @@index([category, expiresAt])
   @@map("challenges")
 }
 
 model UserChallenge {
-  id          String    @id @default(uuid())
+  id          String          @id @default(uuid())
   userId      String
   challengeId String
-  progress    Int       @default(0)
-  isCompleted Boolean   @default(false)
+  progress    Int             @default(0)
+  isCompleted Boolean         @default(false)
+  status      ChallengeStatus @default(IN_PROGRESS)
   completedAt DateTime?
-  challenge   Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  claimedAt   DateTime?
+  challenge   Challenge       @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, challengeId])
+  @@index([userId, status])
+  @@index([status])
   @@map("user_challenges")
 }
 
@@ -232,32 +336,42 @@ model Badge {
 }
 
 model UserBadge {
-  id       String   @id @default(uuid())
-  userId   String
-  badgeId  String
-  earnedAt DateTime @default(now())
-  badge    Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
-  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id             String    @id @default(uuid())
+  userId         String
+  badgeId        String
+  earnedAt       DateTime  @default(now())
+  credentialJwt  String?   @db.Text
+  credentialJwk  Json?
+  issuedAt       DateTime?
+  badge          Badge     @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, badgeId])
   @@map("user_badges")
 }
 
 model Battle {
-  id              String       @id @default(uuid())
-  challengerId    String
-  opponentId      String
-  status          BattleStatus @default(PENDING)
-  category        String
-  challengerScore Float?
-  opponentScore   Float?
-  startedAt       DateTime     @default(now())
-  endsAt          DateTime
-  winnerId        String?
-  challenger      User         @relation("BattleChallenger", fields: [challengerId], references: [id])
-  opponent        User         @relation("BattleOpponent", fields: [opponentId], references: [id])
-  winner          User?        @relation("BattleWinner", fields: [winnerId], references: [id])
+  id                 String       @id @default(uuid())
+  challengerId       String
+  opponentId         String
+  status             BattleStatus @default(PENDING)
+  category           String
+  challengerScore    Float?
+  opponentScore      Float?
+  startedAt          DateTime     @default(now())
+  endsAt             DateTime
+  winnerId           String?
+  forfeitedById      String?
+  cancellationReason String?
+  zkpProofHash       String?
+  zkpVerifiedAt      DateTime?
+  challenger         User         @relation("BattleChallenger", fields: [challengerId], references: [id])
+  opponent           User         @relation("BattleOpponent", fields: [opponentId], references: [id])
+  winner             User?        @relation("BattleWinner", fields: [winnerId], references: [id])
 
+  @@index([status, endsAt])
+  @@index([challengerId, status])
+  @@index([opponentId, status])
   @@map("battles")
 }
 
@@ -310,6 +424,13 @@ enum ChallengeType {
   SEASONAL
 }
 
+enum ChallengeStatus {
+  IN_PROGRESS
+  COMPLETED
+  CLAIMED
+  EXPIRED
+}
+
 enum Difficulty {
   EASY
   MEDIUM
@@ -337,6 +458,8 @@ enum BattleStatus {
   ACTIVE
   COMPLETED
   CANCELLED
+  EXPIRED
+  FORFEITED
 }
 
 enum NotificationType {
@@ -357,6 +480,8 @@ enum ActivityType {
   FORK
   ACHIEVEMENT
   LEVEL_UP
+  BATTLE
+  CHALLENGE
 }
 
 model GithubUser {
@@ -406,3 +531,106 @@ model XpTransaction {
   @@index([userId, createdAt(sort: Desc)])
   @@map("xp_transactions")
 }
+
+enum StorageTier {
+  HOT
+  WARM
+  COLD
+}
+
+model CommitArchive {
+  id               String      @id @default(uuid())
+  repositoryId     String
+  commitSha        String
+  tier             StorageTier @default(HOT)
+  originalBytes    Int
+  compressedBytes  Int
+  compressionRatio Float       @default(1.0)
+  storageLocation  String      // Local file path, S3 URL, or Glacier Archive ID
+  accessCount      Int         @default(0)
+  lastAccessedAt   DateTime    @default(now())
+  archivedAt       DateTime    @default(now())
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  @@unique([repositoryId, commitSha])
+  @@index([repositoryId])
+  @@index([tier])
+  @@index([lastAccessedAt])
+  @@map("commit_archives")
+}
+
+
+model SamlTenantConfig {
+  id                  String   @id @default(uuid())
+  tenantSlug          String   @unique
+  providerName        String   // "okta" | "entra" | "google-workspace" | "custom"
+  idpEntityId         String
+  idpSsoUrl           String
+  idpCertificatePem   String   @db.Text
+  spEntityId          String
+  defaultRole         String   @default("MEMBER")
+  roleMapping         Json?
+  wantAssertionsSigned Boolean @default(true)
+  enabled             Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+enum WebhookStatus {
+  ACTIVE
+  PAUSED
+  DISABLED
+}
+
+enum WebhookDeliveryStatus {
+  PENDING
+  SUCCESS
+  RETRYING
+  DEAD_LETTER
+}
+
+model WebhookSubscription {
+  id          String                @id @default(uuid())
+  userId      String?
+  url         String
+  secret      String                // HMAC secret key
+  description String?
+  events      String[]              // e.g. ["battle.ended", "pr.reviewed", "badge.awarded", "*"]
+  status      WebhookStatus         @default(ACTIVE)
+  deliveries  WebhookDeliveryLog[]
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@map("webhook_subscriptions")
+}
+
+model WebhookDeliveryLog {
+  id             String                @id @default(uuid())
+  subscriptionId String
+  subscription   WebhookSubscription   @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  event          String
+  payload        Json
+  status         WebhookDeliveryStatus @default(PENDING)
+  statusCode     Int?
+  latencyMs      Int?
+  attemptCount   Int                   @default(0)
+  maxAttempts    Int                   @default(5)
+  nextRetryAt    DateTime?
+  error          String?
+  responseBody   String?               @db.Text
+  isDeadLetter   Boolean               @default(false)
+  dlqReason      String?
+  deliveredAt    DateTime?
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  @@index([subscriptionId])
+  @@index([status])
+  @@index([isDeadLetter])
+  @@index([nextRetryAt])
+  @@map("webhook_delivery_logs")
+}
+

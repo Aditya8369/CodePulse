@@ -1,0 +1,130 @@
+{
+  "defaultAction": "SCMP_ACT_ERRNO",
+  "defaultErrnoRet": 1,
+  "archMap": [
+    {
+      "architecture": "SCMP_ARCH_X86_64",
+      "subArchitectures": [
+        "SCMP_ARCH_X86",
+        "SCMP_ARCH_X32"
+      ]
+    },
+    {
+      "architecture": "SCMP_ARCH_AARCH64",
+      "subArchitectures": [
+        "SCMP_ARCH_ARM"
+      ]
+    }
+  ],
+  "syscalls": [
+    {
+      "names": [
+        "read",
+        "write",
+        "readv",
+        "writev",
+        "close",
+        "fstat",
+        "newfstatat",
+        "lseek",
+        "mmap",
+        "mprotect",
+        "munmap",
+        "brk",
+        "rt_sigaction",
+        "rt_sigprocmask",
+        "rt_sigreturn",
+        "ioctl",
+        "access",
+        "faccessat",
+        "faccessat2",
+        "pipe",
+        "pipe2",
+        "select",
+        "pselect6",
+        "poll",
+        "ppoll",
+        "nanosleep",
+        "clock_nanosleep",
+        "gettimeofday",
+        "clock_gettime",
+        "clock_getres",
+        "getpid",
+        "gettid",
+        "getuid",
+        "geteuid",
+        "getgid",
+        "getegid",
+        "getrandom",
+        "uname",
+        "arch_prctl",
+        "futex",
+        "set_robust_list",
+        "get_robust_list",
+        "rseq",
+        "prlimit64",
+        "exit",
+        "exit_group"
+      ],
+      "action": "SCMP_ACT_ALLOW",
+      "args": [],
+      "comment": "Whitelisted standard runtime and computation syscalls for sandboxed code execution"
+    },
+    {
+      "names": [
+        "socket",
+        "connect",
+        "accept",
+        "accept4",
+        "bind",
+        "listen",
+        "sendto",
+        "recvfrom",
+        "sendmsg",
+        "recvmsg",
+        "shutdown",
+        "getsockname",
+        "getpeername",
+        "socketpair",
+        "setsockopt",
+        "getsockopt"
+      ],
+      "action": "SCMP_ACT_KILL_PROCESS",
+      "args": [],
+      "comment": "Block all network socket creation and I/O with process termination"
+    },
+    {
+      "names": [
+        "ptrace",
+        "process_vm_readv",
+        "process_vm_writev",
+        "sys_kexec_load",
+        "kexec_file_load",
+        "reboot",
+        "settimeofday",
+        "clock_settime",
+        "adjtimex",
+        "mount",
+        "umount2",
+        "pivot_root",
+        "chroot",
+        "setns",
+        "unshare"
+      ],
+      "action": "SCMP_ACT_KILL_PROCESS",
+      "args": [],
+      "comment": "Block privilege escalation, host namespace tampering, and debugging probes"
+    },
+    {
+      "names": [
+        "clone",
+        "clone3",
+        "fork",
+        "vfork"
+      ],
+      "action": "SCMP_ACT_KILL_PROCESS",
+      "args": [],
+      "comment": "Strict mitigation against fork-bomb attacks; process creation blocked in unprivileged execution"
+    }
+  ]
+}

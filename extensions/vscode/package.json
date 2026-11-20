@@ -1,0 +1,93 @@
+{
+  "name": "codepulse-vscode",
+  "displayName": "CodePulse Live Battles & IDE Telemetry",
+  "description": "Accept and play real-time CodePulse coding battles, sync keystrokes with <30ms WebSocket latency, and run local test cases with inline error decorations directly inside Visual Studio Code.",
+  "version": "1.0.0",
+  "publisher": "codepulse",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other",
+    "Programming Languages",
+    "Testing"
+  ],
+  "activationEvents": [
+    "onView:codepulse.battlesSidebar",
+    "onCommand:codepulse.startBattle",
+    "onCommand:codepulse.acceptInvite",
+    "onCommand:codepulse.runTestCases",
+    "onCommand:codepulse.refreshSidebar"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "codepulse-activitybar",
+          "title": "CodePulse Battles",
+          "icon": "media/codepulse-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "codepulse-activitybar": [
+        {
+          "id": "codepulse.battlesSidebar",
+          "name": "CodePulse Arena"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "codepulse.refreshSidebar",
+        "title": "CodePulse: Refresh Arena"
+      },
+      {
+        "command": "codepulse.startBattle",
+        "title": "CodePulse: Start Coding Battle"
+      },
+      {
+        "command": "codepulse.acceptInvite",
+        "title": "CodePulse: Accept Battle Invite"
+      },
+      {
+        "command": "codepulse.runTestCases",
+        "title": "CodePulse: Run Test Cases"
+      }
+    ],
+    "configuration": {
+      "title": "CodePulse",
+      "properties": {
+        "codepulse.apiBaseUrl": {
+          "type": "string",
+          "default": "http://localhost:3001/api/v1",
+          "description": "CodePulse Backend API base URL"
+        },
+        "codepulse.wsUrl": {
+          "type": "string",
+          "default": "ws://localhost:3001/battles",
+          "description": "CodePulse WebSocket endpoint for <30ms keystroke & telemetry sync"
+        },
+        "codepulse.authToken": {
+          "type": "string",
+          "default": "",
+          "description": "Personal JWT authentication token for CodePulse"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./tsconfig.json",
+    "build": "npm run compile",
+    "test": "npm run compile && node --test dist/test/extension.test.js",
+    "test:electron": "npm run compile && node dist/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.90.0",
+    "@vscode/test-electron": "^2.4.1",
+    "typescript": "^5.5.0"
+  }
+}
