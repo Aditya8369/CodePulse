@@ -44,6 +44,8 @@ model User {
   badges              UserBadge[]
   challenges          UserChallenge[]
   passwordResetTokens PasswordResetToken[]
+  guildMemberships    GuildMember[]
+  ownedGuilds         Guild[]
 
   @@map("users")
 }
@@ -405,4 +407,66 @@ model XpTransaction {
 
   @@index([userId, createdAt(sort: Desc)])
   @@map("xp_transactions")
+}
+
+enum GuildRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+model Guild {
+  id          String        @id @default(uuid())
+  name        String
+  slug        String        @unique
+  tag         String
+  description String?
+  avatarUrl   String?
+  bannerUrl   String?
+  ownerId     String
+  totalXp     Int           @default(0)
+  level       Int           @default(1)
+  maxMembers  Int           @default(25)
+  isPrivate   Boolean       @default(false)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  owner       User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  members     GuildMember[]
+  invites     GuildInvite[]
+
+  @@index([totalXp(sort: Desc)])
+  @@index([slug])
+  @@map("guilds")
+}
+
+model GuildMember {
+  id            String    @id @default(uuid())
+  guildId       String
+  userId        String
+  role          GuildRole @default(MEMBER)
+  joinedAt      DateTime  @default(now())
+  xpContributed Int       @default(0)
+
+  guild         Guild     @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([guildId, userId])
+  @@index([guildId, role])
+  @@map("guild_members")
+}
+
+model GuildInvite {
+  id         String    @id @default(uuid())
+  guildId    String
+  inviteCode String    @unique
+  expiresAt  DateTime
+  maxUses    Int       @default(1)
+  usesCount  Int       @default(0)
+  createdAt  DateTime  @default(now())
+
+  guild      Guild     @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@index([inviteCode])
+  @@map("guild_invites")
 }
