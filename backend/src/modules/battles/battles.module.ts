@@ -15,6 +15,7 @@ import { AnalyticsModule } from '../analytics/analytics.module';
 import { ReplayStreamService } from './replay-stream.service';
 import { CryptoModule } from '../crypto/crypto.module';
 import { WatermarkService } from './watermark.service';
+import { EsportsModule } from '../esports/esports.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { WatermarkService } from './watermark.service';
     XpModule,
     AnalyticsModule,
     CryptoModule,
+    EsportsModule,
   ],
   controllers: [BattlesController],
   providers: [

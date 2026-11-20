@@ -634,3 +634,49 @@ model WebhookDeliveryLog {
   @@map("webhook_delivery_logs")
 }
 
+
+model PulseBitsWallet {
+  userId            String   @id
+  balance           Int      @default(1000)
+  totalWagered      Int      @default(0)
+  totalWon          Int      @default(0)
+  nonMonetaryPolicy String   @default("VIRTUAL_IN_APP_ONLY_NO_CASH_VALUE")
+  updatedAt         DateTime @updatedAt
+
+  @@map("pulse_bits_wallets")
+}
+
+model PredictionMarketPool {
+  id                  String    @id @default(uuid())
+  battleId            String    @unique
+  marketType          String    @default("MATCH_WINNER")
+  outcomes            Json
+  status              String    @default("OPEN")
+  matchStartedAt      DateTime
+  lockAt              DateTime
+  lockedAt            DateTime?
+  lockReason          String?
+  winningOutcome      String?
+  verifiedByJudge     Boolean   @default(false)
+  createdAt           DateTime  @default(now())
+
+  @@index([status, lockAt])
+  @@map("prediction_market_pools")
+}
+
+model PredictionWager {
+  id           String   @id @default(uuid())
+  poolId       String
+  battleId     String
+  userId       String
+  outcomeKey   String
+  stakeBits    Int
+  lockedOdds   Float
+  payoutBits   Int      @default(0)
+  settled      Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  @@index([battleId, userId])
+  @@index([poolId, outcomeKey])
+  @@map("prediction_wagers")
+}

@@ -15,6 +15,7 @@ import { ZkpVerifierService } from '../crypto/zkp-verifier.service';
 import type { ZkpVerificationRequest } from '../crypto/zkp-verifier.service';
 import { DisruptorRingBuffer } from '../../common/concurrency/disruptor-ring-buffer';
 import { WatermarkService } from './watermark.service';
+import { PredictionMarketService } from '../esports/prediction-market.service';
 
 interface PlayerState {
   userId: string;
@@ -57,6 +58,7 @@ export class BattlesGateway
     private readonly metrics: MetricsService,
     @Optional() private readonly zkpService?: ZkpVerifierService,
     @Optional() private readonly watermarkService?: WatermarkService,
+    @Optional() private readonly predictionMarket?: PredictionMarketService,
   ) {}
 
   @WebSocketServer()
@@ -108,6 +110,14 @@ export class BattlesGateway
           timestamp: event.timestamp,
         });
     } else if (eventType === 'test_case_eval') {
+      const lockedPool = this.predictionMarket?.lockPoolOnCodeExecution(battleId);
+      if (lockedPool && lockedPool.status === 'LOCKED') {
+        this.server?.to(`spectator:${battleId}`)?.emit('prediction_pool_locked', {
+          battleId,
+          poolId: lockedPool.poolId,
+          reason: lockedPool.lockReason,
+        });
+      }
       this.server
         ?.to(`battle:${battleId}`)
         ?.emit('player_test_case_progress', {
@@ -433,5 +443,32 @@ export class BattlesGateway
     }
 
     void client.join(`spectator:${data.battleId}`);
+  }
+
+  @SubscribeMessage('place_prediction')
+  async handlePlacePrediction(
+    @ConnectedSocket() client: Socket,
+    @MessageBody()
+    data: {
+      battleId: string;
+      userId: string;
+      outcomeKey: string;
+      stakeBits: number;
+    },
+  ) {
+    if (!this.predictionMarket) return null;
+    const outcome = await this.predictionMarket.placePrediction(data);
+    this.server
+      ?.to(`spectator:${data.battleId}`)
+      ?.to(`battle:${data.battleId}`)
+      ?.emit('prediction_odds_updated', {
+        battleId: data.battleId,
+        poolId: outcome.pool.poolId,
+        odds: outcome.pool.odds,
+        outcomePools: outcome.pool.outcomePools,
+        totalPoolBits: outcome.pool.totalPoolBits,
+      });
+    client.emit('prediction_placed', outcome);
+    return outcome;
   }
 }
