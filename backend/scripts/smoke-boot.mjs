@@ -19,7 +19,13 @@ process.env.DIRECT_URL = process.env.DIRECT_URL || 'postgresql://postgres:postgr
 import { Test } from '@nestjs/testing';
 import { pathToRegexp } from 'path-to-regexp';
 import { MODULE_METADATA, PATH_METADATA } from '@nestjs/common/constants.js';
-import { AppModule } from '../dist/app.module.js';
+
+let AppModule;
+try {
+  ({ AppModule } = await import('../dist/src/app.module.js'));
+} catch {
+  ({ AppModule } = await import('../dist/app.module.js'));
+}
 
 async function runSmokeBootCheck() {
   console.log('🛡️  [CodePulse Smoke Boot Verification]');

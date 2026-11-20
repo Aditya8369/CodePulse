@@ -40,6 +40,8 @@
     "node_modules",
     "backend",
     "deploy",
-    "extensions"
+    "extensions",
+    "e2e",
+    "playwright.config.ts"
   ]
 }

@@ -57,7 +57,7 @@ export class AstScannerService {
         case ts.SyntaxKind.ForInStatement:
         case ts.SyntaxKind.ForOfStatement:
         case ts.SyntaxKind.WhileStatement:
-        case ts.SyntaxKind.DoWhileStatement:
+        case ts.SyntaxKind.DoStatement:
         case ts.SyntaxKind.CaseClause:
         case ts.SyntaxKind.CatchClause:
         case ts.SyntaxKind.ConditionalExpression: // ternary operator ? :

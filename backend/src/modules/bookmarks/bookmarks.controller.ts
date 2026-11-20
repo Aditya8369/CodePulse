@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Delete, Patch, Body, Param, Query } from '@nestjs/common';
-import { BookmarksService, BookmarkPayload } from './bookmarks.service';
+import { BookmarksService } from './bookmarks.service';
+import type { BookmarkPayload } from './bookmarks.service';
 
 @Controller('bookmarks')
 export class BookmarksController {

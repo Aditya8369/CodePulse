@@ -4,11 +4,18 @@ import React from 'react';
 import { AchievementShareModal } from './achievement-share-modal';
 
 describe('AchievementShareModal Component', () => {
-  const mockAchievement = {
+  const mockAchievement: any = {
     id: 'ach_1',
     title: 'CodePulse Champion',
     description: 'Ranked in the top 1% global leaderboards',
     xpReward: 500,
+    icon: '🏆',
+    category: 'battles',
+    rarity: 'legendary',
+    isUnlocked: true,
+    progress: 100,
+    maxProgress: 100,
+    unlockedAt: new Date(),
   };
 
   it('renders achievement details accurately', () => {

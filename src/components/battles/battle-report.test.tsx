@@ -4,29 +4,49 @@ import React from 'react';
 import { BattleReport } from './battle-report';
 
 describe('BattleReport Component Flow', () => {
-  const mockReport = {
-    winnerName: 'Alex Mercer',
-    winnerUsername: 'alexmercer',
-    winnerAvatar: 'https://github.com/alex.png',
-    xpEarned: 150,
-    playerScore: 4,
-    opponentScore: 2,
-    totalQuestions: 5,
-    onPlayAgain: vi.fn(),
+  const mockPlayer1 = {
+    username: 'alexmercer',
+    name: 'Alex Mercer',
+    avatar: 'https://github.com/alex.png',
+    score: 4,
+    stats: { totalCommits: 100 },
+    topLanguages: ['TypeScript'],
   };
+  const mockPlayer2 = {
+    username: 'opponent',
+    name: 'Opponent Dev',
+    avatar: 'https://github.com/opp.png',
+    score: 2,
+    stats: { totalCommits: 50 },
+    topLanguages: ['Python'],
+  };
+  const onRematchMock = vi.fn();
 
-  it('renders victory screen with correct winner avatar and XP earned', () => {
-    render(<BattleReport {...mockReport} />);
+  it('renders victory screen with player names and scores', () => {
+    render(
+      <BattleReport
+        player1={mockPlayer1}
+        player2={mockPlayer2}
+        battleType="speed"
+        onRematch={onRematchMock}
+      />
+    );
 
-    expect(screen.getByText(/Alex Mercer|Winner/i)).toBeInTheDocument();
-    expect(screen.getByText(/150/i)).toBeInTheDocument();
+    expect(screen.getByText(/Alex Mercer/i)).toBeInTheDocument();
   });
 
-  it('triggers onPlayAgain callback when action button is clicked', () => {
-    render(<BattleReport {...mockReport} />);
+  it('triggers onRematch callback when action button is clicked', () => {
+    render(
+      <BattleReport
+        player1={mockPlayer1}
+        player2={mockPlayer2}
+        battleType="speed"
+        onRematch={onRematchMock}
+      />
+    );
 
-    const playAgainBtn = screen.getByRole('button', { name: /Play Again|Next Match/i });
-    fireEvent.click(playAgainBtn);
-    expect(mockReport.onPlayAgain).toHaveBeenCalled();
+    const rematchBtn = screen.getByRole('button', { name: /Rematch/i });
+    fireEvent.click(rematchBtn);
+    expect(onRematchMock).toHaveBeenCalled();
   });
 });

@@ -59,3 +59,5 @@ export function triggerDualCannonConfetti() {
 export function playVictorySound(isMuted: boolean = false) {
   if (!isMuted) audioManager.playVictoryFanfare();
 }
+
+export const triggerCelebration = triggerDualCannonConfetti;

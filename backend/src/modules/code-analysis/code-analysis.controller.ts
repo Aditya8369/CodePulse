@@ -1,5 +1,6 @@
 import { Controller, Post, Body, Get, Param } from '@nestjs/common';
-import { AstScannerService, FileQualityAnalysis } from './ast-scanner.service';
+import { AstScannerService } from './ast-scanner.service';
+import type { FileQualityAnalysis } from './ast-scanner.service';
 
 export interface ScanCodeDto {
   code: string;

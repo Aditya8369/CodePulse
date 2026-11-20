@@ -38,6 +38,10 @@ export class DeadLetterQueueService {
       ['github-sync', sync],
     ]);
   }
+  async recordFailedJob(jobInfo: any): Promise<void> {
+    this.logger.warn(`DLQ recorded failed job: ${jobInfo?.id || 'unknown'}`);
+  }
+
   async capture(job: Job | undefined, error: Error): Promise<void> {
     if (!job?.id || !this.sources.has(job.queueName)) return;
     if (

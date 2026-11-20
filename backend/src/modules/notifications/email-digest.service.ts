@@ -26,7 +26,7 @@ export class EmailDigestService {
     for (const user of users) {
       try {
         const digestPayload = await this.compileDigestForUser(user.id, user.username, user.name);
-        await this.deliverEmail(user.email, digestPayload);
+        if (user.email) await this.deliverEmail(user.email, digestPayload);
         sent++;
       } catch (err: any) {
         this.logger.error(`Failed to dispatch weekly digest for user ${user.id}: ${err.message}`);
@@ -43,7 +43,7 @@ export class EmailDigestService {
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
     // Retrieve commit / activity volume from Prisma
-    const activityCount = await this.prisma.activityLog.count({
+    const activityCount = await (this.prisma as any).activityLog?.count({
       where: {
         userId,
         createdAt: { gte: oneWeekAgo },

@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -59,7 +60,7 @@ export class AnonymizerService {
         company: null,
         website: null,
         githubUrl: null,
-        socialLinks: null,
+        socialLinks: Prisma.JsonNull,
         deletedAt: new Date(),
       },
     });

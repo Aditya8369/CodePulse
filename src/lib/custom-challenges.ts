@@ -240,3 +240,9 @@ export function subscribeToCustomChallenges(onChange: () => void): () => void {
     window.removeEventListener(CUSTOM_CHALLENGES_CHANGE_EVENT, onChange);
   };
 }
+
+export function addCustomChallenge(challenge: any): void {
+  if (typeof window !== "undefined") {
+    saveCustomChallenge(challenge as CustomChallenge);
+  }
+}

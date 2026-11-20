@@ -30,23 +30,24 @@ import { formatNumber } from "@/lib/utils";
 interface AnalyticsExportModalProps {
   isOpen: boolean;
   onClose: () => void;
-  currentUser: any;
-  stats: any;
-  rating: any;
-  languages: any[];
-  repos: any[];
-  longestStreak: number;
+  currentUser?: any;
+  stats?: any;
+  rating?: any;
+  languages?: any[];
+  repos?: any[];
+  longestStreak?: number;
+  metrics?: any;
 }
 
 export function AnalyticsExportModal({
   isOpen,
   onClose,
   currentUser,
-  stats,
-  rating,
-  languages,
-  repos,
-  longestStreak,
+  stats = {},
+  rating = {},
+  languages = [],
+  repos = [],
+  longestStreak = 0,
 }: AnalyticsExportModalProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const scorecardRef = useRef<HTMLDivElement>(null);
