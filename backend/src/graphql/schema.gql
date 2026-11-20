@@ -1,0 +1,19 @@
+type Repository {
+  id: ID!
+  name: String!
+  stars: Int!
+  forks: Int!
+  language: String
+}
+
+type User {
+  id: ID!
+  username: String!
+  name: String
+  repositories: [Repository!]!
+}
+
+type Query {
+  user(id: ID!): User
+  developers(limit: Int): [User!]!
+}
