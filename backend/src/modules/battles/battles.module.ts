@@ -19,6 +19,7 @@ import { WatermarkService } from './watermark.service';
 import { HypeMeterService } from './hype-meter.service';
 import { TournamentEngineService } from './tournament-engine.service';
 import { EsportsModule } from '../esports/esports.module';
+import { RaidBossService } from './raid-boss.service';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { EsportsModule } from '../esports/esports.module';
     WatermarkService,
     HypeMeterService,
     TournamentEngineService,
+    RaidBossService,
   ],
   exports: [
     BattlesService,
@@ -55,6 +57,7 @@ import { EsportsModule } from '../esports/esports.module';
     WatermarkService,
     HypeMeterService,
     TournamentEngineService,
+    RaidBossService,
   ],
 })
 export class BattlesModule {}
