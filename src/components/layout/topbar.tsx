@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "motion/react";
@@ -16,6 +16,7 @@ import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import { useNotifications } from "@/hooks/api/use-notifications";
 import { NotificationDropdown } from "@/components/layout/notification-dropdown";
+import { LanguageSelector } from "@/components/layout/language-selector";
 import { useCurrentUser } from "@/hooks/api/use-auth";
 import { NAV_ITEMS } from "@/lib/constants";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -28,6 +29,7 @@ import {
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { useLogout } from "@/hooks/api/use-auth";
+import { WebSocketStatusIndicator } from "@/components/providers/websocket-status-indicator";
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -48,7 +50,7 @@ function useBreadcrumbs() {
   const activeItem = allItems.find((item) => item.href === pathname);
 
   const crumbs: { title: string; href?: string }[] = [
-    { title: "DevBattle", href: "/dashboard" },
+    { title: "CodePulse", href: "/dashboard" },
   ];
 
   if (activeItem) {
@@ -104,7 +106,7 @@ function SearchTrigger({ onOpen }: SearchTriggerProps) {
 function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const { notifications, unreadCount, markAsRead, markAllAsRead } =
+  const { notifications, unreadCount, markAsRead, markAllAsRead, markCategoryAsRead } =
     useNotifications();
 
   // Close dropdown when clicking outside or pressing Escape
@@ -175,6 +177,7 @@ function NotificationBell() {
         unreadCount={unreadCount}
         onMarkAsRead={markAsRead}
         onMarkAllAsRead={markAllAsRead}
+        onMarkCategoryAsRead={markCategoryAsRead}
       />
     </div>
   );
@@ -186,11 +189,11 @@ function NotificationBell() {
 
 function ThemeToggle() {
   const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
 
   if (!mounted) {
     return (
@@ -364,6 +367,7 @@ export function Topbar({ onOpenCommandPalette }: TopbarProps) {
 
       {/* Right: Actions */}
       <div className="flex items-center gap-1.5">
+        <WebSocketStatusIndicator />
         <div className="hidden lg:block">
           <SearchTrigger onOpen={onOpenCommandPalette} />
         </div>
@@ -382,6 +386,7 @@ export function Topbar({ onOpenCommandPalette }: TopbarProps) {
           <Search className="h-[18px] w-[18px]" />
         </motion.button>
 
+        <LanguageSelector />
         <NotificationBell />
         <ThemeToggle />
 

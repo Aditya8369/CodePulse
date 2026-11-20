@@ -12,13 +12,24 @@ import { formatNumber } from "@/lib/utils";
 import { useCurrentUser } from "@/hooks/api/use-auth";
 import { GithubIcon } from "@/components/icons/github";
 import {
-  MapPin, Building, Globe, Calendar, Star, GitFork, Users, GitCommit,
-  GitPullRequest, Eye, Flame, Code, ExternalLink, Crown, QrCode,
+  MapPin, Building, Globe, Calendar, Star, GitFork, GitCommit,
+  GitPullRequest, Eye, Flame, Code, ExternalLink, Crown, QrCode, Shield, Share2,
 } from "lucide-react";
 import { ProfileQrModal } from "@/components/modals/profile-qr-modal";
+import { ProfileBadgeModal } from "@/components/modals/profile-badge-modal";
+import { BadgeShowcase } from "@/components/profile/badge-showcase";
+import { ProfileShareModal } from "@/components/modals/profile-share-modal";
+import { BadgeCredentialModal } from "@/components/modals/badge-credential-modal";
+import { SocialLinksManager } from "@/components/profile/social-links-manager";
+import { StatusBadgeEditorModal } from "@/components/profile/status-badge-editor";
+import type { Badge } from "@/types";
 
 export default function ProfilePage() {
   const { data: user, isLoading } = useCurrentUser();
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+  const [isBadgeModalOpen, setIsBadgeModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [selectedCredentialBadge, setSelectedCredentialBadge] = useState<Badge | null>(null);
 
   if (isLoading) {
     return (
@@ -83,12 +94,11 @@ export default function ProfilePage() {
   const stats = user.stats || { totalCommits: 0, totalPRs: 0, totalReviews: 0, totalStars: 0, streak: 0, totalRepos: 0, followers: 0, following: 0 };
   
   // Map badges structure
-  const displayBadges = user.badges?.map((b: any) => b.badge || b) || [];
+  const displayBadges = user.badges || [];
   const displayRepos = user.repositories || [];
   const displayActivities = user.activities || [];
   const displayLanguages = user.languages || [];
   const contributionData = user.stats?.contributionData || [];
-  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
 
   return (
     <div className="space-y-6">
@@ -124,7 +134,10 @@ export default function ProfilePage() {
               )}
             </div>
             <p className="text-muted-foreground mb-1">@{user.username}</p>
+            <BadgeShowcase key={`header-${user.id}`} userId={user.id} badges={user.badges} placement="header" />
+            <StatusBadgeEditorModal key={user.id} userId={user.id} />
             {user.bio && <p className="text-sm text-muted-foreground mb-4 max-w-xl">{user.bio}</p>}
+            <SocialLinksManager key={user.id} userId={user.id} initialLinks={Array.isArray(user.socialLinks) ? user.socialLinks : []} />
 
             <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
               {user.location && <span className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5" />{user.location}</span>}
@@ -139,15 +152,6 @@ export default function ProfilePage() {
                   <GithubIcon className="w-3.5 h-3.5" />GitHub Profile
                 </a>
               )}
-              {user.socialLinks && Array.isArray(user.socialLinks) && user.socialLinks.map((link: any, idx: number) => {
-                let displayUrl = link.url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
-                if (displayUrl.length > 25) displayUrl = displayUrl.substring(0, 25) + '...';
-                return (
-                  <a key={idx} href={link.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-blue-400 transition-colors">
-                    <ExternalLink className="w-3.5 h-3.5" />{displayUrl}
-                  </a>
-                );
-              })}
               <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" />Joined {joinedDate}</span>
               <button
                 onClick={() => setIsQrModalOpen(true)}
@@ -155,6 +159,21 @@ export default function ProfilePage() {
               >
                 <QrCode className="w-3.5 h-3.5 text-purple-400" />
                 Share QR
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsShareModalOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium transition-all"
+              >
+                <Share2 className="w-3.5 h-3.5 text-blue-400" aria-hidden="true" />
+                Share Profile
+              </button>
+              <button
+                onClick={() => setIsBadgeModalOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium transition-all"
+              >
+                <Shield className="w-3.5 h-3.5 text-primary" />
+                Get Badge
               </button>
             </div>
 
@@ -216,16 +235,45 @@ export default function ProfilePage() {
         user={user}
       />
 
+      <ProfileShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        user={user}
+      />
+
+      <ProfileBadgeModal
+        isOpen={isBadgeModalOpen}
+        onClose={() => setIsBadgeModalOpen(false)}
+        user={user}
+      />
+
+      <BadgeCredentialModal
+        isOpen={!!selectedCredentialBadge}
+        onClose={() => setSelectedCredentialBadge(null)}
+        badge={selectedCredentialBadge}
+        username={user?.username || "developer"}
+      />
+
       {/* Badges */}
+      <BadgeShowcase key={`gallery-${user.id}`} userId={user.id} badges={user.badges} />
+
+      {/* Verifiable Credentials */}
       {displayBadges.length > 0 && (
         <div className="glass-card rounded-[20px] p-6">
-          <h2 className="text-lg font-semibold mb-4">Badges</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <Shield className="w-5 h-5 text-purple-400" />
+              Verifiable Credentials (W3C DID)
+            </h2>
+            <span className="text-xs text-muted-foreground">Click a badge to verify or export W3C Credential</span>
+          </div>
           <div className="flex flex-wrap gap-3">
             {displayBadges.map((badge: any) => (
               <motion.div
                 key={badge.id}
                 whileHover={{ scale: 1.05 }}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10"
+                onClick={() => setSelectedCredentialBadge(badge)}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 cursor-pointer hover:border-primary/50 transition-colors"
               >
                 <span className="text-lg">🏆</span>
                 <div>
@@ -251,7 +299,7 @@ export default function ProfilePage() {
         <div>
           <h2 className="text-lg font-semibold mb-4">Pinned Repositories</h2>
           <StaggerContainer className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {displayRepos.slice(0, 4).map((repo: any) => (
+            {displayRepos.slice(0, 4).map((repo) => (
               <StaggerItem key={repo.id}>
                 <motion.div
                   whileHover={{ scale: 1.01, y: -2 }}

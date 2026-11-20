@@ -12,6 +12,7 @@ import {
 import { AnimatedProgress } from "@/components/animations/animated-counter";
 import { ClaimRewardModal } from "@/components/modals/claim-reward-modal";
 import {
+  type LucideIcon,
   CheckCircle2,
   Clock,
   Zap,
@@ -29,7 +30,7 @@ import type { Challenge } from "@/types";
 // Icon map for challenge icons
 // ===========================
 
-const ICON_MAP: Record<string, React.ElementType> = {
+const ICON_MAP: Record<string, LucideIcon> = {
   Flame,
   GitPullRequest,
   Eye,

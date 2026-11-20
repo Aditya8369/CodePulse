@@ -1,0 +1,20 @@
+{
+  "app.name": "CodePulse",
+  "app.tagline": "GitHub 開発者アナリティクス＆ゲーミフィケーション",
+  "nav.dashboard": "ダッシュボード",
+  "nav.repositories": "リポジトリ",
+  "nav.leaderboard": "リーダーボード",
+  "nav.battles": "バトル",
+  "nav.challenges": "チャレンジ",
+  "nav.analytics": "アナリティクス",
+  "nav.settings": "設定",
+  "topbar.searchPlaceholder": "開発者、リポジトリ、コマンドを検索...",
+  "topbar.languageSelector": "言語を選択",
+  "topbar.rtlBadge": "RTL",
+  "dashboard.welcome": "おかえりなさい、{name}さん！",
+  "dashboard.commitSummary": "{count, plural, =0 {本日のコミットはありません} one {本日 # 件のコミット} other {本日 # 件のコミット}}",
+  "dashboard.streakStatus": "{days, plural, =0 {今日からストリークを始めよう} one {# 日連続アクティブ} other {# 日連続アクティブ}}",
+  "dashboard.mentorGreeting": "{gender, select, female {彼女はダイヤモンドリーグに到達しました！} male {彼はダイヤモンドリーグに到達しました！} other {ダイヤモンドリーグに到達しました！}}",
+  "battles.activeCount": "{count, plural, =0 {進行中のバトルはありません} one {# 件のアクティブなバトル} other {# 件のアクティブなバトル}}",
+  "notifications.unread": "{count, plural, =0 {未読の通知はありません} one {# 件の未読通知} other {# 件の未読通知}}"
+}

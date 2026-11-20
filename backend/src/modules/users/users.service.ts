@@ -12,6 +12,9 @@ export class UsersService {
       include: {
         rating: true,
         stats: true,
+        languages: true,
+        repositories: true,
+        activities: { orderBy: { createdAt: 'desc' }, take: 100 },
       },
     });
 
@@ -31,7 +34,7 @@ export class UsersService {
         repositories: true,
         activities: {
           orderBy: { createdAt: 'desc' },
-          take: 20,
+          take: 100,
         },
         badges: {
           include: { badge: true },

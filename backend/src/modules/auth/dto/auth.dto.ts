@@ -22,8 +22,17 @@ export class GitHubLoginDto {
 }
 
 export class AuthResponseDto {
-  @ApiProperty()
+  @ApiProperty({ description: 'Short-lived JWT Access Token' })
   accessToken: string;
+
+  @ApiProperty({ required: false, description: 'Rotating refresh token string' })
+  @IsOptional()
+  @IsString()
+  refreshToken?: string;
+
+  @ApiProperty({ required: false, description: 'Access token expiration lifetime in seconds' })
+  @IsOptional()
+  expiresIn?: number;
 
   @ApiProperty()
   user: {
@@ -32,6 +41,34 @@ export class AuthResponseDto {
     name: string | null;
     email: string | null;
   };
+}
+
+export class RefreshTokenDto {
+  @ApiProperty({
+    description: 'Rotating refresh token to exchange for new access & refresh tokens',
+    example: 'd9b7f6c3a1e24567...',
+  })
+  @IsString()
+  @IsNotEmpty()
+  refreshToken: string;
+
+  @ApiProperty({
+    required: false,
+    description: 'Device or browser client fingerprint string for session tracking',
+  })
+  @IsOptional()
+  @IsString()
+  deviceFingerprint?: string;
+}
+
+export class LogoutDto {
+  @ApiProperty({
+    required: false,
+    description: 'Refresh token to revoke and blacklist along with its token family',
+  })
+  @IsOptional()
+  @IsString()
+  refreshToken?: string;
 }
 
 export class EmailPasswordDto {

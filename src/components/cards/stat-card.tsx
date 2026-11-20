@@ -1,6 +1,5 @@
 "use client";
 
-import type { ElementType } from "react";
 import { type LucideIcon } from "lucide-react";
 import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
@@ -18,7 +17,7 @@ interface StatCardProps {
   title: string;
   value: number;
   change?: number;
-  icon: ElementType;
+  icon: LucideIcon;
   color?: StatColor;
   suffix?: string;
   prefix?: string;

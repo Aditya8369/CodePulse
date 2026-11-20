@@ -1,0 +1,7 @@
+{
+  "distro": "Alpine Linux 3.20.3 (x86-wasm)",
+  "kernel": "6.6.52-0-virt-wasm",
+  "imageSizeBytes": 11842560,
+  "maxImageBudgetBytes": 15728640,
+  "binaries": ["/bin/sh", "/usr/bin/curl", "/usr/bin/git", "/usr/bin/python3", "/usr/bin/vi"]
+}

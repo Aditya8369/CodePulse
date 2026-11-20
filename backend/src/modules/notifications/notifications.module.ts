@@ -1,10 +1,13 @@
 import { Module } from '@nestjs/common';
 import { NotificationsController } from './notifications.controller';
 import { NotificationsService } from './notifications.service';
+import { DiscordWebhookService } from './discord-webhook.service';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
+  imports: [AuthModule],
   controllers: [NotificationsController],
-  providers: [NotificationsService],
-  exports: [NotificationsService],
+  providers: [NotificationsService, DiscordWebhookService],
+  exports: [NotificationsService, DiscordWebhookService],
 })
 export class NotificationsModule {}

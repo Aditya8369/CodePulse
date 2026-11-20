@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { CommitActivityChart } from "@/components/charts/commit-activity-chart";
 import { ContributionHeatmap } from "@/components/charts/contribution-heatmap";
 import { LanguageDistribution } from "@/components/charts/language-distribution";
@@ -11,8 +13,13 @@ import { GlobalRankingMeter } from "@/components/charts/global-ranking-meter";
 import { PrReviewVelocityCard } from "@/components/cards/pr-review-velocity-card";
 import { StaggerContainer, StaggerItem } from "@/components/animations/page-transition";
 import { AnimatedCounter } from "@/components/animations/animated-counter";
+import { AnalyticsExportModal } from "@/components/analytics/analytics-export-modal";
+import { ProductivityGauge } from "@/components/analytics/productivity-gauge";
+import { CustomQueryConsole } from "@/components/analytics/custom-query-console";
+import { calculateProductivity, type ProductivityBattle } from "@/lib/productivity-calculator";
+import { apiClient, extractData } from "@/lib/api-client";
 import { useCurrentUser } from "@/hooks/api/use-auth";
-import { Loader2, BarChart3, TrendingUp, Clock, Calendar, Code, GitCommit } from "lucide-react";
+import { Loader2, BarChart3, TrendingUp, Clock, Calendar, Code, GitCommit, Download } from "lucide-react";
 import { BackToTop } from "@/components/ui/back-to-top";
 import type {
   CommitActivity,
@@ -31,7 +38,17 @@ interface AnalyticsRating extends Partial<DeveloperRating> {
 }
 
 export default function AnalyticsPage() {
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const { data: currentUser, isLoading } = useCurrentUser();
+  const { data: battles } = useQuery({
+    queryKey: ["battles", "user", currentUser?.id],
+    enabled: Boolean(currentUser?.id),
+    queryFn: async (): Promise<ProductivityBattle[]> => {
+      const response = await apiClient.get(`/battles/user/${currentUser!.id}`);
+      return extractData<ProductivityBattle[]>(response);
+    },
+    retry: false,
+  });
 
   if (isLoading) {
     return (
@@ -90,6 +107,15 @@ export default function AnalyticsPage() {
   const rating: AnalyticsRating = userRecord.rating || {};
   const languages = currentUser.languages || [];
   const repos = currentUser.repositories || [];
+  const productivity = calculateProductivity({
+    userId: currentUser.id,
+    commitActivity: stats.commitActivity,
+    contributionData: stats.contributionData,
+    activities: currentUser.activities,
+    battles,
+    xp: rating.xp,
+    languages,
+  });
 
   const activeDays = Array.isArray(stats.commitActivity) ? stats.commitActivity.length : 0;
   const avgCommitsPerDay = stats.totalCommits ? (stats.totalCommits / 365) : 0;
@@ -129,7 +155,7 @@ export default function AnalyticsPage() {
 
   return (
     <div className="space-y-8 pb-12">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl sm:text-4xl font-black tracking-tight flex items-center gap-3">
             <BarChart3 className="w-8 h-8 text-primary" />
@@ -141,6 +167,14 @@ export default function AnalyticsPage() {
             A comprehensive, Next-Level deep dive into your developer journey.
           </p>
         </div>
+
+        <button
+          onClick={() => setIsExportModalOpen(true)}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white shadow-lg shadow-purple-500/20 hover:shadow-purple-500/30 transition-all active:scale-95 cursor-pointer shrink-0"
+        >
+          <Download className="w-4 h-4" />
+          Export Report
+        </button>
       </div>
 
       <StaggerContainer className="grid grid-cols-1 md:grid-cols-12 gap-6 auto-rows-[minmax(180px,_auto)]">
@@ -148,6 +182,10 @@ export default function AnalyticsPage() {
         {/* Banner (Full Width) */}
         <StaggerItem className="md:col-span-12">
           <GithubWrappedBanner stats={stats} languages={languages} />
+        </StaggerItem>
+
+        <StaggerItem className="md:col-span-12">
+          <ProductivityGauge result={productivity} />
         </StaggerItem>
 
         {/* Global Ranking (Span 4) */}
@@ -198,7 +236,7 @@ export default function AnalyticsPage() {
 
         {/* Repository Bubble Chart (Span 8) */}
         <StaggerItem className="md:col-span-8 min-h-[400px]">
-          <RepositoryBubbleChart repos={repos} />
+          <RepositoryBubbleChart repos={repos} owner={currentUser.username} />
         </StaggerItem>
 
         {/* Language Distribution (Span 4) */}
@@ -212,6 +250,11 @@ export default function AnalyticsPage() {
         {/* PR & Review Velocity Breakdown (Span 12) */}
         <StaggerItem className="md:col-span-12">
           <PrReviewVelocityCard stats={stats} />
+        </StaggerItem>
+
+        {/* In-Browser DuckDB Analytical Query Console (Span 12) */}
+        <StaggerItem className="md:col-span-12">
+          <CustomQueryConsole />
         </StaggerItem>
 
         {/* Commit Activity (Span 12) */}
@@ -236,6 +279,18 @@ export default function AnalyticsPage() {
         </StaggerItem>
 
       </StaggerContainer>
+
+      {/* Analytics Report Export Modal */}
+      <AnalyticsExportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        currentUser={currentUser}
+        stats={stats}
+        rating={rating}
+        languages={languages}
+        repos={repos}
+        longestStreak={longestStreak}
+      />
 
       {/* Floating Back to Top Button */}
       <BackToTop className="bottom-20 md:bottom-6" />

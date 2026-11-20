@@ -3,20 +3,28 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "motion/react";
+import { useQuery } from "@tanstack/react-query";
 import { RadarCompareChart } from "@/components/charts/radar-compare-chart";
+import { HeadToHeadCard, type HeadToHeadData } from "@/components/compare/head-to-head-card";
+import { ComparisonMetricsTable } from "@/components/compare/comparison-metrics-table";
+import { apiClient, extractData } from "@/lib/api-client";
 import { useCurrentUser } from "@/hooks/api/use-auth";
+import { toast } from "sonner";
 import { 
   Swords, Search, Trophy, CalendarDays, MapPin, Calendar, GitBranch, Star, Users, Flame,
   TrendingUp, GitCommitHorizontal, GitPullRequest, CircleDot, CodeXml, Coffee, Plus, Minus,
-  Loader2, X, Tent, Crown, AlertCircle, Moon, Sun, Sunset, Code2, Key, RefreshCw, ArrowLeftRight
+  Loader2, X, Tent, Crown, AlertCircle, Moon, Sun, Sunset, Code2, Key, RefreshCw, ArrowLeftRight, Share2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CompareShareCard } from "@/components/compare/compare-share-card";
+import { RadarExportModal } from "@/components/compare/radar-export-modal";
 
 // Types
 interface DevStats {
   totalCommits: number;
   totalPRs: number;
+  totalReviews?: number;
   totalIssues: number;
   totalStars: number;
   followers: number;
@@ -60,12 +68,24 @@ function CompareDashboard() {
   
   const [dev1, setDev1] = useState<DevData | null>(null);
   const [dev2, setDev2] = useState<DevData | null>(null);
+  const headToHead = useQuery({
+    queryKey: ["battles", "head-to-head", dev1?.username, dev2?.username],
+    enabled: !!dev1 && !!dev2 && dev1.username.toLowerCase() !== dev2.username.toLowerCase(),
+    queryFn: async () => {
+      const response = await apiClient.get(`/battles/head-to-head?user1=${encodeURIComponent(dev1!.username)}&user2=${encodeURIComponent(dev2!.username)}`);
+      return extractData<HeadToHeadData>(response);
+    },
+    staleTime: 60_000,
+    retry: false,
+  });
   
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [recentComparisons, setRecentComparisons] = useState<{u1: string, u2: string}[]>([]);
   const [githubToken, setGithubToken] = useState("");
   const [showTokenInput, setShowTokenInput] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isRadarExportOpen, setIsRadarExportOpen] = useState(false);
   
   // Load recent comparisons from local storage
   useEffect(() => {
@@ -166,7 +186,6 @@ function CompareDashboard() {
       setDev1(d1);
       setDev2(d2);
       saveRecent(d1.username, d2.username);
-      
       // Update URL silently
       const params = new URLSearchParams(searchParams.toString());
       params.set('user1', q1);
@@ -176,6 +195,9 @@ function CompareDashboard() {
       window.history.replaceState(null, '', `?${params.toString()}`);
     } else {
       setError("Could not fetch one or both users. Check if usernames are correct and GitHub API limits.");
+      toast.error("Invalid username(s)", {
+        description: "Check if both GitHub usernames are correct and try again.",
+      });
     }
     setIsLoading(false);
   };
@@ -218,6 +240,9 @@ function CompareDashboard() {
   };
 
   const winner = getWinner();
+  const reviews1 = dev1?.stats.totalReviews ?? 0;
+  const reviews2 = dev2?.stats.totalReviews ?? 0;
+  const reviewLeader = reviews1 > reviews2 ? dev1 : reviews2 > reviews1 ? dev2 : null;
 
   const StatBar = ({ val1, val2, icon: Icon, label }: any) => {
     const total = val1 + val2;
@@ -612,16 +637,34 @@ function CompareDashboard() {
               </div>
               
               <div className="relative z-10 space-y-8">
-                {winner && (
-                  <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="p-4 rounded-xl border border-emerald-200 dark:border-emerald-500/20 bg-emerald-50 dark:bg-emerald-500/10 text-center">
-                    <div className="flex items-center justify-center gap-2">
-                      <Trophy className="w-4.5 h-4.5 text-emerald-500" />
-                      <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">
-                        @{winner.username} wins the showdown!
-                      </span>
-                    </div>
-                  </motion.div>
-                )}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                  {winner ? (
+                    <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex-1 p-4 rounded-xl border border-emerald-200 dark:border-emerald-500/20 bg-emerald-50 dark:bg-emerald-500/10 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <Trophy className="w-4.5 h-4.5 text-emerald-500" />
+                        <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">
+                          @{winner.username} wins the showdown!
+                        </span>
+                      </div>
+                    </motion.div>
+                  ) : <div />}
+                  <div className="flex flex-wrap justify-center gap-2">
+                    <button
+                      onClick={() => setIsRadarExportOpen(true)}
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold shadow-lg transition-all"
+                    >
+                      <Share2 className="w-4 h-4" />
+                      <span>Export Skill Radar</span>
+                    </button>
+                    <button
+                      onClick={() => setIsShareModalOpen(true)}
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold shadow-lg transition-all"
+                    >
+                      <Share2 className="w-4 h-4" />
+                      <span>Export Matchup Card</span>
+                    </button>
+                  </div>
+                </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative">
                   <ProfileCard dev={dev1} isWinner={winner?.id === dev1.id} />
@@ -632,6 +675,20 @@ function CompareDashboard() {
                   </div>
                   <ProfileCard dev={dev2} isWinner={winner?.id === dev2.id} />
                 </div>
+
+                <HeadToHeadCard
+                  first={dev1}
+                  second={dev2}
+                  history={headToHead.data}
+                  isLoading={headToHead.isPending && headToHead.fetchStatus !== "idle"}
+                  hasError={headToHead.isError}
+                />
+
+                <ComparisonMetricsTable
+                  dev1={dev1}
+                  dev2={dev2}
+                  headToHead={headToHead.data}
+                />
 
                 <div>
                   <h2 className="text-xs text-[#A1A1AA] uppercase tracking-widest font-medium mb-4">Stats Showdown</h2>
@@ -767,17 +824,23 @@ function CompareDashboard() {
                         developers={[
                           {
                             name: dev1.username,
-                            values: [dev1.stats.totalCommits, dev1.stats.totalPRs, dev1.stats.totalIssues, dev1.stats.totalPRs, dev1.stats.totalStars, dev1.stats.streak],
+                            values: [dev1.stats.totalCommits, dev1.stats.totalPRs, dev1.stats.totalIssues, reviews1, dev1.stats.totalStars, dev1.stats.streak],
                             color: { line: '#8b5cf6', area: 'rgba(139, 92, 246, 0.2)' }
                           },
                           {
                             name: dev2.username,
-                            values: [dev2.stats.totalCommits, dev2.stats.totalPRs, dev2.stats.totalIssues, dev2.stats.totalPRs, dev2.stats.totalStars, dev2.stats.streak],
+                            values: [dev2.stats.totalCommits, dev2.stats.totalPRs, dev2.stats.totalIssues, reviews2, dev2.stats.totalStars, dev2.stats.streak],
                             color: { line: '#06b6d4', area: 'rgba(6, 182, 212, 0.2)' }
                           }
                         ]}
                       />
                     </div>
+                    <p className="text-center text-xs">
+                      Code Reviews: @{dev1.username} {reviews1.toLocaleString()} · @{dev2.username} {reviews2.toLocaleString()}
+                      <span className="block font-medium text-foreground">
+                        {reviewLeader ? `@${reviewLeader.username} leads in code reviews` : "Code reviews tied"}
+                      </span>
+                    </p>
                   </div>
                 </div>
 
@@ -836,6 +899,20 @@ function CompareDashboard() {
                 })()}
 
               </div>
+
+              {/* Matchup Share Card Modal */}
+              <CompareShareCard
+                isOpen={isShareModalOpen}
+                onClose={() => setIsShareModalOpen(false)}
+                dev1={dev1}
+                dev2={dev2}
+              />
+              <RadarExportModal
+                isOpen={isRadarExportOpen}
+                onClose={() => setIsRadarExportOpen(false)}
+                first={dev1}
+                second={dev2}
+              />
             </motion.div>
           )
         )}

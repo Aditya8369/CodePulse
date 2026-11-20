@@ -3,6 +3,7 @@ import {
   ConflictException,
   Injectable,
   Logger,
+  Optional,
   ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -11,6 +12,8 @@ import { AuthResponseDto, RegisterDto } from './dto/auth.dto';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { SyncService } from '../sync/sync.service';
+import { TokenBlacklistService } from './token-blacklist.service';
+import { VaultService } from '../security/vault.service';
 import axios from 'axios';
 import { Prisma } from '@prisma/client';
 import {
@@ -52,9 +55,14 @@ export class AuthService {
     private readonly configService: ConfigService,
     private readonly jwtService: JwtService,
     private readonly syncService: SyncService,
+    private readonly blacklistService: TokenBlacklistService,
+    @Optional() private readonly vaultService?: VaultService,
   ) {}
 
-  async register(data: RegisterDto): Promise<AuthResponseDto> {
+  async register(
+    data: RegisterDto,
+    deviceFingerprint?: string,
+  ): Promise<AuthResponseDto> {
     const email = data.email.trim().toLowerCase();
     const existing = await this.prisma.user.findUnique({
       where: { authEmail: email },
@@ -80,7 +88,7 @@ export class AuthService {
           interests: data.interests ?? [],
         },
       });
-      return this.createAuthResponse(user);
+      return await this.createAuthResponse(user, deviceFingerprint);
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -97,6 +105,7 @@ export class AuthService {
   async authenticateWithPassword(
     rawEmail: string,
     password: string,
+    deviceFingerprint?: string,
   ): Promise<AuthResponseDto> {
     const email = rawEmail.trim().toLowerCase();
     const user = await this.prisma.user.findUnique({
@@ -109,7 +118,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password.');
     }
 
-    return this.createAuthResponse(user);
+    return await this.createAuthResponse(user, deviceFingerprint);
   }
 
   async requestPasswordReset(rawEmail: string): Promise<void> {
@@ -188,21 +197,180 @@ export class AuthService {
     });
   }
 
-  private createAuthResponse(user: {
-    id: string;
-    githubId: string | null;
-    username: string;
-    name: string | null;
-    email: string | null;
-  }): AuthResponseDto {
-    const accessToken = this.jwtService.sign({
-      sub: user.id,
-      githubId: user.githubId,
-      username: user.username,
-      email: user.email,
+  async refreshAccessToken(
+    refreshToken: string,
+    deviceFingerprint?: string,
+  ): Promise<AuthResponseDto> {
+    if (!refreshToken || typeof refreshToken !== 'string') {
+      throw new UnauthorizedException('Refresh token is required');
+    }
+
+    const tokenHash = this.blacklistService.hashToken(refreshToken);
+
+    // 1. Check if token itself is blacklisted
+    const isTokenBlacklisted =
+      await this.blacklistService.isTokenBlacklisted(refreshToken);
+    if (isTokenBlacklisted) {
+      const existing = await this.prisma.refreshToken.findUnique({
+        where: { tokenHash },
+      });
+      if (existing) {
+        // Token reuse or replay detected: revoke entire family immediately
+        await this.prisma.refreshToken.updateMany({
+          where: { familyId: existing.familyId },
+          data: { revokedAt: new Date() },
+        });
+        await this.blacklistService.blacklistFamily(existing.familyId);
+      }
+      throw new UnauthorizedException(
+        'Revoked refresh token reuse detected. Session terminated.',
+      );
+    }
+
+    // 2. Query token record from database
+    const tokenRecord = await this.prisma.refreshToken.findUnique({
+      where: { tokenHash },
+      include: { user: true },
     });
+
+    if (!tokenRecord) {
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
+
+    // 3. Check if token family is blacklisted
+    const isFamilyBlacklisted = await this.blacklistService.isFamilyBlacklisted(
+      tokenRecord.familyId,
+    );
+    if (isFamilyBlacklisted) {
+      throw new UnauthorizedException('Refresh token family has been revoked.');
+    }
+
+    // 4. Check for token reuse (already revoked token attempted to be used again)
+    if (tokenRecord.revokedAt !== null) {
+      // Replay attack detected: revoke entire token family immediately
+      await this.prisma.refreshToken.updateMany({
+        where: { familyId: tokenRecord.familyId },
+        data: { revokedAt: new Date() },
+      });
+      await this.blacklistService.blacklistFamily(tokenRecord.familyId);
+      await this.blacklistService.blacklistToken(refreshToken);
+      throw new UnauthorizedException(
+        'Token reuse detected. All sessions in this family have been revoked.',
+      );
+    }
+
+    // 5. Check if token is expired
+    if (tokenRecord.expiresAt <= new Date()) {
+      throw new UnauthorizedException('Refresh token has expired');
+    }
+
+    // 6. Token Rotation: Immediately invalidate old refresh token
+    await this.prisma.refreshToken.update({
+      where: { id: tokenRecord.id },
+      data: { revokedAt: new Date() },
+    });
+    await this.blacklistService.blacklistToken(refreshToken);
+
+    // 7. Issue fresh pair with sliding expiry preserving the familyId
+    return await this.createAuthResponse(
+      tokenRecord.user,
+      deviceFingerprint || tokenRecord.deviceFingerprint || undefined,
+      tokenRecord.familyId,
+    );
+  }
+
+  async logout(
+    refreshToken?: string,
+    accessToken?: string,
+  ): Promise<{ message: string }> {
+    if (refreshToken && typeof refreshToken === 'string') {
+      const tokenHash = this.blacklistService.hashToken(refreshToken);
+      const record = await this.prisma.refreshToken.findUnique({
+        where: { tokenHash },
+      });
+
+      if (record) {
+        // Revoke token family in DB and blacklist in Redis
+        await this.prisma.refreshToken.updateMany({
+          where: { familyId: record.familyId },
+          data: { revokedAt: new Date() },
+        });
+        await this.blacklistService.blacklistFamily(record.familyId);
+      }
+      await this.blacklistService.blacklistToken(refreshToken);
+    }
+
+    if (accessToken && typeof accessToken === 'string') {
+      await this.blacklistService.blacklistToken(accessToken, 900);
+    }
+
+    return { message: 'Successfully logged out' };
+  }
+
+  async isTokenBlacklisted(token: string): Promise<boolean> {
+    return this.blacklistService.isTokenBlacklisted(token);
+  }
+
+  private async createAuthResponse(
+    user: {
+      id: string;
+      githubId: string | null;
+      username: string;
+      name: string | null;
+      email: string | null;
+    },
+    deviceFingerprint?: string,
+    existingFamilyId?: string,
+  ): Promise<AuthResponseDto> {
+    const signSecret = this.vaultService
+      ? this.vaultService.getCurrentJwtSigningKey()
+      : undefined;
+
+    const accessToken = signSecret
+      ? this.jwtService.sign(
+          {
+            sub: user.id,
+            githubId: user.githubId,
+            username: user.username,
+            email: user.email,
+          },
+          { secret: signSecret },
+        )
+      : this.jwtService.sign({
+          sub: user.id,
+          githubId: user.githubId,
+          username: user.username,
+          email: user.email,
+        });
+
+    const refreshToken = randomBytes(40).toString('hex');
+    const tokenHash = this.blacklistService.hashToken(refreshToken);
+    const familyId = existingFamilyId || randomBytes(16).toString('hex');
+
+    // 7 days sliding expiry
+    const expiresAt = new Date(Date.now() + 7 * 24 * 3600 * 1000);
+
+    try {
+      await this.prisma.refreshToken.create({
+        data: {
+          userId: user.id,
+          tokenHash,
+          familyId,
+          deviceFingerprint: deviceFingerprint || null,
+          expiresAt,
+        },
+      });
+    } catch (error) {
+      this.logger.error(
+        'Failed to persist refresh token to database',
+        error instanceof Error ? error.message : String(error),
+      );
+    }
+
     return {
       accessToken,
+      refreshToken,
+      expiresIn: 900,
       user: {
         id: user.id,
         username: user.username,
@@ -265,13 +433,16 @@ export class AuthService {
     await transporter.sendMail({
       from,
       to: email,
-      subject: 'Reset your DevBattle password',
+      subject: 'Reset your CodePulse password',
       text: `Use this link within 30 minutes to reset your password: ${resetUrl}`,
-      html: `<p>We received a request to reset your DevBattle password.</p><p><a href="${resetUrl}">Reset your password</a></p><p>This link expires in 30 minutes and can only be used once. If you did not request this, you can ignore this email.</p>`,
+      html: `<p>We received a request to reset your CodePulse password.</p><p><a href="${resetUrl}">Reset your password</a></p><p>This link expires in 30 minutes and can only be used once. If you did not request this, you can ignore this email.</p>`,
     });
   }
 
-  async authenticateWithGitHub(code: string): Promise<AuthResponseDto> {
+  async authenticateWithGitHub(
+    code: string,
+    deviceFingerprint?: string,
+  ): Promise<AuthResponseDto> {
     try {
       if (!code) {
         throw new UnauthorizedException('Invalid GitHub code');
@@ -366,23 +537,8 @@ export class AuthService {
           ),
         );
 
-      // 5. Return JWT
-      const payload = {
-        sub: user.id,
-        githubId: user.githubId,
-        username: user.username,
-      };
-      const jwtToken = this.jwtService.sign(payload);
-
-      return {
-        accessToken: jwtToken,
-        user: {
-          id: user.id,
-          username: user.username,
-          name: user.name,
-          email: user.email,
-        },
-      };
+      // 5. Return JWT with rotating refresh token
+      return await this.createAuthResponse(user, deviceFingerprint);
     } catch (error: unknown) {
       if (error instanceof ServiceUnavailableException) {
         throw error;

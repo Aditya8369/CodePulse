@@ -5,8 +5,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ThemeFavicon } from "@/components/layout/theme-favicon";
+import { ColorVisionSync } from "@/components/theme/color-vision-sync";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "sonner";
+import { LocalizationProvider } from "@/components/layout/language-selector";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -30,9 +32,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
         disableTransitionOnChange
       >
         <ThemeFavicon />
-        <TooltipProvider delay={0}>
-          {children}
-        </TooltipProvider>
+        <ColorVisionSync />
+        <LocalizationProvider>
+          <TooltipProvider delay={0}>
+            {children}
+          </TooltipProvider>
+        </LocalizationProvider>
         <Toaster
           theme="dark"
           position="bottom-right"

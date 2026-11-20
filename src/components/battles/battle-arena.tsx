@@ -183,7 +183,7 @@ function FighterCard({
       transition={{ duration: 0.5, type: "spring" }}
       className={cn(
         "glass-card rounded-[32px] p-8 relative overflow-hidden",
-        isWinner && "ring-2 ring-amber-400/50 shadow-[0_0_50px_rgba(251,191,36,0.15)]"
+        isWinner && "ring-2 ring-[var(--status-success)]"
       )}
     >
       {/* Winner Stamp */}
@@ -194,7 +194,7 @@ function FighterCard({
             animate={{ scale: 1, opacity: 1, rotate: -15 }}
             className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none"
           >
-            <div className="border-4 border-amber-400 text-amber-400 text-5xl font-black px-6 py-2 rounded-xl backdrop-blur-sm bg-black/20 shadow-2xl">
+            <div className="border-4 border-[var(--status-success)] text-[var(--status-success)] text-5xl font-black px-6 py-2 rounded-xl bg-card shadow-2xl">
               WINNER
             </div>
           </motion.div>

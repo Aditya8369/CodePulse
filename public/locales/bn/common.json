@@ -1,0 +1,20 @@
+{
+  "app.name": "CodePulse",
+  "app.tagline": "GitHub ডেভেলপার অ্যানালিটিক্স এবং গ্যামিফিকেশন",
+  "nav.dashboard": "ড্যাশবোর্ড",
+  "nav.repositories": "রিপোজিটরি",
+  "nav.leaderboard": "লিডারবোর্ড",
+  "nav.battles": "ব্যাটল",
+  "nav.challenges": "চ্যালেঞ্জ",
+  "nav.analytics": "অ্যানালিটিক্স",
+  "nav.settings": "সেটিংস",
+  "topbar.searchPlaceholder": "ডেভেলপার, রিপোজিটরি বা কমান্ড খুঁজুন...",
+  "topbar.languageSelector": "ভাষা নির্বাচন করুন",
+  "topbar.rtlBadge": "RTL",
+  "dashboard.welcome": "স্বাগতম, {name}!",
+  "dashboard.commitSummary": "{count, plural, =0 {আজ কোনো কমিট নেই} one {আজ #টি কমিট} other {আজ #টি কমিট}}",
+  "dashboard.streakStatus": "{days, plural, =0 {আজই আপনার স্ট্রিক শুরু করুন} one {# দিনের সক্রিয় স্ট্রিক} other {# দিনের সক্রিয় স্ট্রিক}}",
+  "dashboard.mentorGreeting": "{gender, select, female {তিনি ডায়মন্ড লিগে পৌঁছেছেন!} male {তিনি ডায়মন্ড লিগে পৌঁছেছেন!} other {তারা ডায়মন্ড লিগে পৌঁছেছেন!}}",
+  "battles.activeCount": "{count, plural, =0 {কোনো সক্রিয় ব্যাটল নেই} one {#টি সক্রিয় ব্যাটল} other {#টি সক্রিয় ব্যাটল}}",
+  "notifications.unread": "{count, plural, =0 {সব পড়া হয়েছে} one {#টি অপঠিত বিজ্ঞপ্তি} other {#টি অপঠিত বিজ্ঞপ্তি}}"
+}
