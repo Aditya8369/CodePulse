@@ -235,6 +235,65 @@ describe('ReplicaBalancerService', () => {
     });
   });
 
+  describe('Write vs Read Query Classification for Primary Routing (#551)', () => {
+    it('should correctly classify mutating SQL and Prisma write queries for primary routing', () => {
+      expect(service.isWriteQuery('INSERT INTO users VALUES (...)')).toBe(true);
+      expect(service.isWriteQuery('UPDATE battles SET status = ...')).toBe(true);
+      expect(service.isWriteQuery('DELETE FROM repositories WHERE ...')).toBe(true);
+      expect(service.isWriteQuery('user.create')).toBe(true);
+      expect(service.isWriteQuery('battle.update')).toBe(true);
+      expect(service.isWriteQuery('userBadge.deleteMany')).toBe(true);
+
+      // Read queries should return false
+      expect(service.isWriteQuery('SELECT * FROM users')).toBe(false);
+      expect(service.isWriteQuery('user.findUnique')).toBe(false);
+      expect(service.isWriteQuery('repository.findMany')).toBe(false);
+    });
+  });
+
+  describe('Multi-Policy Load Balancing (Round-Robin & Least-Connections) (#551)', () => {
+    it('should cycle through replicas in round-robin policy', () => {
+      service.setBalancingPolicy('ROUND_ROBIN');
+      const first = service.selectOptimalReplica('ROUND_ROBIN');
+      const second = service.selectOptimalReplica('ROUND_ROBIN');
+      const third = service.selectOptimalReplica('ROUND_ROBIN');
+
+      expect(first.id).toBe('replica-us-east');
+      expect(second.id).toBe('replica-eu-west');
+      expect(third.id).toBe('replica-ap-south');
+    });
+
+    it('should select replica with least active connections', () => {
+      service.setBalancingPolicy('LEAST_CONNECTIONS');
+      const east = service.getReplicaStatus('replica-us-east')!;
+      const west = service.getReplicaStatus('replica-eu-west')!;
+      const south = service.getReplicaStatus('replica-ap-south')!;
+
+      east.activeQueriesCount = 10;
+      west.activeQueriesCount = 2; // lowest
+      south.activeQueriesCount = 5;
+
+      const chosen = service.selectOptimalReplica('LEAST_CONNECTIONS');
+      expect(chosen.id).toBe('replica-eu-west');
+    });
+
+    it('should support dynamic replication lag tolerance (e.g. 500ms)', async () => {
+      service.setMaxReplicationLag(500);
+      expect(service.getMaxReplicationLag()).toBe(500);
+
+      // Lag of 250ms is within 500ms threshold -> should remain healthy
+      mockAdapter.nodeLags.set('replica-eu-west', 250);
+      await service.runClusterHealthProbe();
+      expect(service.getReplicaStatus('replica-eu-west')!.isIsolated).toBe(false);
+
+      // Lag of 550ms exceeds 500ms threshold -> should isolate
+      mockAdapter.nodeLags.set('replica-eu-west', 550);
+      await service.runClusterHealthProbe();
+      expect(service.getReplicaStatus('replica-eu-west')!.isIsolated).toBe(true);
+      expect(service.getReplicaStatus('replica-eu-west')!.isolationReason).toContain('exceeds threshold of 500ms');
+    });
+  });
+
   describe('Prometheus Metrics Export', () => {
     it('should export Prometheus metrics format for replica cluster load and lag', () => {
       const metrics = service.exportPrometheusMetrics();
