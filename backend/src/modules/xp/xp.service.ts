@@ -123,4 +123,43 @@ export class XpService {
       totalPages: Math.ceil(total / limit),
     };
   }
+
+  /**
+   * Safely deducts XP for wagers, staking pools, or fees with transactional row locking
+   */
+  async deductXp(dto: { userId: string; amount: number; reason: string; source?: string }) {
+    if (!Number.isInteger(dto.amount) || dto.amount <= 0) {
+      throw new BadRequestException('Amount must be a positive integer.');
+    }
+
+    return this.prisma.$transaction(async tx => {
+      await tx.$queryRaw`SELECT id FROM users WHERE id = ${dto.userId} FOR UPDATE`;
+      const rating = await tx.developerRating.findUnique({ where: { userId: dto.userId } });
+      if (!rating) throw new NotFoundException('Developer rating not found.');
+
+      if (rating.xp < dto.amount) {
+        throw new BadRequestException('Insufficient XP balance.');
+      }
+
+      const updated = await tx.developerRating.update({
+        where: { userId: dto.userId },
+        data: { xp: rating.xp - dto.amount },
+      });
+
+      const transaction = await tx.xpTransaction.create({
+        data: {
+          userId: dto.userId,
+          amount: -dto.amount,
+          source: dto.source || 'WAGER_DEDUCTION',
+          description: dto.reason,
+        },
+      });
+
+      return {
+        success: true,
+        remainingXp: updated.xp,
+        transaction,
+      };
+    });
+  }
 }
