@@ -16,11 +16,12 @@ describe('AnalyticsExportModal Component', () => {
       <AnalyticsExportModal
         isOpen={true}
         onClose={vi.fn()}
-        metrics={mockMetrics}
+        stats={mockMetrics}
+        currentUser={{ id: 'test-user', username: 'testcoder', name: 'Test Coder' }}
       />
     );
 
-    expect(screen.getByText(/Export Analytics Report/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Export Developer Analytics' })).toBeInTheDocument();
   });
 
   it('does not render when isOpen is false', () => {
@@ -28,7 +29,8 @@ describe('AnalyticsExportModal Component', () => {
       <AnalyticsExportModal
         isOpen={false}
         onClose={vi.fn()}
-        metrics={mockMetrics}
+        stats={mockMetrics}
+        currentUser={{ id: 'test-user', username: 'testcoder', name: 'Test Coder' }}
       />
     );
 
@@ -41,11 +43,12 @@ describe('AnalyticsExportModal Component', () => {
       <AnalyticsExportModal
         isOpen={true}
         onClose={handleClose}
-        metrics={mockMetrics}
+        stats={mockMetrics}
+        currentUser={{ id: 'test-user', username: 'testcoder', name: 'Test Coder' }}
       />
     );
 
-    const closeBtn = screen.getByRole('button', { name: /close|cancel/i }) || screen.getAllByRole('button')[0];
+    const closeBtn = screen.getByRole('button', { name: 'Close' });
     fireEvent.click(closeBtn);
     expect(handleClose).toHaveBeenCalled();
   });

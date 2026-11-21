@@ -32,7 +32,7 @@ describe('BattleReport Component Flow', () => {
       />
     );
 
-    expect(screen.getByText(/Alex Mercer/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Alex Mercer' })).toBeInTheDocument();
   });
 
   it('triggers onRematch callback when action button is clicked', () => {

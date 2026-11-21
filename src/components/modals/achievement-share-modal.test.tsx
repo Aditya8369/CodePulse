@@ -28,7 +28,7 @@ describe('AchievementShareModal Component', () => {
     );
 
     expect(screen.getByText(/CodePulse Champion/i)).toBeInTheDocument();
-    expect(screen.getByText(/top 1% global leaderboards/i)).toBeInTheDocument();
+    expect(screen.getByText('Ranked in the top 1% global leaderboards')).toBeInTheDocument();
   });
 
   it('triggers clipboard copy when copy button is pressed', async () => {
