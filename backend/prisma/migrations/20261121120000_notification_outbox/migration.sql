@@ -14,7 +14,7 @@ CREATE TABLE "notification_outbox" (
   "lastError" TEXT,
   "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT "notification_outbox_pkey" PRIMARY KEY ("id"),
-  CONSTRAINT "notification_outbox_user_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT "notification_outbox_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT "notification_outbox_status_check" CHECK ("status" IN ('PENDING','PROCESSING','DELIVERED','FAILED')),
   CONSTRAINT "notification_outbox_attempts_check" CHECK ("attempts" >= 0),
   CONSTRAINT "notification_outbox_payload_check" CHECK (

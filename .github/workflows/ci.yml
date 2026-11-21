@@ -30,6 +30,12 @@ jobs:
       - name: 📦 Install Frontend Dependencies
         run: npm ci
 
+      - name: Install backend dependencies used by existing cross-package checks
+        run: npm ci --prefix backend
+        env:
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/postgres"
+          DIRECT_URL: "postgresql://postgres:postgres@localhost:5432/postgres"
+
       - name: ⚡ Restore Next.js Build Cache
         uses: actions/cache@v6
         with:
