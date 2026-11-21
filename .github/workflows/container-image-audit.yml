@@ -33,7 +33,8 @@ jobs:
   container-image-audit:
     name: 🔍 Scan Container Image with Trivy & Grype
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    # Cold image builds plus two scanner database downloads exceed five minutes.
+    timeout-minutes: 15
 
     env:
       IMAGE_TAG: codepulse-backend:audit-${{ github.sha }}
