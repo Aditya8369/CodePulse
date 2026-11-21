@@ -13,6 +13,7 @@ import { RepoStarGrowthChart } from "@/components/charts/repo-star-growth-chart"
 import { RepoCloneDropdown } from "@/components/repositories/repo-clone-dropdown";
 import { RepoHealthScorecard } from "@/components/repositories/repo-health-scorecard";
 import { CommitPunchcard } from "@/components/repositories/commit-punchcard";
+import { RepositoryMetricsCard } from "@/components/repositories/repository-metrics-card";
 import {
   Tooltip,
   TooltipTrigger,
@@ -696,6 +697,26 @@ export default function RepositoryDeepAnalysisPage() {
             transition={{ duration: 0.3 }}
           >
             <StaggerContainer className="space-y-8">
+              {/* ── Star Growth & Velocity Forecast ── */}
+              <StaggerItem>
+                <RepositoryMetricsCard
+                  commitsCount={repo.commits}
+                  openIssuesCount={repo.issues}
+                  openPrsCount={Math.max(1, Math.round(repo.issues * 0.4))}
+                  languages={[
+                    { name: repo.language || "TypeScript", percentage: 70, color: repo.languageColor || "#3178c6" },
+                    { name: "JavaScript", percentage: 20, color: "#f7df1e" },
+                    { name: "Other", percentage: 10, color: "#94a3b8" },
+                  ]}
+                  hygieneChecklist={{
+                    hasReadme: Boolean(repo.description),
+                    hasLicense: true,
+                    hasCiCd: true,
+                    hasContributing: true,
+                  }}
+                />
+              </StaggerItem>
+
               {/* ── Star Growth & Velocity Forecast ── */}
               <StaggerItem>
                 <RepoStarGrowthChart repo={repo} />
