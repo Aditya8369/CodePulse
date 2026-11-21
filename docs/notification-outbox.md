@@ -31,3 +31,11 @@ The default command lists at most 25 failed events without message bodies.
 Retry resets only FAILED rows and preserves the original event/inbox key.
 The scheduled worker picks the event up after repair. These commands require
 operator database access and are not exposed to normal application users.
+
+## Regression checks
+
+Run `npm run test:notification-outbox` from `backend`. This runs the producer,
+worker, inbox ownership and collaboration regression suites, then applies the
+migration to an isolated PGlite PostgreSQL-compatible database to check rollback,
+lease fencing, expired claims and read-state preservation. The backend CI job
+runs this command after build and boot verification; it needs no production DB.

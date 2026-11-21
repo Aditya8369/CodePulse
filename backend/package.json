@@ -20,7 +20,8 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "test:migrations": "node --test test/sync-migration.test.mjs",
     "test:xp-migration": "node --test test/xp-ledger-migration.test.mjs",
-    "test:boot": "node scripts/smoke-boot.mjs"
+    "test:boot": "node scripts/smoke-boot.mjs",
+    "test:notification-outbox": "jest --runInBand --runTestsByPath src/modules/notifications/notification-outbox.service.spec.ts src/modules/notifications/notifications.service.spec.ts src/modules/xp/xp.service.spec.ts src/modules/challenges/challenges-lifecycle.spec.ts src/modules/challenges/challenges-timeline.spec.ts src/modules/collab/crdt-collab.service.spec.ts && node --test test/notification-outbox-migration.test.mjs"
   },
   "dependencies": {
     "@kubernetes/client-node": "^2.0.2",

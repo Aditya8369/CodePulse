@@ -91,3 +91,6 @@ jobs:
           NODE_ENV: "test"
           JWT_SECRET: "ci-smoke-test-jwt-secret-xyz12345678901234567890"
         run: npm run test:boot
+
+      - name: Verify notification outbox transactions and replay
+        run: npm run test:notification-outbox
