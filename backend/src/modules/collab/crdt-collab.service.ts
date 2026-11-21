@@ -130,7 +130,7 @@ export class CrdtCollabService implements OnModuleInit, OnModuleDestroy {
    */
   public joinSession(
     docId: string,
-    participant: Omit<CollabParticipant, 'lastSeenMs' | 'mode'> & { role?: CollabRole; mode?: CollabPermissionMode },
+    participant: Omit<CollabParticipant, 'lastSeenMs' | 'mode' | 'role'> & { role?: CollabRole; mode?: CollabPermissionMode },
   ): { session: CrdtSessionDocument; participant: CollabParticipant; peers: CollabParticipant[] } {
     const session = this.getOrCreateSession(docId);
     const roomParticipants = this.participants.get(docId)!;

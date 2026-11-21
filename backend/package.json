@@ -20,7 +20,8 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "test:migrations": "node --test test/sync-migration.test.mjs",
     "test:xp-migration": "node --test test/xp-ledger-migration.test.mjs",
-    "test:boot": "node scripts/smoke-boot.mjs"
+    "test:boot": "node scripts/smoke-boot.mjs",
+    "test:notification-outbox": "jest --runInBand --runTestsByPath src/modules/notifications/notification-outbox.service.spec.ts src/modules/notifications/notifications.service.spec.ts src/modules/xp/xp.service.spec.ts src/modules/challenges/challenges-lifecycle.spec.ts src/modules/challenges/challenges-timeline.spec.ts src/modules/collab/crdt-collab.service.spec.ts && node --test test/notification-outbox-migration.test.mjs"
   },
   "dependencies": {
     "@kubernetes/client-node": "^2.0.2",
@@ -57,6 +58,7 @@
     "passport-jwt": "^4.0.1",
     "pg": "^8.22.0",
     "prom-client": "^15.1.3",
+    "react": "19.2.4",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "socket.io": "^4.8.1",
@@ -76,6 +78,7 @@
     "@types/node": "^24.0.0",
     "@types/nodemailer": "^8.0.2",
     "@types/passport-jwt": "^4.0.1",
+    "@types/react": "^19.3.0",
     "@types/supertest": "^7.0.0",
     "cross-env": "^10.1.0",
     "eslint": "^10.15.0",

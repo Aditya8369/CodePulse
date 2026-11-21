@@ -1,13 +1,10 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('DevBattles Arena Flow', () => {
-  test('renders battles overview page and quick match button', async ({ page }) => {
+test.describe('DevBattles authentication boundary', () => {
+  test('redirects an unauthenticated battle visitor to login', async ({ page }) => {
     await page.goto('/battles');
-
-    const battleHeader = page.getByRole('heading', { name: /Battles|Arena/i }).first();
-    await expect(battleHeader).toBeVisible();
-
-    const createMatchBtn = page.getByRole('button', { name: /Create Battle|Quick Match/i }).first();
-    await expect(createMatchBtn).toBeVisible();
+    await expect(page).toHaveURL(/\/login\?/);
+    expect(new URL(page.url()).searchParams.get('redirectTo')).toBe('/battles');
+    await expect(page.getByRole('button', { name: /Continue with GitHub/i })).toBeVisible();
   });
 });

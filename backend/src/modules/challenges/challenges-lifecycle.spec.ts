@@ -29,8 +29,8 @@ describe('Challenges Lifecycle State Machine & Concurrency Engine (#502)', () =>
       developerRating: {
         updateMany: jest.fn(),
       },
-      notification: {
-        create: jest.fn(),
+      notificationOutbox: {
+        upsert: jest.fn(),
       },
       activity: {
         create: jest.fn(),
@@ -49,7 +49,7 @@ describe('Challenges Lifecycle State Machine & Concurrency Engine (#502)', () =>
   });
 
   describe('calculateExpiration multi-tier duration engine', () => {
-    const fixedNow = new Date('2026-03-04T10:00:00.000Z'); // Wednesday
+    const fixedNow = new Date(2026, 2, 4, 10); // Wednesday
 
     it('calculates DAILY expiration at 23:59:59.999 of the same day', () => {
       const exp = service.calculateExpiration('DAILY' as ChallengeType, fixedNow);
@@ -70,12 +70,9 @@ describe('Challenges Lifecycle State Machine & Concurrency Engine (#502)', () =>
       expect(exp.getDate()).toBe(31); // March has 31 days
     });
 
-    it('calculates SEASONAL expiration ~30 days in the future', () => {
+    it('expires SEASONAL challenges at the end of the thirtieth calendar day', () => {
       const exp = service.calculateExpiration('SEASONAL' as ChallengeType, fixedNow);
-      const diffDays = Math.round(
-        (exp.getTime() - fixedNow.getTime()) / (1000 * 60 * 60 * 24),
-      );
-      expect(diffDays).toBe(30);
+      expect(exp).toEqual(new Date(2026, 3, 3, 23, 59, 59, 999));
     });
   });
 
@@ -126,7 +123,7 @@ describe('Challenges Lifecycle State Machine & Concurrency Engine (#502)', () =>
           }),
         }),
       );
-      expect(prisma.notification.create).toHaveBeenCalled();
+      expect(prisma.notificationOutbox.upsert).toHaveBeenCalled();
       expect(prisma.activity.create).toHaveBeenCalled();
     });
 

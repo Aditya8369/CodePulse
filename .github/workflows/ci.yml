@@ -30,6 +30,12 @@ jobs:
       - name: 📦 Install Frontend Dependencies
         run: npm ci
 
+      - name: Install backend dependencies used by existing cross-package checks
+        run: npm ci --prefix backend
+        env:
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/postgres"
+          DIRECT_URL: "postgresql://postgres:postgres@localhost:5432/postgres"
+
       - name: ⚡ Restore Next.js Build Cache
         uses: actions/cache@v6
         with:
@@ -85,3 +91,6 @@ jobs:
           NODE_ENV: "test"
           JWT_SECRET: "ci-smoke-test-jwt-secret-xyz12345678901234567890"
         run: npm run test:boot
+
+      - name: Verify notification outbox transactions and replay
+        run: npm run test:notification-outbox

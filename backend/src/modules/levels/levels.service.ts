@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { Prisma, Tier, type DeveloperRating } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { enqueueNotification } from '../notifications/notification-outbox';
 
 export function tierForLevel(level: number): Tier {
   if (level >= 50) return Tier.GRANDMASTER;
@@ -67,8 +68,12 @@ export class LevelsService {
     if (level > rating.level) {
       const title = `Level ${level} reached`;
       const message = `Advanced from level ${rating.level} to ${level} (${tier}).`;
-      await transaction.notification.create({
-        data: { userId, type: 'LEVEL_UP', title, message },
+      await enqueueNotification(transaction, {
+        eventKey: `level-up:${userId}:${level}`,
+        userId,
+        type: 'LEVEL_UP',
+        title,
+        message,
       });
       await transaction.activity.create({
         data: {

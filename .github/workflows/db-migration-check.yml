@@ -44,6 +44,7 @@ jobs:
       - name: Run Zero-Downtime Migration Verification Script
         env:
           DATABASE_URL: "postgresql://test_user:test_password@localhost:5432/codepulse_test?schema=public"
+          DIRECT_URL: "postgresql://test_user:test_password@localhost:5432/codepulse_test?schema=public"
         run: |
           chmod +x backend/scripts/migrate-verify.sh
           ./backend/scripts/migrate-verify.sh

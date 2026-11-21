@@ -1,10 +1,16 @@
+import { enqueueNotification } from '../notifications/notification-outbox';
 import {
   BadRequestException,
   Injectable,
   NotFoundException,
   Optional,
 } from '@nestjs/common';
-import { ChallengeStatus, ChallengeType } from '@prisma/client';
+import {
+  ChallengeStatus,
+  ChallengeType,
+  Difficulty,
+  type Prisma,
+} from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateChallengeDto } from './dto/challenges.dto';
 import { XpService } from '../xp/xp.service';
@@ -53,7 +59,7 @@ export class ChallengesService {
     });
 
     for (const challenge of activeChallenges) {
-      const processSingle = async (tx: any) => {
+      const processSingle = async (tx: Prisma.TransactionClient) => {
         let userChallenge = await tx.userChallenge.findUnique({
           where: {
             userId_challengeId: {
@@ -104,13 +110,12 @@ export class ChallengesService {
         });
 
         if (isCompleted) {
-          await tx.notification.create({
-            data: {
-              userId,
-              type: 'CHALLENGE',
-              title: 'Challenge Completed! 🎉',
-              message: `You completed the "${challenge.title}" challenge and earned ${challenge.xpReward} XP.`,
-            },
+          await enqueueNotification(tx, {
+            eventKey: `challenge-completed:${userChallenge.id}`,
+            userId,
+            type: 'CHALLENGE',
+            title: 'Challenge Completed! 🎉',
+            message: `You completed the "${challenge.title}" challenge and earned ${challenge.xpReward} XP.`,
           });
 
           await tx.activity.create({
@@ -124,12 +129,15 @@ export class ChallengesService {
           });
 
           if (this.xpService) {
-            await this.xpService.addXp({
-              userId,
-              amount: challenge.xpReward,
-              source: 'CHALLENGE_COMPLETE',
-              reason: `Completed challenge: ${challenge.title}`,
-            });
+            await this.xpService.addXp(
+              {
+                userId,
+                amount: challenge.xpReward,
+                source: 'CHALLENGE_COMPLETE',
+                reason: `Completed challenge: ${challenge.title}`,
+              },
+              tx,
+            );
           } else {
             await tx.developerRating.updateMany({
               where: { userId },
@@ -192,12 +200,15 @@ export class ChallengesService {
       const xpReward = userChallenge.challenge.xpReward;
 
       if (this.xpService) {
-        await this.xpService.addXp({
-          userId,
-          amount: xpReward,
-          source: 'CHALLENGE_CLAIM',
-          reason: `Claimed reward for challenge: ${userChallenge.challenge.title}`,
-        });
+        await this.xpService.addXp(
+          {
+            userId,
+            amount: xpReward,
+            source: 'CHALLENGE_CLAIM',
+            reason: `Claimed reward for challenge: ${userChallenge.challenge.title}`,
+          },
+          tx,
+        );
       } else {
         await tx.developerRating.updateMany({
           where: { userId },
@@ -253,7 +264,7 @@ export class ChallengesService {
         title: 'Daily Committer',
         description: 'Make 3 commits today',
         type: 'DAILY' as ChallengeType,
-        difficulty: 'EASY' as any,
+        difficulty: Difficulty.EASY,
         xpReward: 50,
         target: 3,
         category: 'COMMITS',
@@ -263,7 +274,7 @@ export class ChallengesService {
         title: 'Bug Squasher',
         description: 'Close 1 issue today',
         type: 'DAILY' as ChallengeType,
-        difficulty: 'MEDIUM' as any,
+        difficulty: Difficulty.MEDIUM,
         xpReward: 70,
         target: 1,
         category: 'ISSUES',
@@ -273,7 +284,7 @@ export class ChallengesService {
         title: 'Weekly Warrior',
         description: 'Make 15 commits this week',
         type: 'WEEKLY' as ChallengeType,
-        difficulty: 'MEDIUM' as any,
+        difficulty: Difficulty.MEDIUM,
         xpReward: 200,
         target: 15,
         category: 'COMMITS',
@@ -283,7 +294,7 @@ export class ChallengesService {
         title: 'Monthly Master',
         description: 'Earn 1000 stars this month',
         type: 'MONTHLY' as ChallengeType,
-        difficulty: 'HARD' as any,
+        difficulty: Difficulty.HARD,
         xpReward: 1000,
         target: 1000,
         category: 'STARS',
@@ -293,7 +304,7 @@ export class ChallengesService {
         title: 'Winter Coder',
         description: 'Contribute for 30 days during winter season',
         type: 'SEASONAL' as ChallengeType,
-        difficulty: 'LEGENDARY' as any,
+        difficulty: Difficulty.LEGENDARY,
         xpReward: 5000,
         target: 30,
         category: 'STREAK',

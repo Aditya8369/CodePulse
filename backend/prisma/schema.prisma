@@ -43,6 +43,7 @@ model User {
   followers           Follows[]         @relation("following")
   languages           LanguageStat[]
   notifications       Notification[]
+  notificationOutbox  NotificationOutbox[]
   repositories        Repository[]
   achievements        UserAchievement[]
   badges              UserBadge[]
@@ -396,6 +397,29 @@ model Activity {
 
   @@unique([userId, githubEventId])
   @@map("activities")
+}
+
+model NotificationOutbox {
+  id             String           @id @default(uuid())
+  eventKey       String
+  userId         String
+  type           NotificationType
+  title          String
+  message        String
+  status         String           @default("PENDING")
+  attempts       Int              @default(0)
+  nextAttemptAt  DateTime         @default(now())
+  leaseToken     String?
+  leaseExpiresAt DateTime?
+  deliveredAt    DateTime?
+  lastError      String?
+  createdAt      DateTime         @default(now())
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventKey, userId])
+  @@index([status, nextAttemptAt])
+  @@index([status, leaseExpiresAt])
+  @@map("notification_outbox")
 }
 
 model Notification {

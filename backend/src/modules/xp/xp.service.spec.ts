@@ -33,9 +33,9 @@ function fixture() {
         state.ledger.push({ ...data });
       }),
     },
-    notification: {
-      create: jest.fn(async ({ data }: any) => {
-        state.notices.push({ ...data });
+    notificationOutbox: {
+      upsert: jest.fn(async ({ create }: any) => {
+        state.notices.push({ ...create });
       }),
     },
     activity: {
@@ -142,9 +142,9 @@ describe('atomic XP awards and tier progression', () => {
     expect(f.tx.$queryRaw).toHaveBeenCalledTimes(20);
   });
   it('ledger and level-notification failures roll back all award state', async () => {
-    for (const part of ['xpTransaction', 'notification']) {
+    for (const part of ['xpTransaction', 'notificationOutbox']) {
       const f = fixture();
-      f.tx[part].create.mockRejectedValueOnce(new Error('injected failure'));
+      f.tx[part][part === 'xpTransaction' ? 'create' : 'upsert'].mockRejectedValueOnce(new Error('injected failure'));
       await expect(
         f.service.addXp({ userId: 'user', amount: 100, reason: 'rollback' }),
       ).rejects.toThrow('injected failure');
