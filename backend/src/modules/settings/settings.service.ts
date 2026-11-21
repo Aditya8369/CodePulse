@@ -110,15 +110,15 @@ export class SettingsService {
   async getUserSettings(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { settings: true },
+      select: { settings: true, userSettings: true },
     });
     if (!user) throw new NotFoundException('User not found');
-    return user.settings;
+    return user.userSettings || user.settings;
   }
 
   async updateUserSettings(userId: string, value: unknown) {
     const input = record(value);
-    if (!input || (!('appearance' in input) && !('notifications' in input))) {
+    if (!input || (!('appearance' in input) && !('notifications' in input) && !('privacy' in input))) {
       throw new BadRequestException('No settings provided');
     }
     const user = await this.prisma.user.findUnique({
@@ -138,12 +138,65 @@ export class SettingsService {
           ? validateNotifications(input.notifications)
           : {}),
       },
+      privacy: typeof input.privacy === 'string' ? input.privacy : (previous.privacy || 'public'),
     };
     const updated = await this.prisma.user.update({
       where: { id: userId },
       data: { settings: next as Prisma.InputJsonValue },
       select: { settings: true },
     });
+
+    // Also persist strongly typed settings to UserSettings table if available
+    try {
+      const appearance = record(next.appearance) ?? {};
+      const notifications = record(next.notifications) ?? {};
+      const prismaAny = this.prisma as any;
+      if (prismaAny.userSettings) {
+        await prismaAny.userSettings.upsert({
+          where: { userId },
+          create: {
+            userId,
+            theme: String(appearance.theme || 'dark'),
+            accentColor: String(appearance.accentColor || 'purple'),
+            colorVisionTheme: String(appearance.colorVisionTheme || 'normal'),
+            developerTheme: String(appearance.developerTheme || 'default'),
+            defaultLandingTab: String(appearance.defaultLandingTab || 'dashboard'),
+            compactTableView: Boolean(appearance.compactTableView ?? false),
+            reducedMotion: Boolean(appearance.reducedMotion ?? false),
+            notificationsEnabled: true,
+            emailAlerts: Boolean(notifications.weeklyDigest ?? false),
+            soundEffectsEnabled: true,
+            battleChallenges: Boolean(notifications.battleChallenges ?? true),
+            weeklyDigest: Boolean(notifications.weeklyDigest ?? true),
+            achievementUnlocks: Boolean(notifications.achievementUnlocks ?? true),
+            leaderboardUpdates: Boolean(notifications.leaderboardUpdates ?? true),
+            challengeReminders: Boolean(notifications.challengeReminders ?? true),
+            productUpdates: Boolean(notifications.productUpdates ?? false),
+            privacy: String(next.privacy || 'public'),
+          },
+          update: {
+            theme: appearance.theme ? String(appearance.theme) : undefined,
+            accentColor: appearance.accentColor ? String(appearance.accentColor) : undefined,
+            colorVisionTheme: appearance.colorVisionTheme ? String(appearance.colorVisionTheme) : undefined,
+            developerTheme: appearance.developerTheme ? String(appearance.developerTheme) : undefined,
+            defaultLandingTab: appearance.defaultLandingTab ? String(appearance.defaultLandingTab) : undefined,
+            compactTableView: typeof appearance.compactTableView === 'boolean' ? appearance.compactTableView : undefined,
+            reducedMotion: typeof appearance.reducedMotion === 'boolean' ? appearance.reducedMotion : undefined,
+            emailAlerts: typeof notifications.weeklyDigest === 'boolean' ? notifications.weeklyDigest : undefined,
+            battleChallenges: typeof notifications.battleChallenges === 'boolean' ? notifications.battleChallenges : undefined,
+            weeklyDigest: typeof notifications.weeklyDigest === 'boolean' ? notifications.weeklyDigest : undefined,
+            achievementUnlocks: typeof notifications.achievementUnlocks === 'boolean' ? notifications.achievementUnlocks : undefined,
+            leaderboardUpdates: typeof notifications.leaderboardUpdates === 'boolean' ? notifications.leaderboardUpdates : undefined,
+            challengeReminders: typeof notifications.challengeReminders === 'boolean' ? notifications.challengeReminders : undefined,
+            productUpdates: typeof notifications.productUpdates === 'boolean' ? notifications.productUpdates : undefined,
+            privacy: next.privacy ? String(next.privacy) : undefined,
+          },
+        });
+      }
+    } catch {
+      // Graceful fallback to User.settings json
+    }
+
     return updated.settings;
   }
 }

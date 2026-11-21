@@ -49,6 +49,7 @@ model User {
   challenges          UserChallenge[]
   passwordResetTokens PasswordResetToken[]
   refreshTokens       RefreshToken[]
+  userSettings        UserSettings?
   mentorshipProfile   MentorshipProfile?
   mentorSessions      ShadowCodingSession[] @relation("MentorSessions")
   apprenticeSessions  ShadowCodingSession[] @relation("ApprenticeSessions")
@@ -920,4 +921,31 @@ model CompetitiveRating {
   @@index([eloRating(sort: Desc)])
   @@index([seasonId, eloRating(sort: Desc)])
   @@map("competitive_ratings")
+}
+
+model UserSettings {
+  id                   String   @id @default(uuid())
+  userId               String   @unique
+  theme                String   @default("dark")
+  accentColor          String   @default("purple")
+  colorVisionTheme     String   @default("normal")
+  developerTheme       String   @default("default")
+  defaultLandingTab    String   @default("dashboard")
+  compactTableView     Boolean  @default(false)
+  reducedMotion        Boolean  @default(false)
+  notificationsEnabled Boolean  @default(true)
+  emailAlerts          Boolean  @default(false)
+  soundEffectsEnabled  Boolean  @default(true)
+  battleChallenges     Boolean  @default(true)
+  weeklyDigest         Boolean  @default(true)
+  achievementUnlocks   Boolean  @default(true)
+  leaderboardUpdates   Boolean  @default(true)
+  challengeReminders   Boolean  @default(true)
+  productUpdates       Boolean  @default(false)
+  privacy              String   @default("public")
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
 }
