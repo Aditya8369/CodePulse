@@ -4,6 +4,8 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
+import { MmapAssetsService } from './modules/storage/mmap-assets.service';
+
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -76,6 +78,12 @@ async function bootstrap() {
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
+
+  // Hydrate memory-mapped static Monaco assets & WebAssembly runtimes into OS page cache
+  const mmapAssets = app.get(MmapAssetsService, { strict: false });
+  if (mmapAssets) {
+    await mmapAssets.preloadMemoryMappedAssets();
+  }
 
   const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
   await app.listen(port, '0.0.0.0');
