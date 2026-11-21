@@ -17,7 +17,12 @@ import type { MmapEngineStats } from './mmap-storage.service';
 import { MmapAssetsService } from './mmap-assets.service';
 import type { MmapBenchmarkResult } from './mmap-assets.service';
 import { RocksDbService } from './rocksdb.service';
-import type { RocksDbStats } from './rocksdb.service';
+import type {
+  RocksDbStats,
+  RocksDbBenchmarkResult,
+  ParsedAstPayload,
+  FileSymbolTable,
+} from './rocksdb.service';
 import { WorkspaceStateService } from './workspace-state.service';
 import type { UnsavedDraftState } from './workspace-state.service';
 import { HsmService } from './hsm.service';
@@ -45,6 +50,90 @@ export class StorageController {
   })
   getRocksDbStats(): RocksDbStats {
     return this.rocksDb.getStats();
+  }
+
+  @Get('rocksdb/benchmark')
+  @ApiOperation({
+    summary: 'Run high-throughput RocksDB key-value lookup benchmark (50,000+ ops/sec, sub-0.2ms latency #549)',
+  })
+  @ApiQuery({ name: 'iterations', required: false })
+  async runRocksDbBenchmark(
+    @Query('iterations') iterations?: string,
+  ): Promise<RocksDbBenchmarkResult> {
+    const iters = iterations ? parseInt(iterations, 10) : 50000;
+    return this.rocksDb.runBenchmark(iters);
+  }
+
+  @Post('rocksdb/compact')
+  @ApiOperation({
+    summary: 'Trigger manual SSTable disk compaction and reclaim stale key space',
+  })
+  async triggerRocksDbCompaction() {
+    return this.rocksDb.compact();
+  }
+
+  @Post('rocksdb/ast')
+  @ApiOperation({
+    summary: 'Store pre-parsed AST tree in RocksDB indexed by commit SHA and file path (#549)',
+  })
+  @ApiBody({ description: 'Parsed AST payload' })
+  async putAst(
+    @Body('commitSha') commitSha: string,
+    @Body('filePath') filePath: string,
+    @Body('ast') ast: ParsedAstPayload,
+  ) {
+    await this.rocksDb.putAst(commitSha, filePath, ast);
+    return { success: true, key: this.rocksDb.buildAstKey(commitSha, filePath) };
+  }
+
+  @Get('rocksdb/ast')
+  @ApiOperation({
+    summary: 'Retrieve cached AST tree with sub-millisecond local latency (#549)',
+  })
+  @ApiQuery({ name: 'commitSha', required: true })
+  @ApiQuery({ name: 'filePath', required: true })
+  async getAst(
+    @Query('commitSha') commitSha: string,
+    @Query('filePath') filePath: string,
+  ): Promise<ParsedAstPayload | null> {
+    return this.rocksDb.getAst(commitSha, filePath);
+  }
+
+  @Post('rocksdb/symbols')
+  @ApiOperation({
+    summary: 'Store pre-parsed file symbol table in RocksDB indexed by commit SHA and file path (#549)',
+  })
+  async putSymbols(
+    @Body('commitSha') commitSha: string,
+    @Body('filePath') filePath: string,
+    @Body('symbols') symbols: FileSymbolTable,
+  ) {
+    await this.rocksDb.putSymbols(commitSha, filePath, symbols);
+    return { success: true, key: this.rocksDb.buildSymbolKey(commitSha, filePath) };
+  }
+
+  @Get('rocksdb/symbols')
+  @ApiOperation({
+    summary: 'Retrieve cached file symbol table with sub-millisecond local latency (#549)',
+  })
+  @ApiQuery({ name: 'commitSha', required: true })
+  @ApiQuery({ name: 'filePath', required: true })
+  async getSymbols(
+    @Query('commitSha') commitSha: string,
+    @Query('filePath') filePath: string,
+  ): Promise<FileSymbolTable | null> {
+    return this.rocksDb.getSymbols(commitSha, filePath);
+  }
+
+  @Get('rocksdb/workspace-symbols/:commitSha')
+  @ApiOperation({
+    summary: 'Retrieve all file symbols across the workspace for a commit SHA (#549)',
+  })
+  @ApiParam({ name: 'commitSha' })
+  async getWorkspaceSymbols(
+    @Param('commitSha') commitSha: string,
+  ): Promise<FileSymbolTable[]> {
+    return this.rocksDb.getWorkspaceSymbols(commitSha);
   }
 
   @Post('workspace/draft')
