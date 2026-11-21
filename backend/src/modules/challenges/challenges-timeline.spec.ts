@@ -34,7 +34,7 @@ describe('Challenge activity timeline', () => {
       developerRating: {
         updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
-      notification: { create: jest.fn().mockResolvedValue({}) },
+      notificationOutbox: { upsert: jest.fn().mockResolvedValue({}) },
       activity: { create: jest.fn().mockResolvedValue({}) },
     };
     const service = new ChallengesService(prisma as unknown as PrismaService);

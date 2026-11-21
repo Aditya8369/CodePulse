@@ -29,8 +29,8 @@ describe('Challenges Lifecycle State Machine & Concurrency Engine (#502)', () =>
       developerRating: {
         updateMany: jest.fn(),
       },
-      notification: {
-        create: jest.fn(),
+      notificationOutbox: {
+        upsert: jest.fn(),
       },
       activity: {
         create: jest.fn(),
@@ -126,7 +126,7 @@ describe('Challenges Lifecycle State Machine & Concurrency Engine (#502)', () =>
           }),
         }),
       );
-      expect(prisma.notification.create).toHaveBeenCalled();
+      expect(prisma.notificationOutbox.upsert).toHaveBeenCalled();
       expect(prisma.activity.create).toHaveBeenCalled();
     });
 
