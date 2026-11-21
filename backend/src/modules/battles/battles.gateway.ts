@@ -41,7 +41,7 @@ export interface BattleIngestEvent {
   battleId: string;
   userId: string;
   socketId: string;
-  eventType: 'keystroke' | 'test_case_eval' | 'disconnect' | 'player_ready' | 'player_join';
+  eventType: 'keystroke' | 'test_case_eval' | 'disconnect' | 'player_ready' | 'player_join' | 'heartbeat';
   data: any;
   timestamp: number;
 }
@@ -638,5 +638,17 @@ export class BattlesGateway
       });
     client.emit('prediction_placed', outcome);
     return outcome;
+  }
+
+  @SubscribeMessage('heartbeat_ping')
+  handleHeartbeatPing(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { battleId: string; timestamp: number },
+  ) {
+    client.emit('heartbeat_ack', {
+      battleId: data.battleId,
+      originalTimestamp: data.timestamp,
+      serverTimestamp: Date.now(),
+    });
   }
 }
