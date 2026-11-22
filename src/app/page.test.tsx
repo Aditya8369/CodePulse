@@ -1,19 +1,41 @@
-import { describe, it, expect, vi, beforeAll } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { act, render, screen, waitFor } from "@testing-library/react";
+import {
+  mockAllIsIntersecting,
+  resetIntersectionMocking,
+  setupIntersectionMocking,
+} from "react-intersection-observer/test-utils";
 import LandingPage from "./page";
 
-beforeAll(() => {
-  class MockIntersectionObserver implements IntersectionObserver {
-    readonly root: Element | null = null;
-    readonly rootMargin: string = "";
-    readonly thresholds: ReadonlyArray<number> = [];
-    disconnect = vi.fn();
-    observe = vi.fn();
-    takeRecords = vi.fn(() => []);
-    unobserve = vi.fn();
-  }
+const motionTestState = vi.hoisted(() => ({
+  reducedMotion: false,
+  animate: vi.fn(),
+}));
 
-  globalThis.IntersectionObserver = MockIntersectionObserver as unknown as typeof IntersectionObserver;
+vi.mock("motion/react", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("motion/react")>();
+  return {
+    ...actual,
+    animate: motionTestState.animate,
+    useReducedMotion: () => motionTestState.reducedMotion,
+  };
+});
+
+beforeAll(() => {
+  setupIntersectionMocking(vi.fn);
+});
+
+beforeEach(() => {
+  motionTestState.reducedMotion = false;
+  motionTestState.animate.mockReset();
+  motionTestState.animate.mockImplementation((count, target) => {
+    count.set(target);
+    return { stop: vi.fn() };
+  });
+});
+
+afterEach(() => {
+  resetIntersectionMocking();
 });
 
 describe("LandingPage Accessibility (#72)", () => {
@@ -92,5 +114,51 @@ describe("LandingPage Accessibility (#72)", () => {
     // Decorative 3D mockup dashboard
     const heroDashboard = container.querySelector(".hero-dashboard");
     expect(heroDashboard?.parentElement?.getAttribute("aria-hidden")).toBe("true");
+  });
+
+  it("counts up to the exact targets once the statistics section enters the viewport", async () => {
+    render(<LandingPage />);
+
+    expect(screen.getByText("Active Developers").previousElementSibling).toHaveTextContent("0K+");
+    expect(screen.getByText("Commits Analyzed").previousElementSibling).toHaveTextContent("0M+");
+    expect(screen.getByText("Battles Fought").previousElementSibling).toHaveTextContent("0K+");
+    expect(screen.getByText("Uptime").previousElementSibling).toHaveTextContent("0%");
+    expect(motionTestState.animate).not.toHaveBeenCalled();
+
+    act(() => mockAllIsIntersecting(true));
+
+    await waitFor(() => {
+      expect(screen.getByText("Active Developers").previousElementSibling).toHaveTextContent("250K+");
+      expect(screen.getByText("Commits Analyzed").previousElementSibling).toHaveTextContent("12M+");
+      expect(screen.getByText("Battles Fought").previousElementSibling).toHaveTextContent("500K+");
+      expect(screen.getByText("Uptime").previousElementSibling).toHaveTextContent("99.9%");
+    });
+
+    expect(motionTestState.animate).toHaveBeenCalledTimes(4);
+    for (const [count, target, options] of motionTestState.animate.mock.calls) {
+      expect(count.get()).toBe(target);
+      expect(options).toMatchObject({ duration: 2.5, ease: "easeOut" });
+    }
+
+    act(() => {
+      mockAllIsIntersecting(false);
+      mockAllIsIntersecting(true);
+    });
+    expect(motionTestState.animate).toHaveBeenCalledTimes(4);
+  });
+
+  it("shows final values immediately without animating when reduced motion is preferred", async () => {
+    motionTestState.reducedMotion = true;
+    render(<LandingPage />);
+
+    act(() => mockAllIsIntersecting(true));
+
+    await waitFor(() => {
+      expect(screen.getByText("Active Developers").previousElementSibling).toHaveTextContent("250K+");
+      expect(screen.getByText("Commits Analyzed").previousElementSibling).toHaveTextContent("12M+");
+      expect(screen.getByText("Battles Fought").previousElementSibling).toHaveTextContent("500K+");
+      expect(screen.getByText("Uptime").previousElementSibling).toHaveTextContent("99.9%");
+    });
+    expect(motionTestState.animate).not.toHaveBeenCalled();
   });
 });
