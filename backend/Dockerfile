@@ -1,5 +1,5 @@
 # Development & Production image for the NestJS API
-FROM node:20-slim
+FROM node:22-slim
 
 # Install system dependencies with security hardening & clear apt cache
 RUN apt-get update -y && apt-get install -y --no-install-recommends \
