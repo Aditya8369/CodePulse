@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
+import { AuditLogService } from './audit-log.service';
 import { DynamicConfigService } from '../../config/dynamic-config.service';
 import { AcmeCertService } from '../security/acme-cert.service';
 
@@ -60,6 +61,23 @@ describe('AdminController - Core & SSL', () => {
       providers: [
         { provide: AdminService, useValue: adminService },
         { provide: AcmeCertService, useValue: acmeCertService },
+        {
+          provide: AuditLogService,
+          useValue: {
+            getAuditLogs: jest.fn().mockResolvedValue({
+              data: [{ id: 'log-1', action: 'USER_DELETED' }],
+              total: 1,
+              page: 1,
+              limit: 20,
+              totalPages: 1,
+            }),
+            getAuditLogById: jest.fn().mockResolvedValue({
+              id: 'log-1',
+              action: 'USER_DELETED',
+              targetId: 'victim-1',
+            }),
+          },
+        },
       ],
     }).compile();
 
@@ -82,6 +100,18 @@ describe('AdminController - Core & SSL', () => {
     const res = await controller.toggleMaintenance(true);
     expect(adminService.setMaintenanceMode).toHaveBeenCalledWith(true);
     expect(res).toEqual({ success: true, maintenance: true });
+  });
+
+  it('should query paginated audit logs via auditLogService', async () => {
+    const res = await controller.getAuditLogs({ action: 'USER_DELETED', page: 1, limit: 20 });
+    expect(res.data.length).toBe(1);
+    expect(res.data[0].action).toBe('USER_DELETED');
+  });
+
+  it('should retrieve single audit log by ID via auditLogService', async () => {
+    const res = await controller.getAuditLogById('log-1');
+    expect(res.id).toBe('log-1');
+    expect(res.action).toBe('USER_DELETED');
   });
 
   it('should return SSL certificate status via GET /admin/ssl-status', () => {
@@ -118,6 +148,12 @@ describe('AdminController - Dynamic Config API', () => {
         {
           provide: AdminService,
           useValue: adminService,
+        },
+        {
+          provide: AuditLogService,
+          useValue: {
+            getAuditLogs: jest.fn().mockResolvedValue({ data: [], total: 0 }),
+          },
         },
         DynamicConfigService,
       ],
