@@ -2,27 +2,50 @@
 
 import * as React from "react"
 import { Avatar as AvatarPrimitive } from "@base-ui/react/avatar"
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 
 import { cn } from "@/lib/utils"
 
 function Avatar({
   className,
   size = "default",
+  zoomOnHover = false,
+  tooltip,
   ...props
 }: AvatarPrimitive.Root.Props & {
   size?: "default" | "sm" | "lg"
+  zoomOnHover?: boolean
+  tooltip?: string
 }) {
-  return (
+  const avatarElement = (
     <AvatarPrimitive.Root
       data-slot="avatar"
       data-size={size}
+      title={tooltip || props.title}
       className={cn(
-        "group/avatar relative flex size-8 shrink-0 rounded-full select-none after:absolute after:inset-0 after:rounded-full after:border after:border-border after:mix-blend-darken data-[size=lg]:size-10 data-[size=sm]:size-6 dark:after:mix-blend-lighten",
+        "group/avatar relative flex size-8 shrink-0 rounded-full select-none after:absolute after:inset-0 after:rounded-full after:border after:border-border after:mix-blend-darken data-[size=lg]:size-10 data-[size=sm]:size-6 dark:after:mix-blend-lighten transition-transform duration-200 ease-out",
+        zoomOnHover && "hover:scale-115 hover:z-20 cursor-pointer shadow-md",
         className
       )}
       {...props}
     />
   )
+
+  if (tooltip) {
+    return (
+      <Tooltip>
+        <TooltipTrigger render={avatarElement} />
+        <TooltipContent
+          side="top"
+          className="rounded-lg bg-slate-900 border border-white/10 px-2.5 py-1 text-xs font-medium text-white shadow-xl animate-in fade-in-0 zoom-in-95"
+        >
+          {tooltip}
+        </TooltipContent>
+      </Tooltip>
+    )
+  }
+
+  return avatarElement
 }
 
 function AvatarImage({ className, ...props }: AvatarPrimitive.Image.Props) {
@@ -75,7 +98,7 @@ function AvatarGroup({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="avatar-group"
       className={cn(
-        "group/avatar-group flex -space-x-2 *:data-[slot=avatar]:ring-2 *:data-[slot=avatar]:ring-background",
+        "group/avatar-group flex -space-x-2 *:data-[slot=avatar]:ring-2 *:data-[slot=avatar]:ring-background *:data-[slot=avatar]:transition-transform *:data-[slot=avatar]:duration-200 *:data-[slot=avatar]:hover:scale-120 *:data-[slot=avatar]:hover:z-30",
         className
       )}
       {...props}
