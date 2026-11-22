@@ -44,4 +44,28 @@ describe("NotificationDropdown categories", () => {
     expect(screen.getByText("Battle invite")).toBeDefined();
     expect(screen.queryByText("Sync complete")).toBeNull();
   });
+
+  it("calls onClose on keydown Escape and click outside", () => {
+    const onClose = vi.fn();
+    render(
+      <div>
+        <div data-testid="outside">Outside</div>
+        <NotificationDropdown
+          isOpen
+          onClose={onClose}
+          notifications={notices}
+          unreadCount={2}
+          onMarkAsRead={vi.fn()}
+          onMarkAllAsRead={vi.fn()}
+          onMarkCategoryAsRead={vi.fn()}
+        />
+      </div>
+    );
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(onClose).toHaveBeenCalledTimes(1);
+
+    fireEvent.mouseDown(screen.getByTestId("outside"));
+    expect(onClose).toHaveBeenCalledTimes(2);
+  });
 });
