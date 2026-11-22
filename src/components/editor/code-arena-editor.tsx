@@ -60,6 +60,10 @@ export const MONOSPACE_FONTS: MonospaceFontOption[] = [
   },
 ];
 
+export function getMonospaceFont(fontId: MonospaceFont): MonospaceFontOption {
+  return MONOSPACE_FONTS.find((f) => f.id === fontId) || MONOSPACE_FONTS[0];
+}
+
 export interface SyntaxDiagnostic {
   line: number;
   column: number;
