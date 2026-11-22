@@ -30,6 +30,8 @@ import { EdgeRelayService } from './edge-relay.service';
 import { PlagiarismService } from './plagiarism.service';
 import { RoomService } from './room.service';
 import { EvaluatorService } from './evaluator.service';
+import { RaftStateService } from './consensus/raft-state.service';
+import { WalLogService } from './consensus/wal-log.service';
 
 @Module({
   imports: [
@@ -70,6 +72,8 @@ import { EvaluatorService } from './evaluator.service';
     PlagiarismService,
     RoomService,
     EvaluatorService,
+    RaftStateService,
+    WalLogService,
   ],
   exports: [
     BattlesService,
@@ -88,6 +92,8 @@ import { EvaluatorService } from './evaluator.service';
     PlagiarismService,
     RoomService,
     EvaluatorService,
+    RaftStateService,
+    WalLogService,
   ],
 })
 export class BattlesModule {}
