@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { ExternalLink, GitFork, GitPullRequest, Star } from "lucide-react";
 import { RepoHealthScorecard } from "@/components/repositories/repo-health-scorecard";
 import type { RepositoryHealth } from "@/lib/repository-health";
+import { cn } from "@/lib/utils";
 
 interface Inspection {
   fullName: string;
@@ -67,26 +68,55 @@ export function RepositoryInspectorModal({ fullName, open, onClose }: {
     <Dialog open={open} onOpenChange={(next) => { if (!next) onClose(); }}>
       <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto border-white/10 bg-[#0B0F19] text-white sm:rounded-3xl">
         <DialogHeader>
-          <DialogTitle className="break-all text-xl sm:text-2xl">{inspection?.fullName || fullName}</DialogTitle>
-          <DialogDescription className="text-slate-400">Live details from GitHub, refreshed at most hourly.</DialogDescription>
+          <DialogTitle className="break-all text-xl sm:text-2xl text-white font-bold">{inspection?.fullName || fullName}</DialogTitle>
+          <DialogDescription className="text-slate-300">Live details from GitHub, refreshed at most hourly.</DialogDescription>
         </DialogHeader>
 
         {loading && <p role="status" className="py-8 text-center text-slate-300">Loading repository details…</p>}
-        {error && <p role="alert" className="rounded-xl border border-rose-500/20 bg-rose-500/10 p-4 text-rose-200">{error}</p>}
+        {error && <p role="alert" className="rounded-xl border border-rose-500/30 bg-rose-500/20 p-4 text-rose-200 font-medium">{error}</p>}
         {inspection && (
           <>
             <div className="flex flex-wrap items-center gap-2 text-xs">
-              <span className="rounded-full border border-white/10 px-3 py-1">{inspection.isPrivate ? "Private" : "Public"}</span>
-              <span className="rounded-full border border-white/10 px-3 py-1">{inspection.license || "No license detected"}</span>
-              <a href={inspection.url} target="_blank" rel="noopener noreferrer" className="ml-auto inline-flex items-center gap-1 text-blue-300 hover:underline">
+              <span
+                data-testid="visibility-badge"
+                className={cn(
+                  "rounded-full border px-3 py-1 font-semibold shadow-sm",
+                  inspection.isPrivate
+                    ? "bg-amber-500/20 border-amber-500/40 text-amber-300"
+                    : "bg-emerald-500/20 border-emerald-500/40 text-emerald-300"
+                )}
+              >
+                {inspection.isPrivate ? "Private" : "Public"}
+              </span>
+              <span
+                data-testid="license-badge"
+                className="rounded-full border border-indigo-500/40 bg-indigo-500/20 text-indigo-200 px-3 py-1 font-medium shadow-sm"
+              >
+                {inspection.license || "No license detected"}
+              </span>
+              <a
+                href={inspection.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="ml-auto inline-flex items-center gap-1 text-blue-400 hover:text-blue-300 transition-colors font-medium hover:underline"
+              >
                 View on GitHub <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
               </a>
             </div>
 
-            <div role="tablist" aria-label="Repository details" className="flex gap-1 overflow-x-auto rounded-xl bg-white/5 p-1">
+            <div role="tablist" aria-label="Repository details" className="flex gap-1 overflow-x-auto rounded-xl bg-slate-800/70 border border-white/10 p-1">
               {(["overview", "languages", "activity"] as const).map((name) => (
-                <button key={name} type="button" role="tab" aria-selected={tab === name} onClick={() => setTab(name)}
-                  className={`min-w-24 rounded-lg px-3 py-2 text-sm capitalize ${tab === name ? "bg-blue-500 text-white" : "text-slate-300 hover:bg-white/10"}`}>
+                <button
+                  key={name}
+                  type="button"
+                  role="tab"
+                  aria-selected={tab === name}
+                  onClick={() => setTab(name)}
+                  className={cn(
+                    "min-w-24 rounded-lg px-3 py-2 text-sm font-semibold capitalize transition-all cursor-pointer",
+                    tab === name ? "bg-blue-600 text-white shadow-md" : "text-slate-300 hover:text-white hover:bg-white/10"
+                  )}
+                >
                   {name}
                 </button>
               ))}
@@ -101,18 +131,27 @@ export function RepositoryInspectorModal({ fullName, open, onClose }: {
                     { label: "Open PRs", value: inspection.openPullRequests ?? "Unavailable", icon: GitPullRequest },
                     { label: "Issues open:closed", value: ratio, icon: GitPullRequest },
                   ].map(({ label, value, icon: Icon }) => (
-                    <div key={label} className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
-                      <Icon className="mb-2 h-4 w-4 text-blue-300" aria-hidden="true" />
-                      <div className="break-words text-lg font-semibold">{value}</div>
-                      <div className="text-xs text-slate-400">{label}</div>
+                    <div key={label} className="rounded-xl border border-white/10 bg-slate-800/50 p-3 shadow-sm">
+                      <Icon className="mb-2 h-4 w-4 text-blue-400" aria-hidden="true" />
+                      <div className="break-words text-lg font-bold text-white">{value}</div>
+                      <div className="text-xs text-slate-300 font-medium">{label}</div>
                     </div>
                   ))}
                 </div>
                 <RepoHealthScorecard inspection={inspection} />
                 <div>
-                  <h3 className="mb-2 font-semibold">Branches</h3>
+                  <h3 className="mb-2 font-semibold text-slate-200">Branches</h3>
                   {inspection.branches.length ? (
-                    <div className="flex flex-wrap gap-2">{inspection.branches.map((branch) => <span key={branch} className="max-w-full truncate rounded-full bg-white/5 px-3 py-1 text-xs text-slate-300">{branch}</span>)}</div>
+                    <div className="flex flex-wrap gap-2">
+                      {inspection.branches.map((branch) => (
+                        <span
+                          key={branch}
+                          className="max-w-full truncate rounded-full border border-white/10 bg-slate-800/80 px-3 py-1 text-xs font-mono font-medium text-slate-200 shadow-sm"
+                        >
+                          {branch}
+                        </span>
+                      ))}
+                    </div>
                   ) : <p className="text-sm text-slate-400">Branch details unavailable.</p>}
                 </div>
               </div>
