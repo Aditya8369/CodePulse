@@ -28,6 +28,7 @@ import {
 import { CreateCustomChallengeModal } from "@/components/modals/create-custom-challenge-modal";
 import { ChallengeFilterBar } from "@/components/challenges/challenge-filter-bar";
 import { StreakCalendar } from "@/components/challenges/streak-calendar";
+import { StreakFlameParticles } from "@/components/challenges/streak-flame-particles";
 
 const statusTabs = [
   { id: "all", label: "All", icon: Target },
@@ -201,9 +202,12 @@ export default function ChallengesPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
+          <h1 className="text-2xl font-bold flex flex-wrap items-center gap-2">
             <Target className="w-6 h-6 text-primary" />
-            Challenges
+            <span>Challenges</span>
+            {(currentUser?.stats?.streak ?? 0) >= 7 && (
+              <StreakFlameParticles streak={currentUser?.stats?.streak ?? 0} showBadge={true} />
+            )}
           </h1>
           <p className="text-muted-foreground mt-1">
             Complete challenges to earn XP and level up your developer rating
