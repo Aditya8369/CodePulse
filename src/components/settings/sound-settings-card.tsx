@@ -14,6 +14,7 @@ const categories: { id: SoundCategory; label: string }[] = [
 
 export function SoundSettingsCard() {
   const [enabled, setEnabled] = useState(() => audioManager.isEnabled());
+  const [isBlocked, setIsBlocked] = useState(false);
   const [volume, setVolume] = useState(() => Math.round(audioManager.getVolume() * 100));
   const [theme, setTheme] = useState<SoundTheme>(() => audioManager.getTheme());
   const [activeCategories, setActiveCategories] = useState<Record<SoundCategory, boolean>>(() => ({
@@ -21,6 +22,28 @@ export function SoundSettingsCard() {
     round: audioManager.isCategoryEnabled("round"),
     victory: audioManager.isCategoryEnabled("victory"),
   }));
+
+  const handleToggle = async (value: boolean) => {
+    setEnabled(value);
+    audioManager.setEnabled(value);
+    if (value) {
+      const active = await audioManager.resumeContext();
+      if (!active && audioManager.isSuspended()) {
+        setIsBlocked(true);
+      } else {
+        setIsBlocked(false);
+        audioManager.playPreviewChime();
+      }
+    } else {
+      setIsBlocked(false);
+    }
+  };
+
+  const handleUnlockAudio = async () => {
+    await audioManager.resumeContext();
+    setIsBlocked(false);
+    audioManager.playPreviewChime();
+  };
 
   return (
     <section className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4 sm:p-5" aria-label="Sound effects settings">
@@ -32,15 +55,22 @@ export function SoundSettingsCard() {
           </h3>
           <p className="mt-1 text-xs text-muted-foreground">Choose a theme and control the sounds you hear.</p>
         </div>
-        <Switch
-          checked={enabled}
-          onCheckedChange={(value) => {
-            setEnabled(value);
-            audioManager.setEnabled(value);
-            if (value) audioManager.playPreviewChime();
-          }}
-          aria-label="Enable battle sound effects"
-        />
+        <div className="flex items-center gap-3">
+          {isBlocked && (
+            <button
+              type="button"
+              onClick={handleUnlockAudio}
+              className="text-[11px] px-2.5 py-1 rounded-lg bg-amber-500/20 border border-amber-500/30 text-amber-300 hover:bg-amber-500/30 transition-colors font-medium"
+            >
+              Autoplay Blocked (Click to Enable)
+            </button>
+          )}
+          <Switch
+            checked={enabled}
+            onCheckedChange={handleToggle}
+            aria-label="Enable battle sound effects"
+          />
+        </div>
       </div>
 
       <div className="mt-5 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
