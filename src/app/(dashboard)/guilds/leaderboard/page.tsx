@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Shield, Trophy, Users, Flame, Star, Sparkles, Swords, Search } from "lucide-react";
 import { GuildBattleCard } from "@/components/guilds/guild-battle-card";
 import { Input } from "@/components/ui/input";
+import { BackToTop } from "@/components/ui/back-to-top";
 
 export default function GuildLeaderboardPage() {
   const [search, setSearch] = useState("");
@@ -117,6 +118,9 @@ export default function GuildLeaderboardPage() {
           </table>
         </div>
       </div>
+
+      {/* Floating Back to Top Button */}
+      <BackToTop className="bottom-20 md:bottom-6" />
     </div>
   );
 }
