@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Shield, Trophy, Users, Flame, Star, Sparkles, Swords, Search, Plus } from "lucide-react";
 import { GuildBattleCard } from "@/components/guilds/guild-battle-card";
+import { TerritoryMap } from "@/components/guilds/territory-map";
+import { GuildCreateModal } from "@/components/guilds/guild-create-modal";
 import { GuildCreateModal, GuildCreationData } from "@/components/guilds/guild-create-modal";
 import { Input } from "@/components/ui/input";
 import { BackToTop } from "@/components/ui/back-to-top";
@@ -57,6 +59,9 @@ export default function GuildLeaderboardPage() {
           <span>+ Create Guild</span>
         </button>
       </div>
+
+      {/* 2D Tactical Territory Conquest Map */}
+      <TerritoryMap userGuildTag="AVENGER" />
 
       {/* Live Featured GvG Match Card */}
       <div className="space-y-3">
