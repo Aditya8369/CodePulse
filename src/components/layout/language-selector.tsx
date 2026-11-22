@@ -121,6 +121,7 @@ export function LanguageSelector({ className }: { className?: string }) {
           "inline-flex h-9 items-center gap-1.5 rounded-xl px-2.5 text-xs font-medium",
           "border border-white/[0.06] bg-white/[0.03] text-muted-foreground",
           "hover:bg-white/[0.07] hover:text-foreground transition-colors",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0B1120]",
           "rtl:flex-row-reverse",
           className
         )}
@@ -162,6 +163,7 @@ export function LanguageSelector({ className }: { className?: string }) {
                 onClick={() => setLocale(item.code)}
                 className={cn(
                   "flex items-center justify-between gap-2 cursor-pointer rounded-lg px-2.5 py-2 text-xs",
+                  "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-cyan-400/80",
                   "rtl:flex-row-reverse rtl:text-right",
                   selected
                     ? "bg-cyan-500/15 text-cyan-300 font-semibold"

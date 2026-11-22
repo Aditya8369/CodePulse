@@ -1,7 +1,13 @@
-import { Button as ButtonPrimitive } from "@base-ui/react/button"
-import { cva, type VariantProps } from "class-variance-authority"
+"use client";
 
-import { cn } from "@/lib/utils"
+import * as React from "react";
+import { Button as ButtonPrimitive } from "@base-ui/react/button";
+import { cva, type VariantProps } from "class-variance-authority";
+import { motion, AnimatePresence } from "motion/react";
+import { Copy, Check } from "lucide-react";
+import { toast } from "sonner";
+
+import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
   "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
@@ -37,8 +43,8 @@ const buttonVariants = cva(
       variant: "default",
       size: "default",
     },
-  }
-)
+  },
+);
 
 function Button({
   className,
@@ -52,7 +58,105 @@ function Button({
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
     />
-  )
+  );
 }
 
-export { Button, buttonVariants }
+export interface CopyButtonProps extends React.ComponentProps<typeof Button> {
+  value: string;
+  timeout?: number;
+  onCopySuccess?: () => void;
+  onCopyError?: (error: unknown) => void;
+  showTooltip?: boolean;
+  tooltipText?: string;
+  copiedTooltipText?: string;
+}
+
+function CopyButton({
+  value,
+  timeout = 2000,
+  onCopySuccess,
+  onCopyError,
+  showTooltip = true,
+  tooltipText = "Copy to clipboard",
+  copiedTooltipText = "Copied!",
+  className,
+  variant = "outline",
+  size = "icon-sm",
+  children,
+  onClick,
+  ...props
+}: CopyButtonProps) {
+  const [hasCopied, setHasCopied] = React.useState(false);
+
+  const handleCopy = React.useCallback(
+    async (e: React.MouseEvent<HTMLButtonElement>) => {
+      onClick?.(e);
+      if (e.defaultPrevented) return;
+
+      try {
+        await navigator.clipboard.writeText(value);
+        setHasCopied(true);
+        toast.success("Copied to clipboard!");
+        onCopySuccess?.();
+      } catch (err) {
+        toast.error("Failed to copy to clipboard");
+        onCopyError?.(err);
+      }
+    },
+    [value, onClick, onCopySuccess, onCopyError],
+  );
+
+  React.useEffect(() => {
+    if (!hasCopied) return;
+    const timer = setTimeout(() => {
+      setHasCopied(false);
+    }, timeout);
+    return () => clearTimeout(timer);
+  }, [hasCopied, timeout]);
+
+  return (
+    <Button
+      type="button"
+      variant={variant}
+      size={size}
+      onClick={handleCopy}
+      aria-label={hasCopied ? copiedTooltipText : tooltipText}
+      title={
+        showTooltip ? (hasCopied ? copiedTooltipText : tooltipText) : undefined
+      }
+      className={cn("relative transition-all overflow-hidden", className)}
+      {...props}
+    >
+      <AnimatePresence mode="wait" initial={false}>
+        {hasCopied ? (
+          <motion.span
+            key="copied"
+            data-testid="copy-icon-check"
+            initial={{ scale: 0.6, opacity: 0, rotate: -45 }}
+            animate={{ scale: 1, opacity: 1, rotate: 0 }}
+            exit={{ scale: 0.6, opacity: 0, rotate: 45 }}
+            transition={{ duration: 0.18, ease: "easeOut" }}
+            className="flex items-center justify-center text-emerald-400"
+          >
+            <Check className="size-3.5 text-emerald-400" />
+          </motion.span>
+        ) : (
+          <motion.span
+            key="copy"
+            data-testid="copy-icon-clipboard"
+            initial={{ scale: 0.6, opacity: 0, rotate: 45 }}
+            animate={{ scale: 1, opacity: 1, rotate: 0 }}
+            exit={{ scale: 0.6, opacity: 0, rotate: -45 }}
+            transition={{ duration: 0.18, ease: "easeOut" }}
+            className="flex items-center justify-center text-muted-foreground group-hover/button:text-foreground"
+          >
+            <Copy className="size-3.5" />
+          </motion.span>
+        )}
+      </AnimatePresence>
+      {children}
+    </Button>
+  );
+}
+
+export { Button, buttonVariants, CopyButton };
