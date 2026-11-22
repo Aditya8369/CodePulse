@@ -161,26 +161,36 @@ export class VaultRotationService implements OnModuleInit, OnModuleDestroy {
   }
 
   private startSchedulers() {
+    const maxSafeTimeout = 2147483647; // Max signed 32-bit int to prevent Node.js 1ms overflow
+
     // JWT Periodic rotation
     if (!this.jwtRotationTimer) {
+      const jwtInterval = Math.max(
+        1000,
+        Math.min(this.config.jwtRotationIntervalMs, maxSafeTimeout),
+      );
       this.jwtRotationTimer = setInterval(async () => {
         try {
           await this.syncJwtSecret();
         } catch (err: any) {
           this.logger.error('Error during scheduled JWT secret sync:', err.message);
         }
-      }, this.config.jwtRotationIntervalMs);
+      }, jwtInterval);
     }
 
-    // Third-party API token 30-day rotation cron
+    // Third-party API token periodic rotation cron
     if (!this.thirdPartyRotationTimer) {
+      const thirdPartyInterval = Math.max(
+        1000,
+        Math.min(this.config.thirdPartyRotationIntervalMs, maxSafeTimeout),
+      );
       this.thirdPartyRotationTimer = setInterval(async () => {
         try {
           await this.rotateThirdPartyTokens();
         } catch (err: any) {
           this.logger.error('Error during scheduled 30-day third-party token rotation:', err.message);
         }
-      }, this.config.thirdPartyRotationIntervalMs);
+      }, thirdPartyInterval);
     }
   }
 

@@ -32,7 +32,7 @@ export const defaultVaultConfig: VaultConfig = {
     process.env.VAULT_JWT_SECRET_PATH || 'secret/data/codepulse/jwt',
   jwtRotationIntervalMs:
     Number(process.env.VAULT_JWT_ROTATION_INTERVAL_MS) ||
-    30 * 24 * 60 * 60 * 1000,
+    24 * 60 * 60 * 1000, // 24 hours (fits in 32-bit signed int to prevent Node.js 1ms overflow)
   dualKeyWindowMs:
     Number(process.env.VAULT_DUAL_KEY_WINDOW_MS) || 24 * 60 * 60 * 1000, // 24 hours overlap
   leaseRenewalThresholdRatio:
@@ -43,7 +43,7 @@ export const defaultVaultConfig: VaultConfig = {
     process.env.VAULT_THIRD_PARTY_PATH || 'secret/data/codepulse/third-party',
   thirdPartyRotationIntervalMs:
     Number(process.env.VAULT_THIRD_PARTY_ROTATION_MS) ||
-    30 * 24 * 60 * 60 * 1000, // 30 days
+    24 * 60 * 60 * 1000, // 24 hours (fits in 32-bit signed int to prevent Node.js 1ms overflow)
   localEncryptionKey:
     process.env.VAULT_LOCAL_ENCRYPTION_KEY ||
     'codepulse-vault-fallback-aes-256-key-32b',
