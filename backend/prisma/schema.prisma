@@ -65,6 +65,9 @@ model User {
   signalPreKeyBundle  SignalPreKeyBundle?
   apiKeys             ApiKey[]
   hostedRooms         PrivateBattleRoom[]   @relation("HostedPrivateRooms")
+  isAnonymized        Boolean           @default(false)
+  anonymizedAt        DateTime?
+  gdprCertificates    GdprDeletionCertificate[]
 
   @@map("users")
 }
@@ -1259,6 +1262,25 @@ model DisputeSnapshot {
   @@index([disputeId])
   @@index([battleId])
   @@map("dispute_snapshots")
+}
+
+model GdprDeletionCertificate {
+  id                String   @id @default(uuid())
+  certificateNumber String   @unique // e.g. "GDPR-RTBF-2026-XXXX"
+  userId            String
+  anonymizedHandle  String   // e.g. "Ghost-Dev-8392"
+  shreddedAt        DateTime @default(now())
+  reason            String   @default("User requested Right-to-be-Forgotten under GDPR Article 17")
+  sha256Signature   String   // Cryptographic proof/signature of the shredding event
+  purgedCategories  Json     // Record of categories purged
+  metadata          Json?    // Summary statistics (# tokens purged, # sessions revoked, etc.)
+  exportableToken   String?  @db.Text // Encoded exportable token/HMAC
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([certificateNumber])
+  @@index([shreddedAt])
+  @@map("gdpr_deletion_certificates")
 }
 
 model AuditLog {
