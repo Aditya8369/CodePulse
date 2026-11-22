@@ -276,7 +276,7 @@ export default function CooperativeRaidBossPage() {
               Syntax & Lint Aegis Shield
             </span>
             <span data-testid="raid-shield-readout" className="font-mono text-cyan-200">
-              {raid.currentShield.toLocaleString()} / {raid.maxShield.toLocaleString()} ({shieldPct}%)
+              {raid.currentShield.toLocaleString('en-US')} / {raid.maxShield.toLocaleString('en-US')} ({shieldPct}%)
             </span>
           </div>
           <div className="h-2.5 w-full overflow-hidden rounded-full bg-zinc-800">
@@ -295,13 +295,30 @@ export default function CooperativeRaidBossPage() {
               Boss Core Integrity HP
             </span>
             <span data-testid="raid-hp-readout" className="font-mono text-rose-200">
-              {raid.currentHp.toLocaleString()} / {raid.maxHp.toLocaleString()} ({hpPct}%)
+              {raid.currentHp.toLocaleString('en-US')} / {raid.maxHp.toLocaleString('en-US')} ({hpPct}%)
             </span>
           </div>
           <div className="h-4 w-full overflow-hidden rounded-full bg-zinc-800">
             <div
               className="h-full bg-gradient-to-r from-rose-600 to-amber-500 transition-all duration-300"
               style={{ width: `${hpPct}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Boss Spell Casting Bar */}
+        <div className="mt-3 space-y-1.5">
+          <div className="flex justify-between text-xs">
+            <span className="inline-flex items-center gap-1.5 font-medium text-amber-400">
+              <AlertTriangle className="h-3.5 w-3.5 animate-pulse" />
+              Boss Spell: Recursive Stack Overflow
+            </span>
+            <span className="font-mono text-amber-300">Casting... (62%)</span>
+          </div>
+          <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-800">
+            <div
+              className="h-full bg-amber-500 transition-all duration-300 animate-pulse"
+              style={{ width: "62%" }}
             />
           </div>
         </div>
