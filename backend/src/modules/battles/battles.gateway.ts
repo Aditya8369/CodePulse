@@ -30,6 +30,7 @@ import { EvaluatorService } from './evaluator.service';
 import type { BattlePerformanceMetrics, SuddenDeathSession } from './evaluator.service';
 import { PersonaBattleService } from '../ai/persona-battle.service';
 import { CodeHintService } from '../ai/code-hint.service';
+import { ProtobufStreamService, KeystrokeType } from './protobuf-stream.service';
 
 interface PlayerState {
   userId: string;
@@ -82,6 +83,7 @@ export class BattlesGateway
     @Optional() private readonly evaluatorService?: EvaluatorService,
     @Optional() private readonly personaBattleService?: PersonaBattleService,
     @Optional() private readonly codeHintService?: CodeHintService,
+    @Optional() private readonly protobufStream?: ProtobufStreamService,
   ) {}
 
   @WebSocketServer()
@@ -144,6 +146,20 @@ export class BattlesGateway
             cursorPosition: data?.cursorPosition,
             timestamp: event.timestamp,
           });
+
+        if (this.protobufStream) {
+          const binaryBuffer = this.protobufStream.encodeTelemetryFrame({
+            battleId,
+            userId,
+            sequence: data?.sequence || 0,
+            timestamp: event.timestamp,
+            cursorPosition: data?.cursorPosition || 0,
+            deltaLength: data?.delta?.length || 0,
+            keystrokeType: KeystrokeType.INSERT,
+            key: data?.key,
+          });
+          this.server?.to(`battle:${battleId}`)?.emit('opponent_keystroke_binary', binaryBuffer);
+        }
 
         // Live spectator stream in read-only mode
         this.server

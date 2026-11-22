@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package codepulse.battles;
+
+enum KeystrokeType {
+  KEYSTROKE_TYPE_UNSPECIFIED = 0;
+  KEYSTROKE_TYPE_INSERT = 1;
+  KEYSTROKE_TYPE_DELETE = 2;
+  KEYSTROKE_TYPE_CURSOR_MOVE = 3;
+}
+
+message BattleTelemetryFrame {
+  string battle_id = 1;
+  string user_id = 2;
+  uint32 sequence = 3;
+  uint64 timestamp = 4;
+  int32 cursor_position = 5;
+  int32 delta_length = 6;
+  KeystrokeType keystroke_type = 7;
+  string key = 8;
+  string patch_snippet = 9;
+}
+
+message SpectatorReactionFrame {
+  string battle_id = 1;
+  string user_id = 2;
+  string emoji = 3;
+  uint32 count = 4;
+  uint64 timestamp = 5;
+}
