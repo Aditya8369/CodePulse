@@ -8,6 +8,7 @@ import { BusFactorService } from './bus-factor.service';
 import { RepositoryAuthorshipController } from './repository-authorship.controller';
 import { ScyllaKeystrokeService } from './scylla-keystroke.service';
 import { ScyllaDbTelemetryService } from './scylladb-telemetry.service';
+import { ComplexityService } from './complexity.service';
 
 @Module({
   controllers: [
@@ -22,12 +23,14 @@ import { ScyllaDbTelemetryService } from './scylladb-telemetry.service';
     BusFactorService,
     ScyllaKeystrokeService,
     ScyllaDbTelemetryService,
+    ComplexityService,
   ],
   exports: [
     AnalyticsService,
     DifferentialPrivacyService,
     ScyllaKeystrokeService,
     ScyllaDbTelemetryService,
+    ComplexityService,
   ],
 })
 export class AnalyticsModule {}
