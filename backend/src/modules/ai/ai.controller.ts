@@ -8,14 +8,23 @@ import {
   HttpStatus,
   BadRequestException,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { TranspilerService } from './transpiler.service';
 import { PrAnalyzerService, PrAnalysisResult } from './pr-analyzer.service';
+import { PersonaBattleService } from './persona-battle.service';
 import {
   TranspileRequestDto,
   TranspileResponseDto,
   SupportedLanguage,
 } from './dto/transpiler.dto';
+import {
+  AiPersonaDto,
+  StartPracticeBattleRequestDto,
+  PracticeBattleResponseDto,
+  SimulateKeystrokesRequestDto,
+  FinishPracticeMatchDto,
+  FinishPracticeMatchResponseDto,
+} from './dto/persona-battle.dto';
 
 @ApiTags('ai')
 @Controller('ai')
@@ -23,6 +32,7 @@ export class AiController {
   constructor(
     private readonly transpilerService: TranspilerService,
     private readonly prAnalyzer: PrAnalyzerService,
+    private readonly personaBattleService: PersonaBattleService,
   ) {}
 
   @Post('transpile')
@@ -50,5 +60,69 @@ export class AiController {
   async analyzePr(@Body() prDetails: any): Promise<PrAnalysisResult> {
     return this.prAnalyzer.analyzePullRequest(prDetails);
   }
+
+  // ==========================================
+  // Historical Programmer Persona Battles (#366)
+  // ==========================================
+
+  @Get('personas')
+  @ApiOperation({
+    summary: 'List available historical programmer AI personas (Lovelace, Turing, Carmack, Hamilton)',
+    description:
+      'Retrieves calibrated AI personas with distinct coding styles, typing speeds (WPM), Elo ratings, and difficulty tiers for practice battles.',
+  })
+  @ApiResponse({ status: 200, type: [AiPersonaDto] })
+  async getPersonas(): Promise<AiPersonaDto[]> {
+    return this.personaBattleService.getAvailablePersonas();
+  }
+
+  @Get('personas/:personaId')
+  @ApiOperation({ summary: 'Retrieve specific AI persona details' })
+  @ApiParam({ name: 'personaId', description: 'Persona ID (lovelace, turing, carmack, hamilton)' })
+  @ApiResponse({ status: 200, type: AiPersonaDto })
+  async getPersona(@Param('personaId') personaId: string): Promise<AiPersonaDto> {
+    return this.personaBattleService.getPersonaById(personaId);
+  }
+
+  @Post('personas/practice-battle')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Instant matchmaking solo practice battle against an AI historical programmer persona',
+    description:
+      'Instantly creates (< 2 seconds) an active solo practice battle session against a legendary programmer persona matching user Elo rating.',
+  })
+  @ApiResponse({ status: 200, type: PracticeBattleResponseDto })
+  async startPracticeBattle(
+    @Body() dto: StartPracticeBattleRequestDto,
+  ): Promise<PracticeBattleResponseDto> {
+    if (!dto.userId) {
+      throw new BadRequestException('userId is required to initiate a practice match');
+    }
+    return this.personaBattleService.startPracticeBattle(dto);
+  }
+
+  @Post('personas/simulate-keystrokes')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Simulate natural human typing cadence and keystroke stream for an AI persona',
+    description:
+      'Generates keystroke frames with micro-delays (150ms-400ms), thinking pauses, and realistic typo corrections.',
+  })
+  async simulateKeystrokes(@Body() dto: SimulateKeystrokesRequestDto) {
+    return this.personaBattleService.simulateKeystrokes(dto);
+  }
+
+  @Post('personas/finish-match')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Conclude solo practice match against AI persona and award unranked practice XP',
+  })
+  @ApiResponse({ status: 200, type: FinishPracticeMatchResponseDto })
+  async finishPracticeMatch(
+    @Body() dto: FinishPracticeMatchDto,
+  ): Promise<FinishPracticeMatchResponseDto> {
+    return this.personaBattleService.finishPracticeBattle(dto);
+  }
 }
+
 

@@ -24,6 +24,7 @@ import { PredictionMarketService } from '../esports/prediction-market.service';
 import { SabotageEngineService, SABOTAGE_POWERUPS } from './sabotage-engine.service';
 import type { SabotageType, DefenseType } from './sabotage-engine.service';
 import { EdgeRelayService } from './edge-relay.service';
+import { PersonaBattleService } from '../ai/persona-battle.service';
 
 interface PlayerState {
   userId: string;
@@ -72,6 +73,7 @@ export class BattlesGateway
     @Optional() private readonly predictionMarket?: PredictionMarketService,
     @Optional() private readonly sabotageEngine?: SabotageEngineService,
     @Optional() private readonly edgeRelayService?: EdgeRelayService,
+    @Optional() private readonly personaBattleService?: PersonaBattleService,
   ) {}
 
   @WebSocketServer()
@@ -808,4 +810,89 @@ export class BattlesGateway
     client.emit('sabotage:inventory_state', payload);
     return payload;
   }
+
+  // ==========================================
+  // Historical AI Persona Practice Battles (#366)
+  // ==========================================
+
+  @SubscribeMessage('get_ai_personas')
+  async handleGetAiPersonas(@ConnectedSocket() client: Socket) {
+    if (!this.personaBattleService) return [];
+    const personas = await this.personaBattleService.getAvailablePersonas();
+    client.emit('ai_personas_list', personas);
+    return personas;
+  }
+
+  @SubscribeMessage('start_ai_practice_battle')
+  async handleStartAiPracticeBattle(
+    @ConnectedSocket() client: Socket,
+    @MessageBody()
+    data: {
+      userId: string;
+      personaId?: string;
+      challengeId?: string;
+    },
+  ) {
+    if (!this.personaBattleService) return null;
+
+    const practice = await this.personaBattleService.startPracticeBattle({
+      userId: data.userId || 'anonymous-challenger',
+      personaId: data.personaId,
+      challengeId: data.challengeId,
+    });
+
+    const roomName = `battle:${practice.battleId}`;
+    void client.join(roomName);
+
+    // Initialize room state with human and AI persona
+    if (!this.rooms.has(practice.battleId)) {
+      this.rooms.set(practice.battleId, {
+        battleId: practice.battleId,
+        players: {
+          [data.userId]: {
+            userId: data.userId,
+            username: 'Challenger',
+            isReady: true,
+            socketId: client.id,
+          },
+          [practice.persona.id]: {
+            userId: practice.persona.id,
+            username: practice.persona.name,
+            isReady: true,
+            socketId: `ai-${practice.persona.id}`,
+          },
+        },
+        currentRound: 1,
+        totalRounds: 1,
+      });
+    }
+
+    client.emit('practice_battle_started', practice);
+    this.server?.to(roomName)?.emit('battle_start', {
+      battleId: practice.battleId,
+      challenge: practice.challenge,
+      opponent: practice.persona,
+      isPractice: true,
+    });
+
+    // Stream realistic keystrokes matching persona cadence into room
+    const frames = this.personaBattleService.generateKeystrokeStream(practice.persona);
+    let cumulativeDelay = 0;
+    frames.slice(0, 30).forEach((frame) => {
+      cumulativeDelay += frame.delayMs;
+      setTimeout(() => {
+        this.server?.to(roomName)?.emit('opponent_keystroke_stream', {
+          battleId: practice.battleId,
+          userId: practice.persona.id,
+          deltaLength: frame.delta.length,
+          cursorPosition: frame.cursorPosition,
+          isTypoCorrection: frame.isTypoCorrection,
+          timestamp: Date.now(),
+        });
+      }, cumulativeDelay);
+    });
+
+    return practice;
+  }
 }
+

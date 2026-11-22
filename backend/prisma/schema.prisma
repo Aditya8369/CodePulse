@@ -57,6 +57,8 @@ model User {
   mentorshipProfile   MentorshipProfile?
   mentorSessions      ShadowCodingSession[] @relation("MentorSessions")
   apprenticeSessions  ShadowCodingSession[] @relation("ApprenticeSessions")
+  personaMatches      PersonaBattleMatch[]
+
 
     guildMemberships    GuildMember[]
   ownedGuilds         Guild[]
@@ -1251,3 +1253,46 @@ model DisputeSnapshot {
   @@index([battleId])
   @@map("dispute_snapshots")
 }
+
+model AiPersona {
+  id                String               @id @default(uuid())
+  name              String               @unique
+  avatarUrl         String
+  eloRating         Int                  @default(1500)
+  preferredLanguage String               @default("typescript")
+  typingSpeedWpm    Int                  @default(75)
+  systemPrompt      String               @db.Text
+  difficultyTier    String               @default("EXPERT") // BEGINNER, INTERMEDIATE, EXPERT, LEGENDARY
+  codingStyle       String               @default("Optimal algorithms")
+  tagline           String?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  matches           PersonaBattleMatch[]
+
+  @@map("ai_personas")
+}
+
+model PersonaBattleMatch {
+  id                String       @id @default(uuid())
+  personaId         String
+  userId            String
+  challengeId       String?
+  status            BattleStatus @default(ACTIVE)
+  userScore         Float?
+  personaScore      Float?
+  winner            String?      // 'USER', 'PERSONA', 'DRAW'
+  practiceXpAwarded Int          @default(0)
+  startedAt         DateTime     @default(now())
+  endedAt           DateTime?
+  keystrokeTimeline Json?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  persona           AiPersona    @relation(fields: [personaId], references: [id], onDelete: Cascade)
+  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([personaId])
+  @@map("persona_battle_matches")
+}
+
