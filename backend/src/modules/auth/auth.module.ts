@@ -19,8 +19,9 @@ import { PostQuantumJwtService } from './jwt.service';
 
 import { KeysController } from './keys.controller';
 import { PreKeyService } from './prekey.service';
-
-
+import { ApiKeyController } from './api-key.controller';
+import { ApiKeyService } from './api-key.service';
+import { ApiKeyGuard } from '../../common/guards/api-key.guard';
 
 @Module({
   imports: [
@@ -46,7 +47,12 @@ import { PreKeyService } from './prekey.service';
     SyncModule,
     CryptoModule,
   ],
-  controllers: [AuthController, PasskeyController, KeysController],
+  controllers: [
+    AuthController,
+    PasskeyController,
+    KeysController,
+    ApiKeyController,
+  ],
   providers: [
     AuthService,
     JwtStrategy,
@@ -56,12 +62,10 @@ import { PreKeyService } from './prekey.service';
     SamlSsoService,
     Fido2AttestationService,
     TwoFactorService,
-
     PostQuantumJwtService,
-
     PreKeyService,
-
-
+    ApiKeyService,
+    ApiKeyGuard,
   ],
   exports: [
     AuthService,
@@ -72,9 +76,9 @@ import { PreKeyService } from './prekey.service';
     PasskeyService,
     SamlSsoService,
     PostQuantumJwtService,
-
     PreKeyService,
-
+    ApiKeyService,
+    ApiKeyGuard,
   ],
 })
 export class AuthModule {}
