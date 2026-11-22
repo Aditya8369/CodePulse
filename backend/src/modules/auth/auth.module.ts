@@ -19,6 +19,9 @@ import { PostQuantumJwtService } from './jwt.service';
 
 import { KeysController } from './keys.controller';
 import { PreKeyService } from './prekey.service';
+import { ApiKeyController } from './api-key.controller';
+import { ApiKeyService } from './api-key.service';
+import { ApiKeyGuard } from '../../common/guards/api-key.guard';
 import { BruteForceService } from './brute-force.service';
 import { BruteForceGuard } from './guards/brute-force.guard';
 
@@ -48,7 +51,12 @@ import { BruteForceGuard } from './guards/brute-force.guard';
     SyncModule,
     CryptoModule,
   ],
-  controllers: [AuthController, PasskeyController, KeysController],
+  controllers: [
+    AuthController,
+    PasskeyController,
+    KeysController,
+    ApiKeyController,
+  ],
   providers: [
     AuthService,
     JwtStrategy,
@@ -58,10 +66,10 @@ import { BruteForceGuard } from './guards/brute-force.guard';
     SamlSsoService,
     Fido2AttestationService,
     TwoFactorService,
-
     PostQuantumJwtService,
-
     PreKeyService,
+    ApiKeyService,
+    ApiKeyGuard,
     BruteForceService,
     BruteForceGuard,
   ],
@@ -75,6 +83,8 @@ import { BruteForceGuard } from './guards/brute-force.guard';
     SamlSsoService,
     PostQuantumJwtService,
     PreKeyService,
+    ApiKeyService,
+    ApiKeyGuard,
     BruteForceService,
     BruteForceGuard,
   ],

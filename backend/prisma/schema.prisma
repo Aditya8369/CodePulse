@@ -61,6 +61,7 @@ model User {
     guildMemberships    GuildMember[]
   ownedGuilds         Guild[]
   signalPreKeyBundle  SignalPreKeyBundle?
+  apiKeys             ApiKey[]
 
   @@map("users")
 }
@@ -1173,6 +1174,24 @@ model MpcAuditProof {
   @@map("mpc_audit_proofs")
 }
 
+model ApiKey {
+  id           String    @id @default(uuid())
+  name         String
+  keyHash      String    @unique
+  keyPrefix    String
+  scopes       String[]  @default([])
+  rateLimit    Int       @default(1000)
+  expiresAt    DateTime?
+  lastUsedAt   DateTime?
+  requestCount Int       @default(0)
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([keyPrefix])
+  @@map("api_keys")
 enum DisputeStatus {
   PENDING
   UNDER_REVIEW
