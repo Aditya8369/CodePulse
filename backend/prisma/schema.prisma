@@ -1316,3 +1316,40 @@ model PrivateBattleRoom {
   @@index([status])
   @@map("private_battle_rooms")
 }
+
+enum FindingSeverity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum FindingStatus {
+  OPEN
+  RESOLVED
+  IGNORED
+}
+
+model CodeReviewFinding {
+  id            String          @id @default(uuid())
+  commitSha     String
+  repository    String?
+  filePath      String
+  startLine     Int
+  endLine       Int
+  ruleId        String
+  severity      FindingSeverity @default(MEDIUM)
+  category      String
+  message       String
+  suggestedDiff String?         @db.Text
+  functionScope String?
+  status        FindingStatus   @default(OPEN)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([commitSha])
+  @@index([repository])
+  @@index([severity])
+  @@index([status])
+  @@map("code_review_findings")
+}

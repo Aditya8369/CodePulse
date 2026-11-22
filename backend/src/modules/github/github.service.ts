@@ -306,6 +306,31 @@ export class GithubService {
   }
 
   /**
+   * Fetches changed files and patch contents for a specific commit for automated code review.
+   */
+  async fetchCommitFiles(
+    repo: string,
+    commitSha: string,
+    token?: string,
+  ): Promise<Array<{ filePath: string; content: string; patch?: string }>> {
+    if (!/^[\w.-]+\/[\w.-]+$/.test(repo)) return [];
+    try {
+      const response = await axios.get(`https://api.github.com/repos/${repo}/commits/${commitSha}`, {
+        headers: this.getHeaders(token),
+      });
+      const files = response.data?.files || [];
+      return files.map((f: any) => ({
+        filePath: f.filename,
+        content: f.patch || '',
+        patch: f.patch,
+      }));
+    } catch (error: any) {
+      this.logger.warn(`Could not load commit files for ${repo}@${commitSha}: ${error.message}`);
+      return [];
+    }
+  }
+
+  /**
    * Fetches public GitHub user profile details.
    */
   async fetchUserProfile(username: string, token?: string) {
