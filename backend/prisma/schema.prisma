@@ -288,6 +288,7 @@ model Challenge {
   target      Int
   icon        String?
   category    String?
+  embedding   Unsupported("vector(1536)")? // pgvector 1536-dimensional semantic embedding (#1060)
   expiresAt   DateTime
   createdAt   DateTime        @default(now())
   users       UserChallenge[]
