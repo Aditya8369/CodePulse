@@ -24,6 +24,8 @@ import { PredictionMarketService } from '../esports/prediction-market.service';
 import { SabotageEngineService, SABOTAGE_POWERUPS } from './sabotage-engine.service';
 import type { SabotageType, DefenseType } from './sabotage-engine.service';
 import { EdgeRelayService } from './edge-relay.service';
+import { EvaluatorService } from './evaluator.service';
+import type { BattlePerformanceMetrics, SuddenDeathSession } from './evaluator.service';
 
 interface PlayerState {
   userId: string;
@@ -72,6 +74,7 @@ export class BattlesGateway
     @Optional() private readonly predictionMarket?: PredictionMarketService,
     @Optional() private readonly sabotageEngine?: SabotageEngineService,
     @Optional() private readonly edgeRelayService?: EdgeRelayService,
+    @Optional() private readonly evaluatorService?: EvaluatorService,
   ) {}
 
   @WebSocketServer()
@@ -144,6 +147,10 @@ export class BattlesGateway
         void this.edgeRelayService.executeWithLatencyBuffer(battleId, userId, emitKeystroke);
       } else {
         emitKeystroke();
+      }
+
+      if (this.evaluatorService) {
+        this.evaluatorService.recordKeystroke(battleId, userId, event.timestamp);
       }
 
       if (this.shoutcasterService) {
@@ -807,5 +814,162 @@ export class BattlesGateway
 
     client.emit('sabotage:inventory_state', payload);
     return payload;
+  }
+
+  /**
+   * Evaluates tiebreaker between two players using execution runtime, memory, and code conciseness.
+   * If composite score is identical, extends timer by 180s and initiates Sudden Death.
+   */
+  @SubscribeMessage('battle:evaluate_tiebreaker')
+  async handleEvaluateTiebreaker(
+    @ConnectedSocket() client: Socket,
+    @MessageBody()
+    data: {
+      battleId: string;
+      player1: BattlePerformanceMetrics;
+      player2: BattlePerformanceMetrics;
+    },
+  ) {
+    if (!this.evaluatorService) {
+      client.emit('error', { message: 'EvaluatorService not available on gateway' });
+      return;
+    }
+
+    const { battleId, player1, player2 } = data;
+    const result = this.evaluatorService.evaluateTiebreaker(player1, player2);
+
+    if (result.isDraw) {
+      // Initiate 3-minute Sudden Death with micro-challenge
+      const session = this.evaluatorService.initiateSuddenDeath(battleId);
+
+      const suddenDeathPayload = {
+        battleId,
+        durationSeconds: session.durationSeconds,
+        endsAt: session.endsAt,
+        puzzle: {
+          puzzleId: session.puzzle.puzzleId,
+          title: session.puzzle.title,
+          description: session.puzzle.description,
+          buggyCode: session.puzzle.buggyCode,
+          language: session.puzzle.language,
+        },
+        message: 'Draw detected! 3-minute Sudden Death initiated! First player to compile without errors and pass wins!',
+      };
+
+      // Broadcast to players and spectators
+      this.server?.to(`battle:${battleId}`)?.emit('battle:sudden_death', suddenDeathPayload);
+      this.server?.to(`spectator:${battleId}`)?.emit('battle:sudden_death', suddenDeathPayload);
+
+      return { outcome: 'SUDDEN_DEATH', session: suddenDeathPayload };
+    }
+
+    // Mathematical resolution
+    const resolvedPayload = {
+      battleId,
+      winnerId: result.winnerId,
+      reason: result.reason,
+      scores: result.scores,
+    };
+
+    this.server?.to(`battle:${battleId}`)?.emit('battle:tiebreaker_resolved', resolvedPayload);
+    this.server?.to(`spectator:${battleId}`)?.emit('battle:tiebreaker_resolved', resolvedPayload);
+
+    return { outcome: 'RESOLVED', ...resolvedPayload };
+  }
+
+  /**
+   * Directly triggers sudden death for a battle (e.g. on timer expiration).
+   */
+  @SubscribeMessage('battle:trigger_sudden_death')
+  handleTriggerSuddenDeath(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { battleId: string; customPuzzleId?: string },
+  ) {
+    if (!this.evaluatorService) return;
+
+    const session = this.evaluatorService.initiateSuddenDeath(
+      data.battleId,
+      data.customPuzzleId,
+    );
+
+    const suddenDeathPayload = {
+      battleId: data.battleId,
+      durationSeconds: session.durationSeconds,
+      endsAt: session.endsAt,
+      puzzle: {
+        puzzleId: session.puzzle.puzzleId,
+        title: session.puzzle.title,
+        description: session.puzzle.description,
+        buggyCode: session.puzzle.buggyCode,
+        language: session.puzzle.language,
+      },
+      message: 'Sudden Death round commenced! Timer extended by 180 seconds.',
+    };
+
+    this.server?.to(`battle:${data.battleId}`)?.emit('battle:sudden_death', suddenDeathPayload);
+    this.server?.to(`spectator:${data.battleId}`)?.emit('battle:sudden_death', suddenDeathPayload);
+
+    return suddenDeathPayload;
+  }
+
+  /**
+   * First player to compile without errors and pass the single sudden-death test immediately secures victory.
+   * Broadcasts battle:sudden_death_winner to both players and spectators with full timing breakdown.
+   */
+  @SubscribeMessage('battle:submit_sudden_death')
+  handleSubmitSuddenDeath(
+    @ConnectedSocket() client: Socket,
+    @MessageBody()
+    data: {
+      battleId: string;
+      userId: string;
+      code: string;
+    },
+  ) {
+    if (!this.evaluatorService) {
+      client.emit('battle:sudden_death_eval', { passed: false, error: 'EvaluatorService unavailable' });
+      return;
+    }
+
+    const { battleId, userId, code } = data;
+    const session = this.evaluatorService.getSuddenDeathSession(battleId);
+
+    const result = this.evaluatorService.submitSuddenDeathSolution(battleId, userId, code);
+
+    if (!result.success || !result.isWinner) {
+      client.emit('battle:sudden_death_eval', {
+        passed: false,
+        error: result.error || 'Evaluation failed',
+      });
+      return { success: false, error: result.error };
+    }
+
+    const winnerPayload = {
+      battleId,
+      winnerId: userId,
+      puzzleId: session?.puzzle?.puzzleId,
+      timingBreakdown: result.timingBreakdown,
+      message: `Player ${userId} solved the micro-puzzle in ${result.timingBreakdown?.timeToSolveMs}ms and secured Sudden Death victory!`,
+    };
+
+    // Broadcast victory immediately to both players and spectators
+    this.server?.to(`battle:${battleId}`)?.emit('battle:sudden_death_winner', winnerPayload);
+    this.server?.to(`spectator:${battleId}`)?.emit('battle:sudden_death_winner', winnerPayload);
+
+    return { success: true, isWinner: true, ...winnerPayload };
+  }
+
+  /**
+   * Retrieves keystroke velocity statistics (WPM, CPM, burst speed) for a player.
+   */
+  @SubscribeMessage('battle:get_keystroke_velocity')
+  handleGetKeystrokeVelocity(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { battleId: string; userId: string },
+  ) {
+    if (!this.evaluatorService) return null;
+    const stats = this.evaluatorService.getKeystrokeVelocity(data.battleId, data.userId);
+    client.emit('battle:keystroke_velocity_stats', stats);
+    return stats;
   }
 }

@@ -28,6 +28,7 @@ import { AntiSmurfService } from './anti-smurf.service';
 import { AntiCheatBiometricsService } from './anti-cheat-biometrics.service';
 import { SabotageEngineService } from './sabotage-engine.service';
 import { EdgeRelayService } from './edge-relay.service';
+import { EvaluatorService } from './evaluator.service';
 
 
 @Module({
@@ -65,6 +66,7 @@ import { EdgeRelayService } from './edge-relay.service';
     AntiCheatBiometricsService,
     SabotageEngineService,
     EdgeRelayService,
+    EvaluatorService,
   ],
   exports: [
     BattlesService,
@@ -80,6 +82,7 @@ import { EdgeRelayService } from './edge-relay.service';
     AntiSmurfService,
     AntiCheatBiometricsService,
     EdgeRelayService,
+    EvaluatorService,
   ],
 })
 export class BattlesModule {}
