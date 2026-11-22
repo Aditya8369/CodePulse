@@ -197,7 +197,19 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
         port,
         password,
         username,
-        tls: password ? {} : undefined,
+        tls:
+          this.configService?.get<string>('REDIS_TLS') === 'true' ||
+          process.env.REDIS_TLS === 'true'
+            ? {}
+            : ['false', '0'].includes(
+                this.configService?.get<string>('REDIS_TLS') ||
+                  process.env.REDIS_TLS ||
+                  '',
+              ) || ['redis', 'localhost', '127.0.0.1'].includes(host)
+            ? undefined
+            : password
+            ? {}
+            : undefined,
         lazyConnect: true,
         connectTimeout: 2000,
         maxRetriesPerRequest: 1,

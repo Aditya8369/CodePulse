@@ -31,7 +31,14 @@ import { CustomThrottlerGuard } from '../../common/guards/custom-throttler.guard
           host: config.get<string>('REDIS_HOST') || 'localhost',
           port: parseInt(config.get<string>('REDIS_PORT') || '6379', 10),
           password,
-          tls: password ? {} : undefined,
+          tls:
+            config.get<string>('REDIS_TLS') === 'true' ||
+            (!['redis', 'localhost', '127.0.0.1'].includes(
+              config.get<string>('REDIS_HOST') || '',
+            ) &&
+              password)
+              ? {}
+              : undefined,
           maxRetriesPerRequest: 1,
           enableOfflineQueue: false,
           retryStrategy: (attempt: number) => Math.min(attempt * 500, 10_000),

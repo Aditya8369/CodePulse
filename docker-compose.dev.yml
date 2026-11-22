@@ -71,6 +71,9 @@ services:
       DIRECT_URL: postgresql://devbattle:devbattle_password@postgres:5432/devbattle_db?schema=public
       REDIS_HOST: redis
       REDIS_PORT: '6379'
+      REDIS_PASSWORD: ''
+      REDIS_USERNAME: ''
+      REDIS_TLS: 'false'
       SMTP_HOST: mailpit
       SMTP_PORT: '1025'
       SMTP_SECURE: 'false'
