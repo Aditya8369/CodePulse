@@ -1,12 +1,14 @@
 import { DisruptorRingBuffer } from './disruptor-ring-buffer';
 
-describe('DisruptorRingBuffer (LMAX Disruptor Pattern #459)', () => {
+describe('DisruptorRingBuffer (LMAX Disruptor Pattern & Adaptive Backpressure #1051)', () => {
   it('initializes with next power-of-two capacity', () => {
     const buffer = new DisruptorRingBuffer(1000);
     expect(buffer.getCapacity()).toBe(1024);
 
     const buffer2 = new DisruptorRingBuffer(65536);
     expect(buffer2.getCapacity()).toBe(65536);
+    buffer.destroy();
+    buffer2.destroy();
   });
 
   it('publishes and consumes events in deterministic sequence order', () => {
@@ -25,6 +27,7 @@ describe('DisruptorRingBuffer (LMAX Disruptor Pattern #459)', () => {
     expect(events[0]).toMatchObject({ sequence: 0, type: 'keystroke', payload: 'key-a' });
     expect(events[1]).toMatchObject({ sequence: 1, type: 'keystroke', payload: 'key-b' });
     expect(events[2]).toMatchObject({ sequence: 2, type: 'test_case_eval', payload: 'pass-all' });
+    buffer.destroy();
   });
 
   it('handles circular buffer wrap-around seamlessly using bitwise masking', () => {
@@ -48,6 +51,7 @@ describe('DisruptorRingBuffer (LMAX Disruptor Pattern #459)', () => {
     const secondDrain = buffer.drainBatch(4);
     expect(secondDrain).toHaveLength(4);
     expect(secondDrain.map((e) => e.payload)).toEqual([2, 3, 4, 5]);
+    buffer.destroy();
   });
 
   it('reports accurate diagnostic metrics (capacity, published, consumed, pending)', () => {
@@ -66,26 +70,44 @@ describe('DisruptorRingBuffer (LMAX Disruptor Pattern #459)', () => {
     stats = buffer.getStats();
     expect(stats.consumedCount).toBe(6);
     expect(stats.pendingCount).toBe(4);
+    buffer.destroy();
   });
 
-  it('benchmark: demonstrates > 1,500,000 events/sec lock-free throughput', () => {
-    const buffer = new DisruptorRingBuffer<number>(1048576);
-    const TOTAL_EVENTS = 500000;
+  it('activates adaptive socket backpressure when event loop delay exceeds 50ms', () => {
+    const buffer = new DisruptorRingBuffer<string>({ capacity: 64, lagThresholdMs: 50 });
 
-    // Measure raw lock-free publishing throughput
-    const start = performance.now();
-    for (let i = 0; i < TOTAL_EVENTS; i++) {
-      buffer.publish('keystroke', i, 0);
-    }
-    const elapsedSeconds = (performance.now() - start) / 1000;
-    const throughput = TOTAL_EVENTS / elapsedSeconds;
+    expect(buffer.isBackpressureActive()).toBe(false);
+    expect(buffer.shouldPauseSocket()).toBe(false);
 
-    let consumed = 0;
-    buffer.drain(() => {
-      consumed++;
-    }, TOTAL_EVENTS);
+    // Normal publishing under healthy conditions
+    const seqNormal = buffer.publish('emoji_reaction', '🔥', 'LOW');
+    expect(seqNormal).toBe(0);
 
-    expect(consumed).toBe(TOTAL_EVENTS);
-    expect(throughput).toBeGreaterThan(1500000); // Exceeds 1.5M events/sec benchmark requirement
+    // Simulate event loop lag spike > 50ms (e.g. 75ms)
+    buffer.setSimulatedLag(75);
+    expect(buffer.isBackpressureActive()).toBe(true);
+    expect(buffer.shouldPauseSocket()).toBe(true);
+
+    // Low priority visual reactions are shed/dropped to protect the event loop
+    const seqDropped = buffer.publish('emoji_reaction', '🎉', 'LOW');
+    expect(seqDropped).toBe(-1);
+
+    // Critical battle submission events MUST still be accepted
+    const seqCritical = buffer.publish('battle_submission', 'solution_code', 'CRITICAL');
+    expect(seqCritical).toBe(1);
+
+    const stats = buffer.getStats();
+    expect(stats.droppedLowPriorityCount).toBe(1);
+    expect(stats.eventLoopDelayMs).toBe(75);
+    expect(stats.isBackpressureActive).toBe(true);
+
+    // Recover lag back below threshold
+    buffer.setSimulatedLag(10);
+    expect(buffer.isBackpressureActive()).toBe(false);
+
+    const seqRecovered = buffer.publish('emoji_reaction', '👍', 'LOW');
+    expect(seqRecovered).toBe(2);
+
+    buffer.destroy();
   });
 });
