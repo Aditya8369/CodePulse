@@ -2,6 +2,10 @@
 
 import React, { useState } from "react";
 import {
+  RewardUnboxingModal,
+  UnboxingReward,
+} from "@/components/battle-pass/reward-unboxing-modal";
+import {
   Crown,
   Sparkles,
   CheckCircle2,
@@ -133,6 +137,7 @@ export default function BattlePassPage({
     "Syntax Pulse Theme v1",
     "Cyber-Neon Editor Theme #1",
   ]);
+  const [unboxingReward, setUnboxingReward] = useState<UnboxingReward | null>(null);
   const [previewModal, setPreviewModal] = useState<{
     tier: number;
     track: PassTrack;
@@ -196,6 +201,19 @@ export default function BattlePassPage({
       setClaimedElite((prev) => [...prev, tier]);
     }
     setInventory((prev) => (prev.includes(label) ? prev : [...prev, label]));
+
+    const rewardItem = ROADMAP_TIERS.find((t) => t.tier === tier);
+    if (rewardItem) {
+      const r = track === "FREE" ? rewardItem.freeReward : rewardItem.eliteReward;
+      setUnboxingReward({
+        tier,
+        track,
+        label: r.label,
+        category: r.category,
+        rarity: r.rarity as "COMMON" | "RARE" | "EPIC" | "MYTHIC",
+        xpBonus: tier * 50,
+      });
+    }
   };
 
   return (
@@ -468,6 +486,15 @@ export default function BattlePassPage({
           </div>
         </div>
       )}
+      {/* Animated Mystery Reward Unboxing Celebration Dialog */}
+      <RewardUnboxingModal
+        isOpen={!!unboxingReward}
+        onClose={() => setUnboxingReward(null)}
+        reward={unboxingReward}
+        onEquip={(r) => {
+          setInventory((prev) => (prev.includes(r.label) ? prev : [...prev, r.label]));
+        }}
+      />
     </main>
   );
 }
