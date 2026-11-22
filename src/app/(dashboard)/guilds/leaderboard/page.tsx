@@ -1,13 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Shield, Trophy, Users, Flame, Star, Sparkles, Swords, Search } from "lucide-react";
+import { Shield, Trophy, Users, Flame, Star, Sparkles, Swords, Search, Plus } from "lucide-react";
 import { GuildBattleCard } from "@/components/guilds/guild-battle-card";
+import { GuildCreateModal, GuildCreationData } from "@/components/guilds/guild-create-modal";
 import { Input } from "@/components/ui/input";
 import { BackToTop } from "@/components/ui/back-to-top";
 
 export default function GuildLeaderboardPage() {
   const [search, setSearch] = useState("");
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   const sampleMatch = {
     id: "match-1",
@@ -44,6 +46,16 @@ export default function GuildLeaderboardPage() {
             Aggregated clan velocity, weekend tournament matchups, and global prestige rankings.
           </p>
         </div>
+
+        <button
+          type="button"
+          data-testid="open-create-guild-modal-btn"
+          onClick={() => setIsCreateOpen(true)}
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black text-xs font-bold transition-all shadow-lg shadow-cyan-500/20 active:scale-95 cursor-pointer shrink-0"
+        >
+          <Sparkles className="w-4 h-4" />
+          <span>+ Create Guild</span>
+        </button>
       </div>
 
       {/* Live Featured GvG Match Card */}
@@ -121,6 +133,12 @@ export default function GuildLeaderboardPage() {
 
       {/* Floating Back to Top Button */}
       <BackToTop className="bottom-20 md:bottom-6" />
+
+      {/* Guild Creation Wizard Modal */}
+      <GuildCreateModal
+        isOpen={isCreateOpen}
+        onClose={() => setIsCreateOpen(false)}
+      />
     </div>
   );
 }
