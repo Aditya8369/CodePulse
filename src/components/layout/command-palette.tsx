@@ -25,6 +25,7 @@ import {
   FolderGit2,
   ArrowLeft,
   Sparkles,
+  Keyboard,
 } from "lucide-react";
 import {
   CommandDialog,
@@ -191,7 +192,7 @@ interface CommandPaletteProps {
 export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const router = useRouter();
   const { data: currentUser } = useCurrentUser();
-  const [mode, setMode] = useState<"main" | "battle">("main");
+  const [mode, setMode] = useState<"main" | "battle" | "shortcuts">("main");
   const [searchQuery, setSearchQuery] = useState("");
 
   const cleanQuery = useMemo(() => {
@@ -219,7 +220,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     [onOpenChange]
   );
 
-  // Global Keyboard Shortcuts (Cmd+K and Cmd+B)
+  // Global Keyboard Shortcuts (Cmd+K, Cmd+B, and ?)
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       // Toggle palette on Cmd+K / Ctrl+K
@@ -238,6 +239,19 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "b") {
         e.preventDefault();
         setMode("battle");
+        setSearchQuery("");
+        onOpenChange(true);
+      }
+
+      // Open Keyboard Shortcuts on '?' when not in an active input
+      if (
+        e.key === "?" &&
+        !["input", "textarea"].includes(
+          (e.target as HTMLElement)?.tagName?.toLowerCase()
+        )
+      ) {
+        e.preventDefault();
+        setMode("shortcuts");
         setSearchQuery("");
         onOpenChange(true);
       }
@@ -276,9 +290,9 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     );
   };
 
-  // Intercept Escape key when in "battle" mode to return to "main"
+  // Intercept Escape key when in "battle" or "shortcuts" mode to return to "main"
   const handleDialogKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Escape" && mode === "battle") {
+    if (e.key === "Escape" && (mode === "battle" || mode === "shortcuts")) {
       e.preventDefault();
       e.stopPropagation();
       setMode("main");
@@ -290,10 +304,18 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     <CommandDialog
       open={open}
       onOpenChange={handleOpenChange}
-      title={mode === "battle" ? "Start Quick Battle" : "Command Palette"}
+      title={
+        mode === "battle"
+          ? "Start Quick Battle"
+          : mode === "shortcuts"
+          ? "Keyboard Shortcuts"
+          : "Command Palette"
+      }
       description={
         mode === "battle"
           ? "Type a GitHub username and hit Enter to jump directly into battle"
+          : mode === "shortcuts"
+          ? "Global shortcuts and navigation keys across CodePulse"
           : "Search repositories, navigation routes, or launch quick battles"
       }
       className="glass-strong max-w-[580px] rounded-2xl! border border-white/[0.08] bg-[#0d1117]/95! shadow-2xl shadow-purple-500/5"
@@ -302,6 +324,26 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         className="bg-transparent!"
         onKeyDown={handleDialogKeyDown}
       >
+        {/* Shortcuts Header Banner */}
+        {mode === "shortcuts" && (
+          <div className="flex items-center justify-between border-b border-white/[0.06] bg-indigo-500/10 px-4 py-2 text-xs text-indigo-200">
+            <div className="flex items-center gap-2 font-medium">
+              <Keyboard className="h-3.5 w-3.5 text-indigo-400" />
+              <span>Global Navigation Keys</span>
+            </div>
+            <button
+              onClick={() => {
+                setMode("main");
+                setSearchQuery("");
+              }}
+              className="inline-flex items-center gap-1 rounded bg-white/[0.06] px-2 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-white/[0.1] hover:text-foreground cursor-pointer"
+            >
+              <ArrowLeft className="h-3 w-3" />
+              Back (Esc)
+            </button>
+          </div>
+        )}
+
         {/* Quick Battle Header Banner (when in battle mode) */}
         {mode === "battle" && (
           <div className="flex items-center justify-between border-b border-white/[0.06] bg-purple-500/10 px-4 py-2 text-xs text-purple-200">
@@ -349,6 +391,80 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
               )}
             </div>
           </CommandEmpty>
+
+          {/* ======================================================== */}
+          {/* MODE: SHORTCUTS ONLY                                     */}
+          {/* ======================================================== */}
+          {mode === "shortcuts" && (
+            <div className="p-2 space-y-3" data-testid="shortcuts-dialog-content">
+              <CommandGroup heading="Global Shortcuts">
+                <CommandItem
+                  onSelect={() => {
+                    setMode("main");
+                    onOpenChange(true);
+                  }}
+                  className="flex items-center justify-between rounded-xl p-2.5 cursor-pointer"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Search className="h-4 w-4 text-purple-400" />
+                    <span>Open Command Palette</span>
+                  </div>
+                  <kbd className="px-2 py-0.5 rounded bg-white/10 border border-white/10 font-mono text-[10px]">
+                    ⌘K / Ctrl+K
+                  </kbd>
+                </CommandItem>
+                <CommandItem
+                  onSelect={() => {
+                    setMode("battle");
+                    onOpenChange(true);
+                  }}
+                  className="flex items-center justify-between rounded-xl p-2.5 cursor-pointer"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Swords className="h-4 w-4 text-rose-400" />
+                    <span>Start Quick Battle Mode</span>
+                  </div>
+                  <kbd className="px-2 py-0.5 rounded bg-white/10 border border-white/10 font-mono text-[10px]">
+                    ⌘B / Ctrl+B
+                  </kbd>
+                </CommandItem>
+                <CommandItem
+                  onSelect={() => setMode("shortcuts")}
+                  className="flex items-center justify-between rounded-xl p-2.5 cursor-pointer"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Keyboard className="h-4 w-4 text-indigo-400" />
+                    <span>Show Keyboard Shortcuts Dialog</span>
+                  </div>
+                  <kbd className="px-2 py-0.5 rounded bg-white/10 border border-white/10 font-mono text-[10px]">
+                    ?
+                  </kbd>
+                </CommandItem>
+              </CommandGroup>
+
+              <CommandGroup heading="Global Navigation (G then Key)">
+                {[
+                  { label: "Dashboard", href: "/dashboard", key: "G D" },
+                  { label: "Battles Arena", href: "/battles", key: "G B" },
+                  { label: "Repositories", href: "/repositories", key: "G R" },
+                  { label: "Leaderboards", href: "/leaderboard", key: "G L" },
+                  { label: "Settings", href: "/settings", key: "G S" },
+                  { label: "Challenges", href: "/challenges", key: "G C" },
+                ].map((item) => (
+                  <CommandItem
+                    key={item.href}
+                    onSelect={() => handleSelect(item.href)}
+                    className="flex items-center justify-between rounded-xl p-2.5 cursor-pointer"
+                  >
+                    <span>{item.label}</span>
+                    <kbd className="px-1.5 py-0.5 rounded bg-white/10 font-mono text-[10px] text-muted-foreground">
+                      {item.key}
+                    </kbd>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </div>
+          )}
 
           {/* ======================================================== */}
           {/* MODE: BATTLE ONLY                                        */}
@@ -624,9 +740,23 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                 esc
               </kbd>
               <span className="text-[11px] text-muted-foreground">
-                {mode === "battle" ? "Back" : "Close"}
+                {mode === "battle" || mode === "shortcuts" ? "Back" : "Close"}
               </span>
             </div>
+            <button
+              type="button"
+              data-testid="shortcuts-toggle-btn"
+              onClick={() => {
+                setMode(mode === "shortcuts" ? "main" : "shortcuts");
+                setSearchQuery("");
+              }}
+              className="hidden sm:inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-white transition-colors cursor-pointer"
+            >
+              <kbd className="flex h-5 items-center rounded border border-white/[0.08] bg-white/[0.04] px-1 font-mono text-[10px]">
+                ?
+              </kbd>
+              <span>Shortcuts</span>
+            </button>
           </div>
           <div className="flex items-center gap-2">
             <span className="hidden items-center gap-1 text-[11px] text-purple-400 sm:inline-flex">
