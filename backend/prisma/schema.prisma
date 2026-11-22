@@ -62,6 +62,7 @@ model User {
   ownedGuilds         Guild[]
   signalPreKeyBundle  SignalPreKeyBundle?
   apiKeys             ApiKey[]
+  hostedRooms         PrivateBattleRoom[]   @relation("HostedPrivateRooms")
 
   @@map("users")
 }
@@ -404,6 +405,7 @@ model Battle {
   challenger         User         @relation("BattleChallenger", fields: [challengerId], references: [id])
   opponent           User         @relation("BattleOpponent", fields: [opponentId], references: [id])
   winner             User?        @relation("BattleWinner", fields: [winnerId], references: [id])
+  privateRoom        PrivateBattleRoom?
 
   @@index([status, endsAt])
   @@index([challengerId, status])
@@ -1292,4 +1294,25 @@ model BattleSubmission {
   @@index([battleId])
   @@index([userId])
   @@map("battle_submissions")
+}
+
+model PrivateBattleRoom {
+  id               String   @id @default(uuid())
+  roomCode         String   @unique
+  hostId           String
+  battleId         String?  @unique
+  difficulty       String   @default("Medium")
+  allowedLanguages String[] @default(["typescript", "python", "go", "rust"])
+  timeLimitSeconds Int      @default(900)
+  maxSpectators    Int      @default(50)
+  passcodeHash     String?
+  status           String   @default("WAITING")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  host             User     @relation("HostedPrivateRooms", fields: [hostId], references: [id])
+  battle           Battle?  @relation(fields: [battleId], references: [id])
+
+  @@index([hostId])
+  @@index([status])
+  @@map("private_battle_rooms")
 }

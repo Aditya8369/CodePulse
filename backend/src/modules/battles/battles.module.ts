@@ -16,20 +16,11 @@ import { AnalyticsModule } from '../analytics/analytics.module';
 import { ReplayStreamService } from './replay-stream.service';
 import { CryptoModule } from '../crypto/crypto.module';
 import { WatermarkService } from './watermark.service';
-
 import { HypeMeterService } from './hype-meter.service';
-import { HypeStormGateway } from './hype-storm.gateway';
-import { RedisService } from '../../common/redis/redis.service';
 import { TournamentEngineService } from './tournament-engine.service';
 import { EsportsModule } from '../esports/esports.module';
-import { AiModule } from '../ai/ai.module';
 import { RaidBossService } from './raid-boss.service';
 import { AntiSmurfService } from './anti-smurf.service';
-import { AntiCheatBiometricsService } from './anti-cheat-biometrics.service';
-import { SabotageEngineService } from './sabotage-engine.service';
-import { EdgeRelayService } from './edge-relay.service';
-import { PlagiarismService } from './plagiarism.service';
-
 
 @Module({
   imports: [
@@ -43,7 +34,6 @@ import { PlagiarismService } from './plagiarism.service';
     AnalyticsModule,
     CryptoModule,
     EsportsModule,
-    AiModule,
   ],
   controllers: [BattlesController, TournamentsController],
   providers: [
@@ -58,15 +48,9 @@ import { PlagiarismService } from './plagiarism.service';
     ReplayStreamService,
     WatermarkService,
     HypeMeterService,
-    HypeStormGateway,
-    RedisService,
     TournamentEngineService,
     RaidBossService,
     AntiSmurfService,
-    AntiCheatBiometricsService,
-    SabotageEngineService,
-    EdgeRelayService,
-    PlagiarismService,
   ],
   exports: [
     BattlesService,
@@ -74,15 +58,9 @@ import { PlagiarismService } from './plagiarism.service';
     ReplayStreamService,
     WatermarkService,
     HypeMeterService,
-    HypeStormGateway,
-    RedisService,
     TournamentEngineService,
-    SabotageEngineService,
     RaidBossService,
     AntiSmurfService,
-    AntiCheatBiometricsService,
-    EdgeRelayService,
-    PlagiarismService,
   ],
 })
 export class BattlesModule {}

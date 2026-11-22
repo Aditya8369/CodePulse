@@ -24,6 +24,8 @@ import { PredictionMarketService } from '../esports/prediction-market.service';
 import { SabotageEngineService, SABOTAGE_POWERUPS } from './sabotage-engine.service';
 import type { SabotageType, DefenseType } from './sabotage-engine.service';
 import { EdgeRelayService } from './edge-relay.service';
+import { RoomService } from './room.service';
+import type { CreatePrivateRoomDto, JoinPrivateRoomDto, PrivateRoomState } from './room.service';
 
 interface PlayerState {
   userId: string;
@@ -72,6 +74,7 @@ export class BattlesGateway
     @Optional() private readonly predictionMarket?: PredictionMarketService,
     @Optional() private readonly sabotageEngine?: SabotageEngineService,
     @Optional() private readonly edgeRelayService?: EdgeRelayService,
+    @Optional() private readonly roomService?: RoomService,
   ) {}
 
   @WebSocketServer()
@@ -80,6 +83,11 @@ export class BattlesGateway
   private readonly logger = new Logger(BattlesGateway.name);
   private rooms: Map<string, RoomState> = new Map();
   private disconnectTimers: Map<string, NodeJS.Timeout> = new Map();
+  private socketRoles: Map<string, { role: 'HOST' | 'PLAYER' | 'SPECTATOR'; roomCode?: string; battleId?: string }> = new Map();
+
+  public isSocketSpectator(socketId: string): boolean {
+    return this.socketRoles.get(socketId)?.role === 'SPECTATOR';
+  }
 
   afterInit() {
     this.startDisruptorConsumerLoop();
@@ -123,6 +131,18 @@ export class BattlesGateway
         this.server
           ?.to(`battle:${battleId}`)
           ?.emit('opponent_keystroke_stream', {
+            battleId,
+            userId,
+            deltaLength: data?.delta?.length || 0,
+            cursorPosition: data?.cursorPosition,
+            timestamp: event.timestamp,
+          });
+
+        // Live spectator stream in read-only mode
+        this.server
+          ?.to(`spectator:${battleId}`)
+          ?.emit('room:spectator_stream', {
+            type: 'keystroke_diff',
             battleId,
             userId,
             deltaLength: data?.delta?.length || 0,
@@ -176,6 +196,19 @@ export class BattlesGateway
           totalCount: data?.totalCount,
           executionTimeMs: data?.executionTimeMs,
         });
+
+      // Live spectator stream in read-only mode
+      this.server
+        ?.to(`spectator:${battleId}`)
+        ?.emit('room:spectator_stream', {
+          type: 'test_eval',
+          battleId,
+          userId,
+          passedCount: data?.passedCount,
+          totalCount: data?.totalCount,
+          executionTimeMs: data?.executionTimeMs,
+          timestamp: event.timestamp,
+        });
       if (this.shoutcasterService && typeof data?.passedCount === 'number' && typeof data?.totalCount === 'number') {
         const actorName = this.rooms.get(battleId)?.players[userId]?.username ?? userId;
         const isAllPassed = data.passedCount === data.totalCount && data.totalCount > 0;
@@ -202,6 +235,12 @@ export class BattlesGateway
   handleDisconnect(client: Socket) {
     this.metrics.socketDisconnected(client.id);
     this.logger.log(`Client disconnected: ${client.id}`);
+
+    // If client was part of a private room, update room state
+    const socketInfo = this.socketRoles.get(client.id);
+    if (socketInfo && socketInfo.roomCode && this.roomService) {
+      this.socketRoles.delete(client.id);
+    }
 
     // Identify which room client was in and route through Disruptor Ring Buffer
     for (const [battleId, room] of this.rooms.entries()) {
@@ -268,6 +307,10 @@ export class BattlesGateway
       cursorPosition?: number;
     },
   ) {
+    if (this.isSocketSpectator(client.id)) {
+      client.emit('error', { message: 'Spectators are read-only and cannot send keystrokes' });
+      return;
+    }
     this.ringBuffer.publish('keystroke', {
       battleId: data.battleId,
       userId: data.userId,
@@ -293,6 +336,10 @@ export class BattlesGateway
       executionTimeMs?: number;
     },
   ) {
+    if (this.isSocketSpectator(client.id)) {
+      client.emit('error', { message: 'Spectators are read-only and cannot evaluate test cases' });
+      return;
+    }
     this.ringBuffer.publish('test_case_eval', {
       battleId: data.battleId,
       userId: data.userId,
@@ -807,5 +854,239 @@ export class BattlesGateway
 
     client.emit('sabotage:inventory_state', payload);
     return payload;
+  }
+
+  /**
+   * Private Battle Lobby: Create private room with custom ruleset and room code.
+   */
+  @SubscribeMessage('room:create_private')
+  async handleCreatePrivateRoom(
+    @ConnectedSocket() client: Socket,
+    @MessageBody()
+    data: {
+      hostId: string;
+      hostUsername: string;
+      difficulty?: 'Easy' | 'Medium' | 'Hard';
+      allowedLanguages?: string[];
+      timeLimitSeconds?: number;
+      maxSpectators?: number;
+      passcode?: string;
+      customRoomCode?: string;
+    },
+  ) {
+    if (!this.roomService) {
+      client.emit('room:error', { message: 'RoomService not configured on gateway' });
+      return;
+    }
+
+    const room = await this.roomService.createPrivateRoom({
+      ...data,
+    });
+
+    this.socketRoles.set(client.id, {
+      role: 'HOST',
+      roomCode: room.roomCode,
+    });
+
+    void client.join(`room:${room.roomCode}`);
+
+    const payload = {
+      roomCode: room.roomCode,
+      room,
+      shareableLink: `/battles/private/${room.roomCode}`,
+    };
+
+    client.emit('room:created', payload);
+    return payload;
+  }
+
+  /**
+   * Private Battle Lobby: Join private room with optional hashed passcode.
+   * Supports player and spectator roles.
+   */
+  @SubscribeMessage('room:join_private')
+  async handleJoinPrivateRoom(
+    @ConnectedSocket() client: Socket,
+    @MessageBody()
+    data: {
+      roomCode: string;
+      userId: string;
+      username: string;
+      passcode?: string;
+      role?: 'player' | 'spectator';
+    },
+  ) {
+    if (!this.roomService) {
+      client.emit('room:join_error', { message: 'RoomService not configured on gateway' });
+      return { success: false, error: 'RoomService unavailable' };
+    }
+
+    const result = await this.roomService.joinPrivateRoom({
+      ...data,
+      socketId: client.id,
+    });
+
+    if (!result.success || !result.room) {
+      client.emit('room:join_error', { message: result.error || 'Failed to join room' });
+      return { success: false, error: result.error };
+    }
+
+    const room = result.room;
+    const assignedRole = result.role || 'PLAYER';
+
+    this.socketRoles.set(client.id, {
+      role: assignedRole,
+      roomCode: room.roomCode,
+      battleId: room.battleId || undefined,
+    });
+
+    void client.join(`room:${room.roomCode}`);
+
+    if (assignedRole === 'SPECTATOR') {
+      void client.join(`spectator:${room.roomCode}`);
+      if (room.battleId) {
+        void client.join(`spectator:${room.battleId}`);
+      }
+
+      client.emit('room:joined', {
+        room,
+        role: 'SPECTATOR',
+        message: 'Joined private room as spectator',
+      });
+
+      this.server.to(`room:${room.roomCode}`).emit('room:spectator_joined', {
+        roomCode: room.roomCode,
+        userId: data.userId,
+        username: data.username,
+        spectatorCount: Object.keys(room.spectators).length,
+      });
+    } else {
+      client.emit('room:joined', {
+        room,
+        role: assignedRole,
+        message: `Joined private room as ${assignedRole}`,
+      });
+
+      this.server.to(`room:${room.roomCode}`).emit('room:player_joined', {
+        roomCode: room.roomCode,
+        player: room.players[data.userId],
+        players: Object.values(room.players),
+      });
+    }
+
+    return { success: true, room, role: assignedRole };
+  }
+
+  /**
+   * Private Battle Lobby: Player toggles ready status.
+   */
+  @SubscribeMessage('room:player_ready')
+  async handleRoomPlayerReady(
+    @ConnectedSocket() client: Socket,
+    @MessageBody()
+    data: {
+      roomCode: string;
+      userId: string;
+      isReady: boolean;
+    },
+  ) {
+    if (!this.roomService) return;
+    const { room, allReady } = await this.roomService.setPlayerReady(
+      data.roomCode,
+      data.userId,
+      data.isReady,
+    );
+
+    if (!room) return;
+
+    this.server.to(`room:${room.roomCode}`).emit('room:ready_update', {
+      roomCode: room.roomCode,
+      userId: data.userId,
+      isReady: data.isReady,
+      players: Object.values(room.players),
+      allReady,
+    });
+
+    if (allReady) {
+      this.server.to(`room:${room.roomCode}`).emit('room:all_ready', {
+        roomCode: room.roomCode,
+        readyToStart: true,
+        message: 'All players ready! Host may now start the match.',
+      });
+    }
+
+    return { room, allReady };
+  }
+
+  /**
+   * Private Battle Lobby: Host starts battle match with custom ruleset.
+   */
+  @SubscribeMessage('room:start_match')
+  async handleRoomStartMatch(
+    @ConnectedSocket() client: Socket,
+    @MessageBody()
+    data: {
+      roomCode: string;
+      userId: string;
+      battleId?: string;
+    },
+  ) {
+    if (!this.roomService) return;
+    const result = await this.roomService.startMatch(
+      data.roomCode,
+      data.userId,
+      data.battleId,
+    );
+
+    if (!result.success || !result.room) {
+      client.emit('room:start_error', { message: result.error || 'Failed to start match' });
+      return { success: false, error: result.error };
+    }
+
+    const room = result.room;
+    const battleId = result.battleId!;
+
+    // Initialize battle room in BattlesGateway
+    if (!this.rooms.has(battleId)) {
+      this.rooms.set(battleId, {
+        battleId,
+        players: Object.fromEntries(
+          Object.entries(room.players).map(([uid, p]) => [
+            uid,
+            {
+              userId: p.userId,
+              username: p.username,
+              isReady: p.isReady,
+              socketId: p.socketId,
+            },
+          ]),
+        ),
+        currentRound: 1,
+        totalRounds: 1,
+      });
+    }
+
+    // Bridge all spectator sockets to the new battle spectator channel
+    for (const spectator of Object.values(room.spectators)) {
+      const sock = this.server?.sockets?.sockets?.get(spectator.socketId);
+      if (sock) {
+        void sock.join(`spectator:${battleId}`);
+      }
+    }
+
+    const payload = {
+      battleId,
+      roomCode: room.roomCode,
+      ruleset: {
+        difficulty: room.difficulty,
+        allowedLanguages: room.allowedLanguages,
+        timeLimitSeconds: room.timeLimitSeconds,
+      },
+      players: Object.values(room.players),
+      message: 'Match started!',
+    };
+
+    this.server.to(`room:${room.roomCode}`).emit('room:match_started', payload);
+    return { success: true, ...payload };
   }
 }

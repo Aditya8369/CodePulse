@@ -44,6 +44,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   private memoryHLL: Map<string, Set<string>> = new Map();
   private memorySortedSets: Map<string, Map<string, number>> = new Map();
   private memoryStrings: Map<string, { value: string; expiresAt?: number }> = new Map();
+  private memoryHashes: Map<string, { data: Map<string, string>; expiresAt?: number }> = new Map();
 
   // Lua script SHA cache
   private tokenBucketSha: string | null = null;
@@ -777,15 +778,142 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
         this.logger.debug(`ttl failed, fallback to in-memory: ${err.message}`);
       }
     }
-    const item = this.memoryStrings.get(key);
+    const item = this.memoryStrings.get(key) || this.memoryHashes.get(key);
     if (!item) return -2;
     if (!item.expiresAt) return -1;
     const remainingMs = item.expiresAt - Date.now();
     if (remainingMs <= 0) {
       this.memoryStrings.delete(key);
+      this.memoryHashes.delete(key);
       return -2;
     }
     return Math.ceil(remainingMs / 1000);
+  }
+
+  /**
+   * Hash: Sets field in hash with optional TTL in seconds for the key.
+   */
+  async hset(key: string, field: string, value: string): Promise<number> {
+    if (this.client && this.isConnected) {
+      try {
+        return await this.client.hset(key, field, value);
+      } catch (err: any) {
+        this.logger.debug(`hset failed, fallback to in-memory: ${err.message}`);
+      }
+    }
+    let entry = this.memoryHashes.get(key);
+    if (!entry || (entry.expiresAt && Date.now() > entry.expiresAt)) {
+      entry = { data: new Map() };
+      this.memoryHashes.set(key, entry);
+    }
+    const isNew = entry.data.has(field) ? 0 : 1;
+    entry.data.set(field, value);
+    return isNew;
+  }
+
+  /**
+   * Hash: Sets multiple fields in hash.
+   */
+  async hmset(key: string, fields: Record<string, string>): Promise<'OK' | number> {
+    if (this.client && this.isConnected) {
+      try {
+        return await this.client.hmset(key, fields);
+      } catch (err: any) {
+        this.logger.debug(`hmset failed, fallback to in-memory: ${err.message}`);
+      }
+    }
+    let entry = this.memoryHashes.get(key);
+    if (!entry || (entry.expiresAt && Date.now() > entry.expiresAt)) {
+      entry = { data: new Map() };
+      this.memoryHashes.set(key, entry);
+    }
+    for (const [f, v] of Object.entries(fields)) {
+      entry.data.set(f, v);
+    }
+    return 'OK';
+  }
+
+  /**
+   * Hash: Gets field in hash.
+   */
+  async hget(key: string, field: string): Promise<string | null> {
+    if (this.client && this.isConnected) {
+      try {
+        return await this.client.hget(key, field);
+      } catch (err: any) {
+        this.logger.debug(`hget failed, fallback to in-memory: ${err.message}`);
+      }
+    }
+    const entry = this.memoryHashes.get(key);
+    if (!entry) return null;
+    if (entry.expiresAt && Date.now() > entry.expiresAt) {
+      this.memoryHashes.delete(key);
+      return null;
+    }
+    return entry.data.get(field) ?? null;
+  }
+
+  /**
+   * Hash: Gets all fields in hash.
+   */
+  async hgetall(key: string): Promise<Record<string, string>> {
+    if (this.client && this.isConnected) {
+      try {
+        return await this.client.hgetall(key);
+      } catch (err: any) {
+        this.logger.debug(`hgetall failed, fallback to in-memory: ${err.message}`);
+      }
+    }
+    const entry = this.memoryHashes.get(key);
+    if (!entry) return {};
+    if (entry.expiresAt && Date.now() > entry.expiresAt) {
+      this.memoryHashes.delete(key);
+      return {};
+    }
+    const result: Record<string, string> = {};
+    for (const [k, v] of entry.data.entries()) {
+      result[k] = v;
+    }
+    return result;
+  }
+
+  /**
+   * Hash: Deletes one or more fields from hash.
+   */
+  async hdel(key: string, ...fields: string[]): Promise<number> {
+    if (this.client && this.isConnected) {
+      try {
+        return await this.client.hdel(key, ...fields);
+      } catch (err: any) {
+        this.logger.debug(`hdel failed, fallback to in-memory: ${err.message}`);
+      }
+    }
+    const entry = this.memoryHashes.get(key);
+    if (!entry) return 0;
+    let deleted = 0;
+    for (const f of fields) {
+      if (entry.data.delete(f)) deleted++;
+    }
+    return deleted;
+  }
+
+  /**
+   * Key: Sets key TTL in seconds.
+   */
+  async expire(key: string, ttlSeconds: number): Promise<number> {
+    if (this.client && this.isConnected) {
+      try {
+        return await this.client.expire(key, ttlSeconds);
+      } catch (err: any) {
+        this.logger.debug(`expire failed, fallback to in-memory: ${err.message}`);
+      }
+    }
+    const expiresAt = Date.now() + ttlSeconds * 1000;
+    const strItem = this.memoryStrings.get(key);
+    if (strItem) strItem.expiresAt = expiresAt;
+    const hashItem = this.memoryHashes.get(key);
+    if (hashItem) hashItem.expiresAt = expiresAt;
+    return 1;
   }
 
   /**
@@ -797,5 +925,6 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     this.memoryHLL.clear();
     this.memorySortedSets.clear();
     this.memoryStrings.clear();
+    this.memoryHashes.clear();
   }
 }

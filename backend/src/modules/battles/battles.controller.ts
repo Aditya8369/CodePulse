@@ -22,6 +22,7 @@ import { Optional } from '@nestjs/common';
 import { SabotageEngineService, SABOTAGE_POWERUPS } from './sabotage-engine.service';
 import { EdgeRelayService } from './edge-relay.service';
 import { RouteEdgeDto, LatencyProbeDto } from './dto/edge-relay.dto';
+import { RoomService, CreatePrivateRoomDto } from './room.service';
 
 @ApiTags('battles')
 @Controller('battles')
@@ -32,6 +33,7 @@ export class BattlesController {
     private readonly replayStream: ReplayStreamService,
     @Optional() private readonly sabotageEngine?: SabotageEngineService,
     @Optional() private readonly edgeRelay?: EdgeRelayService,
+    @Optional() private readonly roomService?: RoomService,
   ) {}
 
   @Get('edge/regions')
@@ -193,6 +195,47 @@ export class BattlesController {
     return this.replayStream.getMatchReplayTimeline(id, start, end, max);
   }
 
+  @Post('rooms/create')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create a private battle room with custom ruleset and 6-char code' })
+  async createPrivateRoom(@Request() req: any, @Body() dto: Partial<CreatePrivateRoomDto>) {
+    if (!this.roomService) throw new BadRequestException('RoomService is unavailable');
+    return this.roomService.createPrivateRoom({
+      hostId: req.user?.id || dto.hostId || 'anonymous',
+      hostUsername: req.user?.username || dto.hostUsername || 'Host',
+      difficulty: dto.difficulty,
+      allowedLanguages: dto.allowedLanguages,
+      timeLimitSeconds: dto.timeLimitSeconds,
+      maxSpectators: dto.maxSpectators,
+      passcode: dto.passcode,
+      customRoomCode: dto.customRoomCode,
+    });
+  }
+
+  @Get('rooms/:roomCode')
+  @ApiOperation({ summary: 'Get public / spectator info for private room' })
+  async getPrivateRoom(@Param('roomCode') roomCode: string) {
+    if (!this.roomService) throw new BadRequestException('RoomService is unavailable');
+    const info = await this.roomService.getSpectatorRoomInfo(roomCode);
+    if (!info) throw new BadRequestException(`Private room ${roomCode} not found or expired`);
+    return info;
+  }
+
+  @Post('rooms/:roomCode/validate-passcode')
+  @ApiOperation({ summary: 'Validate passcode for private room before joining' })
+  async validateRoomPasscode(
+    @Param('roomCode') roomCode: string,
+    @Body() body: { passcode: string },
+  ) {
+    if (!this.roomService) throw new BadRequestException('RoomService is unavailable');
+    const room = await this.roomService.getRoom(roomCode);
+    if (!room) throw new BadRequestException(`Private room ${roomCode} not found`);
+    if (!room.hasPasscode) return { valid: true, requiresPasscode: false };
+    const valid = this.roomService.verifyPasscode(body.passcode, room.passcodeHash || '');
+    return { valid, requiresPasscode: true };
+  }
+
   @Get(':id/plagiarism')
   @ApiOperation({ summary: 'Get plagiarism inspection report, similarity scores, and diff overlays for a battle' })
   async getPlagiarismReport(@Param('id') id: string) {
@@ -223,5 +266,6 @@ export class BattlesController {
       dto.opponentUserId,
       dto.standardTemplate,
     );
+  }
   }
 }
