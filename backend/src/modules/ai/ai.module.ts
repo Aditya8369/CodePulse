@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { AiController } from './ai.controller';
 import { TranspilerService } from './transpiler.service';
 import { PrAnalyzerService } from './pr-analyzer.service';
@@ -11,7 +11,7 @@ import { PrismaModule } from '../../prisma/prisma.module';
 import { RedisService } from '../../common/redis/redis.service';
 
 @Module({
-  imports: [GithubModule, PrismaModule],
+  imports: [forwardRef(() => GithubModule), PrismaModule],
   controllers: [AiController],
   providers: [
     TranspilerService,
