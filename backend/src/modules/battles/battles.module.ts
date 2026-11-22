@@ -30,6 +30,7 @@ import { EdgeRelayService } from './edge-relay.service';
 import { PlagiarismService } from './plagiarism.service';
 import { RoomService } from './room.service';
 import { EvaluatorService } from './evaluator.service';
+import { DistributedLeaderElectionService } from './consensus/leader-election.service';
 
 @Module({
   imports: [
@@ -70,6 +71,7 @@ import { EvaluatorService } from './evaluator.service';
     PlagiarismService,
     RoomService,
     EvaluatorService,
+    DistributedLeaderElectionService,
   ],
   exports: [
     BattlesService,
@@ -88,6 +90,7 @@ import { EvaluatorService } from './evaluator.service';
     PlagiarismService,
     RoomService,
     EvaluatorService,
+    DistributedLeaderElectionService,
   ],
 })
 export class BattlesModule {}
