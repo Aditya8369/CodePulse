@@ -8,8 +8,10 @@ import {
   Request,
   UseGuards,
   Optional,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiQuery, ApiBody } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiQuery, ApiBody, ApiResponse } from '@nestjs/swagger';
 import { AnalyticsService } from './analytics.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { OrgProductivityQueryDto } from './dto/org-metrics.dto';
@@ -20,6 +22,14 @@ import type {
   TelemetryBenchmarkResult,
   ScyllaEngineStats,
 } from './scylladb-telemetry.service';
+import { ComplexityService } from './complexity.service';
+import {
+  CodeAnalysisRequestDto,
+  BatchFilesAnalysisRequestDto,
+  CreateComplexitySnapshotRequestDto,
+  FileComplexityDto,
+  RepositoryComplexitySnapshotDto,
+} from './dto/complexity.dto';
 
 @ApiTags('analytics')
 @Controller('analytics')
@@ -27,6 +37,7 @@ export class AnalyticsController {
   constructor(
     private readonly analyticsService: AnalyticsService,
     @Optional() private readonly scyllaTelemetry?: ScyllaDbTelemetryService,
+    @Optional() private readonly complexityService?: ComplexityService,
   ) {}
 
   @Get('platform')
@@ -150,4 +161,85 @@ export class AnalyticsController {
     const count = this.scyllaTelemetry.recordTelemetryEventsBulk(events);
     return { ingestedCount: count, ack: true };
   }
+
+  // ==========================================
+  // Cyclomatic & Halstead Complexity Endpoints (#365)
+  // ==========================================
+
+  @Post('complexity/analyze-code')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Analyze Cyclomatic & Halstead code complexity with refactoring advice for code snippet',
+    description:
+      'Parses TypeScript, JavaScript, or Python code into AST, computing Cyclomatic Complexity (M = E - N + 2P), Halstead Volume, and Maintainability Index (MI), flagging refactoring hotspots (Complexity > 15, MI < 65).',
+  })
+  @ApiResponse({ status: 200, type: FileComplexityDto })
+  async analyzeCodeComplexity(@Body() dto: CodeAnalysisRequestDto): Promise<FileComplexityDto> {
+    if (!this.complexityService) {
+      throw new Error('ComplexityService not available');
+    }
+    return this.complexityService.analyzeCode(dto);
+  }
+
+  @Post('complexity/analyze-files')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Analyze a batch of source files for repository-wide complexity hotspots',
+  })
+  async analyzeBatchFiles(@Body() dto: BatchFilesAnalysisRequestDto) {
+    if (!this.complexityService) {
+      throw new Error('ComplexityService not available');
+    }
+    return this.complexityService.analyzeBatch(dto.files || []);
+  }
+
+  @Post('repository/:repositoryId/complexity/snapshot')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Generate and persist a complexity snapshot for a repository',
+  })
+  @ApiParam({ name: 'repositoryId', description: 'Repository UUID' })
+  async createRepositoryComplexitySnapshot(
+    @Param('repositoryId') repositoryId: string,
+    @Body() dto: CreateComplexitySnapshotRequestDto,
+  ): Promise<RepositoryComplexitySnapshotDto> {
+    if (!this.complexityService) {
+      throw new Error('ComplexityService not available');
+    }
+    return this.complexityService.createRepositorySnapshot(
+      repositoryId,
+      `repo-${repositoryId}`,
+      dto.files || [],
+      dto.branch || 'main',
+      dto.commitSha,
+    );
+  }
+
+  @Get('repository/:repositoryId/complexity/latest')
+  @ApiOperation({
+    summary: 'Get latest complexity snapshot for a repository',
+  })
+  @ApiParam({ name: 'repositoryId', description: 'Repository UUID' })
+  async getLatestRepositoryComplexity(
+    @Param('repositoryId') repositoryId: string,
+  ): Promise<RepositoryComplexitySnapshotDto | null> {
+    if (!this.complexityService) {
+      throw new Error('ComplexityService not available');
+    }
+    return this.complexityService.getLatestSnapshot(repositoryId);
+  }
+
+  @Get('repository/:repositoryId/complexity/hotspots')
+  @ApiOperation({
+    summary: 'Get high-risk cognitive and cyclomatic complexity hotspots requiring refactoring',
+  })
+  @ApiParam({ name: 'repositoryId', description: 'Repository UUID' })
+  async getRepositoryHotspots(@Param('repositoryId') repositoryId: string) {
+    if (!this.complexityService) {
+      throw new Error('ComplexityService not available');
+    }
+    return this.complexityService.getHotspots(repositoryId);
+  }
 }
+

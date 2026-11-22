@@ -226,6 +226,7 @@ model Repository {
 
   archivedAt    DateTime?
   prMetrics     PullRequestMetric[]
+  complexities  RepositoryComplexity[]
 
   @@unique([userId, githubRepoId])
   @@index([userId])
@@ -1251,3 +1252,30 @@ model DisputeSnapshot {
   @@index([battleId])
   @@map("dispute_snapshots")
 }
+
+model RepositoryComplexity {
+  id                     String      @id @default(uuid())
+  repositoryId           String
+  repositoryFullName     String
+  branch                 String      @default("main")
+  commitSha              String?
+  fileCount              Int         @default(0)
+  totalLoc               Int         @default(0)
+  averageComplexity      Float       @default(0.0)
+  maxComplexity          Int         @default(0)
+  averageMaintainability Float       @default(0.0)
+  totalHalsteadVolume    Float       @default(0.0)
+  highRiskFunctionsCount Int         @default(0)
+  fileMetrics            Json        // Array of per-file complexity and Halstead metrics
+  highRiskFunctions      Json        // Array of high-risk function hotspots with refactoring advice
+  createdAt              DateTime    @default(now())
+  updatedAt              DateTime    @updatedAt
+
+  repository             Repository  @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+  @@index([repositoryId])
+  @@index([repositoryFullName])
+  @@index([createdAt])
+  @@map("repository_complexities")
+}
+
