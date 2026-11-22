@@ -7,13 +7,17 @@ import { PostQuantumService } from './post-quantum.service';
 
 @Module({
   controllers: [CryptoController],
-import { PostQuantumService } from './post-quantum.service';
-import { CryptoController } from './crypto.controller';
-
-@Module({
-  controllers: [CryptoController],
-  providers: [ZkpVerifierService, HomomorphicTelemetryService, ZkSnarkVerifierService, PostQuantumService],
-  exports: [ZkpVerifierService, HomomorphicTelemetryService, ZkSnarkVerifierService, PostQuantumService],
-})
+  providers: [
+    ZkpVerifierService,
+    HomomorphicTelemetryService,
+    ZkSnarkVerifierService,
+    PostQuantumService,
+  ],
+  exports: [
+    ZkpVerifierService,
+    HomomorphicTelemetryService,
+    ZkSnarkVerifierService,
+    PostQuantumService,
+  ],
 })
 export class CryptoModule {}

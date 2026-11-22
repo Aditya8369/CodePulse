@@ -175,9 +175,10 @@ export function SpatialAudioRoom({
               value={[selectedParticipant.volume]}
               max={100}
               step={1}
-              onValueChange={([val]) => {
+              onValueChange={(val: any) => {
+                const num = Array.isArray(val) ? val[0] : (typeof val === 'number' ? val : 0);
                 setParticipants((prev) =>
-                  prev.map((p) => (p.id === selectedParticipant.id ? { ...p, volume: val } : p))
+                  prev.map((p) => (p.id === selectedParticipant.id ? { ...p, volume: num } : p))
                 );
               }}
             />

@@ -276,7 +276,7 @@ export default function CooperativeRaidBossPage() {
               Syntax & Lint Aegis Shield
             </span>
             <span data-testid="raid-shield-readout" className="font-mono text-cyan-200">
-              {raid.currentShield.toLocaleString()} / {raid.maxShield.toLocaleString()} ({shieldPct}%)
+              {raid.currentShield.toLocaleString('en-US')} / {raid.maxShield.toLocaleString('en-US')} ({shieldPct}%)
             </span>
           </div>
           <div className="h-2.5 w-full overflow-hidden rounded-full bg-zinc-800">
@@ -295,7 +295,7 @@ export default function CooperativeRaidBossPage() {
               Boss Core Integrity HP
             </span>
             <span data-testid="raid-hp-readout" className="font-mono text-rose-200">
-              {raid.currentHp.toLocaleString()} / {raid.maxHp.toLocaleString()} ({hpPct}%)
+              {raid.currentHp.toLocaleString('en-US')} / {raid.maxHp.toLocaleString('en-US')} ({hpPct}%)
             </span>
           </div>
           <div className="h-4 w-full overflow-hidden rounded-full bg-zinc-800">

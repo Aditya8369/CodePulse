@@ -1047,6 +1047,8 @@ model BattleConsensusSnapshot {
   updatedAt  DateTime @updatedAt
 
   @@map("battle_consensus_snapshots")
+}
+
 model ZkpSubmissionProof {
   id            String   @id @default(uuid())
   userId        String
@@ -1108,6 +1110,8 @@ model EncryptedChatMessage {
   @@index([teamId, createdAt(sort: Desc)])
   @@index([senderId, createdAt(sort: Desc)])
   @@map("encrypted_chat_messages")
+}
+
 enum MpcSecretStatus {
   ACTIVE
   RECONSTRUCTED

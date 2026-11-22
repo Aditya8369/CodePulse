@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback } from "react";
 import {
-  Trello,
+  Kanban,
   Plus,
   MoveRight,
   MoreVertical,
@@ -121,7 +121,7 @@ export function WarRoomKanban({
       {/* Kanban Header */}
       <div className="flex items-center justify-between px-6 py-3.5 bg-muted/40 border-b border-border">
         <div className="flex items-center gap-3">
-          <Trello className="w-5 h-5 text-primary" />
+          <Kanban className="w-5 h-5 text-primary" />
           <h2 className="font-bold text-base text-foreground">War Room Incident & Sprint Kanban</h2>
           <Badge variant="outline" className="text-xs font-mono">
             Room: {warRoomId}
