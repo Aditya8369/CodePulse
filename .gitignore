@@ -53,6 +53,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# python
+__pycache__/
+*.pyc
+
 # scratch / agent temporary files
 scratch/
 data/

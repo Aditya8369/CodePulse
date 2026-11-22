@@ -1192,4 +1192,60 @@ model ApiKey {
   @@index([userId])
   @@index([keyPrefix])
   @@map("api_keys")
+enum DisputeStatus {
+  PENDING
+  UNDER_REVIEW
+  RESOLVED
+  DISMISSED
+}
+
+enum DisputeVerdict {
+  NULLIFY_MATCH
+  AWARD_WIN_TO_VICTIM
+  BAN_CHEATER
+  DISMISS_WITH_PENALTY
+  NO_ACTION
+}
+
+model MatchDispute {
+  id             String         @id @default(uuid())
+  battleId       String
+  filerId        String
+  accusedId      String?
+  reason         String
+  evidenceUrl    String?
+  status         DisputeStatus  @default(PENDING)
+  adminVerdict   DisputeVerdict?
+  adminNotes     String?
+  resolvedById   String?
+  resolvedAt     DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  snapshots      DisputeSnapshot[]
+
+  @@index([battleId])
+  @@index([filerId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("match_disputes")
+}
+
+model DisputeSnapshot {
+  id                String       @id @default(uuid())
+  disputeId         String
+  battleId          String
+  capturedAt        DateTime     @default(now())
+  keystrokeTimeline Json         // Array of frame-by-frame keystroke events with offsets
+  testCasesStdout   String?      @db.Text
+  testCasesStderr   String?      @db.Text
+  networkRttTelemetry Json?      // RTT samples, ping jitter, packet loss
+  tabFocusLogs      Json?        // Visibility changes, blur events, window switches
+  finalCodeState    String?      @db.Text
+
+  dispute           MatchDispute @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+
+  @@index([disputeId])
+  @@index([battleId])
+  @@map("dispute_snapshots")
 }

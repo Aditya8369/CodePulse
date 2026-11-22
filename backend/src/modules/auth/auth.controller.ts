@@ -20,6 +20,7 @@ import { SamlSsoService } from './saml-sso.service';
 import type { SamlTenantIdpConfig } from './saml-sso.service';
 import { Fido2AttestationService } from './fido2-attestation.service';
 import { PowChallengeGuard } from '../../common/guards/pow-challenge.guard';
+import { BruteForceGuard } from './guards/brute-force.guard';
 import {
   AuthResponseDto,
   EmailPasswordDto,
@@ -78,12 +79,23 @@ export class AuthController {
   }
 
   @Post('login')
+  @UseGuards(BruteForceGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Authenticate with email and password' })
-  async login(@Body() loginDto: EmailPasswordDto): Promise<AuthResponseDto> {
+  async login(
+    @Body() loginDto: EmailPasswordDto,
+    @Req() req: Request,
+  ): Promise<AuthResponseDto> {
+    const forwarded = req.headers?.['x-forwarded-for'];
+    const ip = forwarded
+      ? (typeof forwarded === 'string' ? forwarded.split(',')[0].trim() : forwarded[0])
+      : req.ip || '127.0.0.1';
+
     return this.authService.authenticateWithPassword(
       loginDto.email,
       loginDto.password,
+      undefined,
+      ip,
     );
   }
 

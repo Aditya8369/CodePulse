@@ -40,6 +40,14 @@ export class AdminController {
     @Optional() private readonly hsmService?: HsmService,
   ) {}
 
+  @Post('users/:id/unlock')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Manually unlock a user account and reset failed brute-force attempt counters (Admin only)' })
+  @ApiParam({ name: 'id', description: 'User ID, username, or email to unlock' })
+  async unlockUser(@Param('id') id: string) {
+    return this.adminService.unlockUser(id);
+  }
+
   @Delete('user/:id')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete a user (Admin only)' })

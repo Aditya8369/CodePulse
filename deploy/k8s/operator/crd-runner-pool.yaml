@@ -1,0 +1,118 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: runnerpools.codepulse.io
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.14.0
+    description: "Automated Self-Healing Execution Runner Pool with dynamic autoscaling & gRPC health probes"
+  labels:
+    app.kubernetes.io/name: codepulse-operator
+    app.kubernetes.io/part-of: codepulse
+spec:
+  group: codepulse.io
+  names:
+    kind: RunnerPool
+    listKind: RunnerPoolList
+    plural: runnerpools
+    singular: runnerpool
+    shortNames:
+      - rp
+      - runnerpool
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      subresources:
+        status: {}
+        scale:
+          specReplicasPath: .spec.minRunners
+          statusReplicasPath: .status.currentRunners
+          labelSelectorPath: .status.selector
+      schema:
+        openAPIV3Schema:
+          type: object
+          description: RunnerPool manages a self-healing pool of sandboxed execution runner pods.
+          required:
+            - spec
+          properties:
+            apiVersion:
+              type: string
+            kind:
+              type: string
+            metadata:
+              type: object
+            spec:
+              type: object
+              required:
+                - minRunners
+                - maxRunners
+                - runnerImage
+              properties:
+                minRunners:
+                  type: integer
+                  minimum: 1
+                  maximum: 200
+                  default: 3
+                  description: Minimum number of ready runner pods in pool.
+                maxRunners:
+                  type: integer
+                  minimum: 1
+                  maximum: 500
+                  default: 50
+                  description: Maximum capacity for autoscaling runner pool under battle queue pressure.
+                runnerImage:
+                  type: string
+                  default: "ghcr.io/codepulse/runner-sandbox:latest"
+                  description: Docker image for isolated runner pods.
+                targetQueueWaitSeconds:
+                  type: number
+                  default: 3.0
+                  description: Target queue latency threshold triggering autoscaling.
+                healthThresholds:
+                  type: object
+                  properties:
+                    cpuThresholdPercent:
+                      type: number
+                      default: 95.0
+                      description: CPU saturation percentage triggering eviction if sustained.
+                    memoryThresholdPercent:
+                      type: number
+                      default: 95.0
+                      description: Memory saturation percentage triggering eviction if sustained.
+                    sustainedThresholdSeconds:
+                      type: integer
+                      default: 30
+                      description: Duration in seconds sustained above threshold before terminating pod.
+                    probeIntervalSeconds:
+                      type: integer
+                      default: 5
+                      description: Interval between periodic gRPC health probes.
+                    probeTimeoutSeconds:
+                      type: integer
+                      default: 2
+                      description: Timeout for gRPC health probe responses.
+                    executionTimeoutSeconds:
+                      type: integer
+                      default: 15
+                      description: Maximum execution timeout before killing zombie pods.
+            status:
+              type: object
+              properties:
+                phase:
+                  type: string
+                  enum: ["Initializing", "Ready", "Healing", "Degraded", "Scaling"]
+                currentRunners:
+                  type: integer
+                readyRunners:
+                  type: integer
+                busyRunners:
+                  type: integer
+                restartedRunnersTotal:
+                  type: integer
+                lastAutoscaleTime:
+                  type: string
+                mttrSeconds:
+                  type: number
+                selector:
+                  type: string

@@ -23,6 +23,7 @@ import type { RaidBossArchetype, RaidPatchSubmission } from './raid-boss.service
 import { PredictionMarketService } from '../esports/prediction-market.service';
 import { SabotageEngineService, SABOTAGE_POWERUPS } from './sabotage-engine.service';
 import type { SabotageType, DefenseType } from './sabotage-engine.service';
+import { EdgeRelayService } from './edge-relay.service';
 
 interface PlayerState {
   userId: string;
@@ -70,6 +71,7 @@ export class BattlesGateway
     @Optional() private readonly raidBossService?: RaidBossService,
     @Optional() private readonly predictionMarket?: PredictionMarketService,
     @Optional() private readonly sabotageEngine?: SabotageEngineService,
+    @Optional() private readonly edgeRelayService?: EdgeRelayService,
   ) {}
 
   @WebSocketServer()
@@ -117,15 +119,33 @@ export class BattlesGateway
     const { eventType, battleId, userId, data } = event;
 
     if (eventType === 'keystroke') {
-      this.server
-        ?.to(`battle:${battleId}`)
-        ?.emit('opponent_keystroke_stream', {
+      const emitKeystroke = () => {
+        this.server
+          ?.to(`battle:${battleId}`)
+          ?.emit('opponent_keystroke_stream', {
+            battleId,
+            userId,
+            deltaLength: data?.delta?.length || 0,
+            cursorPosition: data?.cursorPosition,
+            timestamp: event.timestamp,
+          });
+      };
+
+      if (this.edgeRelayService) {
+        void this.edgeRelayService.publishRelayEvent({
+          originRegion: this.edgeRelayService.getLocalRegion(),
           battleId,
-          userId,
-          deltaLength: data?.delta?.length || 0,
-          cursorPosition: data?.cursorPosition,
-          timestamp: event.timestamp,
+          eventType: 'keystroke',
+          payload: {
+            deltaLength: data?.delta?.length || 0,
+            cursorPosition: data?.cursorPosition,
+          },
         });
+        void this.edgeRelayService.executeWithLatencyBuffer(battleId, userId, emitKeystroke);
+      } else {
+        emitKeystroke();
+      }
+
       if (this.shoutcasterService) {
         const burst = this.shoutcasterService.recordKeystrokeAndDetectBurst(battleId, event.timestamp);
         if (burst.isBurst) {
@@ -281,6 +301,26 @@ export class BattlesGateway
       data,
       timestamp: Date.now(),
     });
+  }
+
+  @SubscribeMessage('latency_ping')
+  handleLatencyPing(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { battleId: string; userId: string; clientTimestamp: number },
+  ) {
+    const serverTimestamp = Date.now();
+    const rtt = Math.max(1, (serverTimestamp - (data.clientTimestamp || serverTimestamp)) * 2 || 20);
+    if (this.edgeRelayService && data.battleId && data.userId) {
+      const profile = this.edgeRelayService.recordPlayerPing(data.battleId, data.userId, rtt);
+      client.emit('latency_pong', {
+        serverTimestamp,
+        rttMs: profile.measuredRttMs,
+        artificialBufferMs: profile.artificialBufferMs,
+        region: profile.region,
+      });
+    } else {
+      client.emit('latency_pong', { serverTimestamp, rttMs: 20 });
+    }
   }
 
   @SubscribeMessage('player_join')

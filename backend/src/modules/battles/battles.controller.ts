@@ -20,6 +20,8 @@ import { ReplayStreamService } from './replay-stream.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Optional } from '@nestjs/common';
 import { SabotageEngineService, SABOTAGE_POWERUPS } from './sabotage-engine.service';
+import { EdgeRelayService } from './edge-relay.service';
+import { RouteEdgeDto, LatencyProbeDto } from './dto/edge-relay.dto';
 
 @ApiTags('battles')
 @Controller('battles')
@@ -29,7 +31,47 @@ export class BattlesController {
     private readonly seasonReset: SeasonResetService,
     private readonly replayStream: ReplayStreamService,
     @Optional() private readonly sabotageEngine?: SabotageEngineService,
+    @Optional() private readonly edgeRelay?: EdgeRelayService,
   ) {}
+
+  @Get('edge/regions')
+  @ApiOperation({ summary: 'Get available multi-region WebSocket edge POPs (US-East, EU-Central, AP-South)' })
+  getEdgeRegions() {
+    return this.edgeRelay ? this.edgeRelay.getAllRegions() : [];
+  }
+
+  @Post('edge/route')
+  @ApiOperation({ summary: 'Resolve optimal nearest edge gateway via Geo-DNS / Anycast heuristics' })
+  routeEdgeClient(@Body() dto: RouteEdgeDto) {
+    if (!this.edgeRelay) throw new BadRequestException('Edge Relay service unavailable');
+    return this.edgeRelay.resolveOptimalEdge(dto);
+  }
+
+  @Get('edge/telemetry')
+  @ApiOperation({ summary: 'Get continuous inter-region network link telemetry, packet loss and average RTT' })
+  getEdgeTelemetry() {
+    if (!this.edgeRelay) throw new BadRequestException('Edge Relay service unavailable');
+    return this.edgeRelay.getNetworkSummary();
+  }
+
+  @Post('edge/latency-probe')
+  @ApiOperation({ summary: 'Record player latency probe and update dynamic equalization buffer' })
+  recordLatencyProbe(@Body() dto: LatencyProbeDto) {
+    if (!this.edgeRelay) throw new BadRequestException('Edge Relay service unavailable');
+    return this.edgeRelay.recordPlayerPing(
+      dto.battleId,
+      dto.userId,
+      dto.measuredRttMs,
+      dto.region as any,
+    );
+  }
+
+  @Get(':battleId/edge/latency')
+  @ApiOperation({ summary: 'Get normalized latency profiles and applied buffers for players in a battle' })
+  getBattleLatencyProfiles(@Param('battleId') battleId: string) {
+    if (!this.edgeRelay) return [];
+    return this.edgeRelay.getBattleLatencyProfiles(battleId);
+  }
 
   @Get('sabotage/catalog')
   @ApiOperation({ summary: 'Get available Red-Team vs Blue-Team battle sabotage powerups catalog' })

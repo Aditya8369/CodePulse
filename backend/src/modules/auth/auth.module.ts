@@ -22,6 +22,10 @@ import { PreKeyService } from './prekey.service';
 import { ApiKeyController } from './api-key.controller';
 import { ApiKeyService } from './api-key.service';
 import { ApiKeyGuard } from '../../common/guards/api-key.guard';
+import { BruteForceService } from './brute-force.service';
+import { BruteForceGuard } from './guards/brute-force.guard';
+
+
 
 @Module({
   imports: [
@@ -66,6 +70,8 @@ import { ApiKeyGuard } from '../../common/guards/api-key.guard';
     PreKeyService,
     ApiKeyService,
     ApiKeyGuard,
+    BruteForceService,
+    BruteForceGuard,
   ],
   exports: [
     AuthService,
@@ -79,6 +85,8 @@ import { ApiKeyGuard } from '../../common/guards/api-key.guard';
     PreKeyService,
     ApiKeyService,
     ApiKeyGuard,
+    BruteForceService,
+    BruteForceGuard,
   ],
 })
 export class AuthModule {}

@@ -43,6 +43,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   private memorySlidingWindows: Map<string, number[]> = new Map();
   private memoryHLL: Map<string, Set<string>> = new Map();
   private memorySortedSets: Map<string, Map<string, number>> = new Map();
+  private memoryStrings: Map<string, { value: string; expiresAt?: number }> = new Map();
 
   // Lua script SHA cache
   private tokenBucketSha: string | null = null;
@@ -661,6 +662,121 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
+   * String KV: Retrieves value by key.
+   */
+  async get(key: string): Promise<string | null> {
+    if (this.client && this.isConnected) {
+      try {
+        return await this.client.get(key);
+      } catch (err: any) {
+        this.logger.debug(`get failed, fallback to in-memory: ${err.message}`);
+      }
+    }
+    const item = this.memoryStrings.get(key);
+    if (!item) return null;
+    if (item.expiresAt && Date.now() > item.expiresAt) {
+      this.memoryStrings.delete(key);
+      return null;
+    }
+    return item.value;
+  }
+
+  /**
+   * String KV: Sets key to value with optional TTL in seconds.
+   */
+  async set(key: string, value: string, ttlSeconds?: number): Promise<void> {
+    if (this.client && this.isConnected) {
+      try {
+        if (ttlSeconds && ttlSeconds > 0) {
+          await this.client.set(key, value, 'EX', ttlSeconds);
+        } else {
+          await this.client.set(key, value);
+        }
+        return;
+      } catch (err: any) {
+        this.logger.debug(`set failed, fallback to in-memory: ${err.message}`);
+      }
+    }
+    const expiresAt =
+      ttlSeconds && ttlSeconds > 0 ? Date.now() + ttlSeconds * 1000 : undefined;
+    this.memoryStrings.set(key, { value, expiresAt });
+  }
+
+  /**
+   * String KV: Deletes key from store.
+   */
+  async del(key: string): Promise<number> {
+    if (this.client && this.isConnected) {
+      try {
+        return await this.client.del(key);
+      } catch (err: any) {
+        this.logger.debug(`del failed, fallback to in-memory: ${err.message}`);
+      }
+    }
+    const existed = this.memoryStrings.delete(key);
+    return existed ? 1 : 0;
+  }
+
+  /**
+   * String KV: Increments key with optional TTL on creation.
+   */
+  async incr(key: string, ttlSeconds?: number): Promise<number> {
+    if (this.client && this.isConnected) {
+      try {
+        const val = await this.client.incr(key);
+        if (ttlSeconds && ttlSeconds > 0) {
+          const ttl = await this.client.ttl(key);
+          if (ttl === -1) {
+            await this.client.expire(key, ttlSeconds);
+          }
+        }
+        return val;
+      } catch (err: any) {
+        this.logger.debug(`incr failed, fallback to in-memory: ${err.message}`);
+      }
+    }
+    const item = this.memoryStrings.get(key);
+    let current = 0;
+    if (item) {
+      if (item.expiresAt && Date.now() > item.expiresAt) {
+        this.memoryStrings.delete(key);
+        current = 0;
+      } else {
+        current = parseInt(item.value, 10) || 0;
+      }
+    }
+    const nextVal = current + 1;
+    const expiresAt =
+      item?.expiresAt ||
+      (ttlSeconds && ttlSeconds > 0 ? Date.now() + ttlSeconds * 1000 : undefined);
+    this.memoryStrings.set(key, { value: nextVal.toString(), expiresAt });
+    return nextVal;
+  }
+
+  /**
+   * String KV: Returns TTL in seconds for key.
+   * Returns -2 if key does not exist, -1 if key exists without TTL.
+   */
+  async ttl(key: string): Promise<number> {
+    if (this.client && this.isConnected) {
+      try {
+        return await this.client.ttl(key);
+      } catch (err: any) {
+        this.logger.debug(`ttl failed, fallback to in-memory: ${err.message}`);
+      }
+    }
+    const item = this.memoryStrings.get(key);
+    if (!item) return -2;
+    if (!item.expiresAt) return -1;
+    const remainingMs = item.expiresAt - Date.now();
+    if (remainingMs <= 0) {
+      this.memoryStrings.delete(key);
+      return -2;
+    }
+    return Math.ceil(remainingMs / 1000);
+  }
+
+  /**
    * Reset helper for tests
    */
   public clearMemoryStores(): void {
@@ -668,5 +784,6 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     this.memorySlidingWindows.clear();
     this.memoryHLL.clear();
     this.memorySortedSets.clear();
+    this.memoryStrings.clear();
   }
 }
