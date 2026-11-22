@@ -19,6 +19,9 @@ describe('AdminController - Core & SSL', () => {
       setMaintenanceMode: jest
         .fn()
         .mockResolvedValue({ success: true, maintenance: true } as any),
+      unlockUser: jest
+        .fn()
+        .mockResolvedValue({ success: true, message: 'Account unlocked' } as any),
     } as unknown as jest.Mocked<AdminService>;
 
     acmeCertService = {
@@ -67,6 +70,12 @@ describe('AdminController - Core & SSL', () => {
     const res = await controller.deleteUser('user-1');
     expect(adminService.deleteUser).toHaveBeenCalledWith('user-1');
     expect(res).toEqual({ success: true, message: 'User deleted' });
+  });
+
+  it('should unlock user account via adminService', async () => {
+    const res = await controller.unlockUser('victim-user');
+    expect(adminService.unlockUser).toHaveBeenCalledWith('victim-user');
+    expect(res).toEqual({ success: true, message: 'Account unlocked' });
   });
 
   it('should toggle maintenance mode via adminService', async () => {

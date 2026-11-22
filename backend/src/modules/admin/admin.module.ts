@@ -3,9 +3,10 @@ import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
 import { SecurityModule } from '../security/security.module';
 import { StorageModule } from '../storage/storage.module';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [SecurityModule, StorageModule],
+  imports: [SecurityModule, StorageModule, AuthModule],
   controllers: [AdminController],
   providers: [AdminService],
   exports: [AdminService],
