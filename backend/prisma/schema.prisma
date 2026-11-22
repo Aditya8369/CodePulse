@@ -57,6 +57,7 @@ model User {
   mentorshipProfile   MentorshipProfile?
   mentorSessions      ShadowCodingSession[] @relation("MentorSessions")
   apprenticeSessions  ShadowCodingSession[] @relation("ApprenticeSessions")
+  tournamentEntries   TournamentParticipant[]
 
     guildMemberships    GuildMember[]
   ownedGuilds         Guild[]
@@ -1250,4 +1251,68 @@ model DisputeSnapshot {
   @@index([disputeId])
   @@index([battleId])
   @@map("dispute_snapshots")
+}
+
+model Tournament {
+  id              String                  @id @default(uuid())
+  title           String
+  maxParticipants Int                     @default(16)
+  status          String                  @default("REGISTRATION") // REGISTRATION, IN_PROGRESS, COMPLETED, CANCELLED
+  format          String                  @default("DOUBLE_ELIMINATION") // SINGLE_ELIMINATION, DOUBLE_ELIMINATION, SWISS
+  startsAt        DateTime                @default(now())
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  participants    TournamentParticipant[]
+  matches         TournamentMatch[]
+
+  @@map("tournaments")
+}
+
+model TournamentParticipant {
+  id           String     @id @default(uuid())
+  tournamentId String
+  userId       String
+  seedNumber   Int
+  elo          Int        @default(1200)
+  isEliminated Boolean    @default(false)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tournamentId, userId])
+  @@index([tournamentId])
+  @@index([userId])
+  @@map("tournament_participants")
+}
+
+model TournamentMatch {
+  id              String     @id @default(uuid())
+  tournamentId    String
+  round           Int
+  bracketType     String     @default("WINNERS") // WINNERS, LOSERS, FINALS, GRAND_FINALS
+  matchNumber     Int        @default(1)
+  player1Id       String?
+  player2Id       String?    // null represents a BYE
+  winnerId        String?
+  loserId         String?
+  nextMatchId     String?
+  nextLoserMatchId String?
+  isBye           Boolean    @default(false)
+  status          String     @default("PENDING") // PENDING, ACTIVE, COMPLETED, BYE, FORFEITED
+  scorePlayer1    Float?
+  scorePlayer2    Float?
+  scheduledAt     DateTime   @default(now())
+  completedAt     DateTime?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  tournament      Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  @@index([tournamentId])
+  @@index([tournamentId, round])
+  @@index([tournamentId, bracketType])
+  @@map("tournament_matches")
 }

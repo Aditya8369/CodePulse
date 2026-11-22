@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { BattlesController } from './battles.controller';
-import { TournamentsController } from './tournaments.controller';
 import { BattlesService } from './battles.service';
 import { BattlesGateway } from './battles.gateway';
 import { SeasonResetService } from './season-reset.service';
@@ -23,6 +22,7 @@ import { RedisService } from '../../common/redis/redis.service';
 import { TournamentEngineService } from './tournament-engine.service';
 import { EsportsModule } from '../esports/esports.module';
 import { AiModule } from '../ai/ai.module';
+import { TournamentsModule } from '../tournaments/tournaments.module';
 import { RaidBossService } from './raid-boss.service';
 import { AntiSmurfService } from './anti-smurf.service';
 import { AntiCheatBiometricsService } from './anti-cheat-biometrics.service';
@@ -43,8 +43,9 @@ import { EdgeRelayService } from './edge-relay.service';
     CryptoModule,
     EsportsModule,
     AiModule,
+    TournamentsModule,
   ],
-  controllers: [BattlesController, TournamentsController],
+  controllers: [BattlesController],
   providers: [
     BattlesService,
     BattlesGateway,
