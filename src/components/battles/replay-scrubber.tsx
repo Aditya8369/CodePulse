@@ -121,7 +121,10 @@ export function ReplayScrubber({
             value={[currentStep]}
             max={deltas.length}
             step={1}
-            onValueChange={([val]) => setCurrentStep(val)}
+            onValueChange={(val: any) => {
+              const step = Array.isArray(val) ? val[0] : (typeof val === 'number' ? val : 0);
+              setCurrentStep(step);
+            }}
             className="flex-1 cursor-pointer"
           />
           <span className="text-xs text-muted-foreground w-8 text-right">{deltas.length}</span>
