@@ -236,6 +236,19 @@ export class PersonaBattleService {
         delayMs += Math.round(300 + Math.random() * 400);
       }
 
+      // Thinking pause before new loops, conditionals, or function blocks (#1074)
+      const remainingCode = code.slice(i);
+      if (
+        remainingCode.startsWith('for ') ||
+        remainingCode.startsWith('while ') ||
+        remainingCode.startsWith('function ') ||
+        remainingCode.startsWith('def ') ||
+        remainingCode.startsWith('if ') ||
+        remainingCode.startsWith('return ')
+      ) {
+        delayMs += Math.round(500 + Math.random() * 600);
+      }
+
       // 4% probability of realistic typo followed by immediate backspace correction
       const shouldSimulateTypo = Math.random() < 0.04 && /[a-zA-Z]/.test(char);
       if (shouldSimulateTypo) {
@@ -295,6 +308,38 @@ export class PersonaBattleService {
       framesCount: frames.length,
       averageDelayMs,
       frames,
+    };
+  }
+
+  /**
+   * Streams realistic keystroke diffs into battle rooms matching human competitor behavior (#1074).
+   * Emits frames asynchronously with simulated micro-delays or instant dispatch for socket relay.
+   */
+  public async streamPersonaKeystrokes(
+    personaId: string,
+    options: {
+      battleId: string;
+      targetCode?: string;
+      onKeystroke: (frame: PersonaKeystrokeFrameDto) => void | Promise<void>;
+      sleepDelays?: boolean;
+      maxFrames?: number;
+    },
+  ): Promise<{ totalFrames: number; totalDurationMs: number }> {
+    const persona = await this.getPersonaById(personaId);
+    const frames = this.generateKeystrokeStream(persona, options.targetCode, options.maxFrames || 100);
+
+    let totalDurationMs = 0;
+    for (const frame of frames) {
+      totalDurationMs += frame.delayMs;
+      if (options.sleepDelays) {
+        await new Promise((r) => setTimeout(r, Math.min(frame.delayMs, 25)));
+      }
+      await options.onKeystroke(frame);
+    }
+
+    return {
+      totalFrames: frames.length,
+      totalDurationMs,
     };
   }
 

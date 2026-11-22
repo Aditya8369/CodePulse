@@ -152,6 +152,33 @@ describe('PersonaBattleService & AI Historical Battles Suite (#366)', () => {
         expect(typoFrames.some((f) => f.delta === '\b')).toBe(true);
       }
     });
+
+    it('injects thinking pauses before loops and complex code statements (#1074)', () => {
+      const persona = HISTORICAL_PERSONAS.find((p) => p.id === 'turing')!;
+      const loopSnippet = '\nfor (let i = 0; i < 10; i++) {';
+      const frames = service.generateKeystrokeStream(persona, loopSnippet, 30);
+
+      // Frame at start of 'for ' should reflect thinking pause delay
+      const pauseFrame = frames.find((f) => f.delta === 'f');
+      expect(pauseFrame).toBeDefined();
+      expect(pauseFrame!.delayMs).toBeGreaterThan(400);
+    });
+
+    it('streams keystroke diffs sequentially to battle rooms (#1074)', async () => {
+      const emittedFrames: any[] = [];
+      const result = await service.streamPersonaKeystrokes('carmack', {
+        battleId: 'practice-battle-101',
+        targetCode: 'let x = 42;',
+        maxFrames: 10,
+        onKeystroke: (frame) => {
+          emittedFrames.push(frame);
+        },
+      });
+
+      expect(result.totalFrames).toBe(emittedFrames.length);
+      expect(emittedFrames.length).toBeGreaterThan(0);
+      expect(emittedFrames[0].codeSnapshot).toBeDefined();
+    });
   });
 
   describe('Solo Practice Match Resolution & Unranked Practice XP', () => {
