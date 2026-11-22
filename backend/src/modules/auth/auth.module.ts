@@ -12,11 +12,14 @@ import { PasskeyService } from './passkey.service';
 import { PasskeyController } from './passkey.controller';
 import { SamlSsoService } from './saml-sso.service';
 import { Fido2AttestationService } from './fido2-attestation.service';
+import { TwoFactorService } from './two-factor.service';
+
 import { CryptoModule } from '../crypto/crypto.module';
 import { PostQuantumJwtService } from './jwt.service';
 
 import { KeysController } from './keys.controller';
 import { PreKeyService } from './prekey.service';
+
 
 
 @Module({
@@ -52,13 +55,17 @@ import { PreKeyService } from './prekey.service';
     PasskeyService,
     SamlSsoService,
     Fido2AttestationService,
+    TwoFactorService,
+
     PostQuantumJwtService,
 
     PreKeyService,
 
+
   ],
   exports: [
     AuthService,
+    TwoFactorService,
     JwtModule,
     TokenBlacklistService,
     AttestationValidatorService,
