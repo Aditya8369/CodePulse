@@ -9,6 +9,8 @@ import {
   Query,
   Optional,
   BadRequestException,
+  NotFoundException,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -18,6 +20,10 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
+import { AuditLogService } from './audit-log.service';
+import { AuditLogQueryDto } from './dto/audit-log.dto';
+import { AuditAction } from '../../common/decorators/audit-action.decorator';
+import { AuditLogInterceptor } from '../../common/interceptors/audit-log.interceptor';
 import {
   DynamicConfigService,
   DynamicConfigKey,
@@ -31,6 +37,7 @@ import type { StorageTierAuditReport } from '../storage/hsm.service';
 
 @ApiTags('admin')
 @Controller('admin')
+@UseInterceptors(AuditLogInterceptor)
 export class AdminController {
   constructor(
     private readonly adminService: AdminService,
@@ -38,9 +45,32 @@ export class AdminController {
     @Optional() private readonly dynamicConfigService?: DynamicConfigService,
     @Optional() private readonly threatDetectorService?: ThreatDetectorService,
     @Optional() private readonly hsmService?: HsmService,
+    @Optional() private readonly auditLogService?: AuditLogService,
   ) {}
 
+  @Get('audit-logs')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Query paginated immutable audit logs with multi-dimensional filtering (Admin only)' })
+  async getAuditLogs(@Query() query: AuditLogQueryDto) {
+    if (!this.auditLogService) {
+      return { data: [], items: [], total: 0, page: 1, limit: 20, totalPages: 0 };
+    }
+    return this.auditLogService.getAuditLogs(query);
+  }
+
+  @Get('audit-logs/:id')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Retrieve single immutable audit log entry by ID (Admin only)' })
+  @ApiParam({ name: 'id', description: 'Audit log UUID' })
+  async getAuditLogById(@Param('id') id: string) {
+    if (!this.auditLogService) {
+      throw new NotFoundException('Audit log service unavailable');
+    }
+    return this.auditLogService.getAuditLogById(id);
+  }
+
   @Post('users/:id/unlock')
+  @AuditAction('USER_UNLOCKED', { targetType: 'USER', targetIdParam: 'id', description: 'Administrative account unlock' })
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Manually unlock a user account and reset failed brute-force attempt counters (Admin only)' })
   @ApiParam({ name: 'id', description: 'User ID, username, or email to unlock' })
@@ -49,6 +79,7 @@ export class AdminController {
   }
 
   @Delete('user/:id')
+  @AuditAction('USER_DELETED', { targetType: 'USER', targetIdParam: 'id', description: 'Administrative user deletion' })
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete a user (Admin only)' })
   async deleteUser(@Param('id') id: string) {
@@ -56,6 +87,7 @@ export class AdminController {
   }
 
   @Post('maintenance')
+  @AuditAction('MAINTENANCE_TOGGLED', { targetType: 'SYSTEM', description: 'Maintenance mode toggled' })
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Toggle maintenance mode (Admin only)' })
   async toggleMaintenance(@Body('active') active: boolean) {

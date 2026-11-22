@@ -1251,3 +1251,23 @@ model DisputeSnapshot {
   @@index([battleId])
   @@map("dispute_snapshots")
 }
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String?
+  actorEmail String?
+  action     String   // e.g. USER_BANNED, ROLE_CHANGED, MAINTENANCE_TOGGLED, XP_ADJUSTED, USER_DELETED, USER_UNLOCKED
+  targetId   String?
+  targetType String?  // e.g. USER, SYSTEM, ORGANIZATION, SETTING, BATTLE
+  metadata   Json?    // JSON containing previous and new state, diff, request payload
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([action])
+  @@index([actorId])
+  @@index([targetId])
+  @@index([targetType])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
