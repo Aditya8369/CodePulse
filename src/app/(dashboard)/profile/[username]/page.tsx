@@ -11,6 +11,7 @@ import { AnimatedCounter, AnimatedProgress } from "@/components/animations/anima
 import { StaggerContainer, StaggerItem } from "@/components/animations/page-transition";
 import { LanguageDistribution } from "@/components/charts/language-distribution";
 import { ContributionHeatmap } from "@/components/charts/contribution-heatmap";
+import { FollowButton } from "@/components/profile/follow-button";
 import { GithubIcon } from "@/components/icons/github";
 import { TIER_COLORS } from "@/lib/constants";
 import { formatNumber } from "@/lib/utils";
@@ -153,6 +154,8 @@ export default function PublicProfilePage({
   const displayLanguages = user.languages || [];
   const contributionData = user.stats?.contributionData || [];
   const isMe = currentUser?.username?.toLowerCase() === user.username?.toLowerCase();
+  const [activeFollowersCount, setActiveFollowersCount] = useState<number | null>(null);
+  const displayedFollowers = activeFollowersCount !== null ? activeFollowersCount : stats.followers || 0;
 
   return (
     <div className="space-y-8 max-w-6xl mx-auto pb-16">
@@ -234,9 +237,15 @@ export default function PublicProfilePage({
               </div>
             </div>
 
-            {/* Battle & Compare Buttons */}
+            {/* Follow, Battle & Compare Buttons */}
             {!isMe && (
-              <div className="flex items-center gap-3 w-full sm:w-auto">
+              <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                <FollowButton
+                  targetUserId={user.id}
+                  targetUsername={user.username}
+                  initialFollowersCount={stats.followers || 0}
+                  onFollowChange={(_, count) => setActiveFollowersCount(count)}
+                />
                 <button
                   type="button"
                   onClick={() => router.push(`/battles?p2=${encodeURIComponent(user.username)}`)}
@@ -270,7 +279,7 @@ export default function PublicProfilePage({
           { label: "Stars", value: stats.totalStars || 0, icon: Star, color: "text-amber-400" },
           { label: "Streak", value: stats.streak || 0, icon: Flame, color: "text-orange-400" },
           { label: "Repositories", value: stats.totalRepos || 0, icon: Code, color: "text-emerald-400" },
-          { label: "Followers", value: stats.followers || 0, icon: Star, color: "text-cyan-400" },
+          { label: "Followers", value: displayedFollowers, icon: Star, color: "text-cyan-400" },
         ].map((stat) => {
           const Icon = stat.icon;
           return (
