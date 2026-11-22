@@ -24,6 +24,7 @@ import { PredictionMarketService } from '../esports/prediction-market.service';
 import { SabotageEngineService, SABOTAGE_POWERUPS } from './sabotage-engine.service';
 import type { SabotageType, DefenseType } from './sabotage-engine.service';
 import { EdgeRelayService } from './edge-relay.service';
+import { CodeHintService } from '../ai/code-hint.service';
 
 interface PlayerState {
   userId: string;
@@ -72,6 +73,7 @@ export class BattlesGateway
     @Optional() private readonly predictionMarket?: PredictionMarketService,
     @Optional() private readonly sabotageEngine?: SabotageEngineService,
     @Optional() private readonly edgeRelayService?: EdgeRelayService,
+    @Optional() private readonly codeHintService?: CodeHintService,
   ) {}
 
   @WebSocketServer()
@@ -807,5 +809,69 @@ export class BattlesGateway
 
     client.emit('sabotage:inventory_state', payload);
     return payload;
+  }
+
+  @SubscribeMessage('battle:request_hint')
+  async handleRequestHint(
+    @ConnectedSocket() client: Socket,
+    @MessageBody()
+    data: {
+      battleId: string;
+      userId: string;
+      tier: number;
+      problemTitle?: string;
+      problemDescription?: string;
+      currentCode?: string;
+      language?: string;
+      elapsedSeconds?: number;
+      totalMatchSeconds?: number;
+    },
+  ) {
+    if (!this.codeHintService) {
+      const fallbackPayload = {
+        battleId: data.battleId,
+        userId: data.userId,
+        tier: data.tier,
+        error: 'CodeHintService not available',
+      };
+      client.emit('battle:hint_error', fallbackPayload);
+      return fallbackPayload;
+    }
+
+    try {
+      const hintResult = await this.codeHintService.requestHint({
+        battleId: data.battleId,
+        userId: data.userId,
+        tier: data.tier,
+        problemTitle: data.problemTitle,
+        problemDescription: data.problemDescription,
+        currentCode: data.currentCode,
+        language: data.language,
+        elapsedSeconds: data.elapsedSeconds,
+        totalMatchSeconds: data.totalMatchSeconds,
+      });
+
+      // Deliver hint securely in markdown to requesting player
+      client.emit('battle:hint_received', hintResult);
+
+      // Notify the battle room / opponent of hint usage and penalty without leaking the hint text
+      this.server.to(data.battleId).emit('battle:hint_used', {
+        battleId: data.battleId,
+        userId: data.userId,
+        tier: data.tier,
+        tierName: hintResult.tierName,
+        penaltyPercent: hintResult.timeDecayedPenaltyPercent,
+      });
+
+      return hintResult;
+    } catch (err: any) {
+      const errorPayload = {
+        battleId: data?.battleId,
+        userId: data?.userId,
+        error: err.message || 'Failed to request hint',
+      };
+      client.emit('battle:hint_error', errorPayload);
+      return errorPayload;
+    }
   }
 }
