@@ -22,6 +22,7 @@ import { HypeStormGateway } from './hype-storm.gateway';
 import { RedisService } from '../../common/redis/redis.service';
 import { TournamentEngineService } from './tournament-engine.service';
 import { EsportsModule } from '../esports/esports.module';
+import { AiModule } from '../ai/ai.module';
 import { RaidBossService } from './raid-boss.service';
 import { AntiSmurfService } from './anti-smurf.service';
 import { AntiCheatBiometricsService } from './anti-cheat-biometrics.service';
@@ -40,6 +41,7 @@ import { SabotageEngineService } from './sabotage-engine.service';
     AnalyticsModule,
     CryptoModule,
     EsportsModule,
+    AiModule,
   ],
   controllers: [BattlesController, TournamentsController],
   providers: [
