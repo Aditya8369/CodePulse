@@ -44,6 +44,7 @@ export function BackToTop({ className, threshold = 350 }: BackToTopProps) {
           type="button"
           onClick={scrollToTop}
           aria-label="Back to top"
+          data-testid="back-to-top-button"
           initial={
             shouldReduceMotion
               ? { opacity: 0 }
