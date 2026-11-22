@@ -730,6 +730,56 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
+   * Deletes keys matching a pattern from Redis or in-memory fallback stores.
+   */
+  async delPattern(pattern: string): Promise<number> {
+    let deletedCount = 0;
+    if (this.client && this.isConnected) {
+      try {
+        const keys = await this.client.keys(pattern);
+        if (keys && keys.length > 0) {
+          deletedCount = await this.client.del(...keys);
+        }
+      } catch (err: any) {
+        this.logger.debug(`delPattern failed, fallback to in-memory: ${err.message}`);
+      }
+    }
+
+    const regex = new RegExp('^' + pattern.replace(/\*/g, '.*') + '$');
+    for (const k of Array.from(this.memoryStrings.keys())) {
+      if (regex.test(k)) {
+        this.memoryStrings.delete(k);
+        deletedCount++;
+      }
+    }
+    for (const k of Array.from(this.memoryTokenBuckets.keys())) {
+      if (regex.test(k)) {
+        this.memoryTokenBuckets.delete(k);
+        deletedCount++;
+      }
+    }
+    for (const k of Array.from(this.memorySlidingWindows.keys())) {
+      if (regex.test(k)) {
+        this.memorySlidingWindows.delete(k);
+        deletedCount++;
+      }
+    }
+    for (const k of Array.from(this.memorySortedSets.keys())) {
+      if (regex.test(k)) {
+        this.memorySortedSets.delete(k);
+        deletedCount++;
+      }
+    }
+    for (const k of Array.from(this.memoryHLL.keys())) {
+      if (regex.test(k)) {
+        this.memoryHLL.delete(k);
+        deletedCount++;
+      }
+    }
+    return deletedCount;
+  }
+
+  /**
    * String KV: Increments key with optional TTL on creation.
    */
   async incr(key: string, ttlSeconds?: number): Promise<number> {
