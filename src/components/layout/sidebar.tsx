@@ -481,7 +481,8 @@ function MobileSidebar() {
       </SheetTrigger>
       <SheetContent
         side="left"
-        className="w-72 border-r border-white/[0.06] bg-[#070B14] p-0"
+        overlayClassName="z-[60] bg-black/70 backdrop-blur-md"
+        className="z-[70] w-72 border-r border-white/[0.08] bg-[#070B14]/95 backdrop-blur-2xl p-0 shadow-2xl"
       >
         <SheetHeader className="sr-only">
           <SheetTitle>Navigation Menu</SheetTitle>
