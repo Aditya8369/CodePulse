@@ -6,6 +6,8 @@ import { PowChallengeGuard } from './pow-challenge.guard';
 import { OpaEngineService } from './opa-engine.service';
 import { OpaPolicyGuard } from './opa-policy.guard';
 import { CsrfGuard } from './csrf.guard';
+import { RbacGuard } from './rbac.guard';
+import { OpaService } from '../../modules/sec/opa.service';
 
 @Global()
 @Module({
@@ -17,6 +19,8 @@ import { CsrfGuard } from './csrf.guard';
     OpaEngineService,
     OpaPolicyGuard,
     CsrfGuard,
+    RbacGuard,
+    OpaService,
   ],
   exports: [
     RedisService,
@@ -26,6 +30,8 @@ import { CsrfGuard } from './csrf.guard';
     OpaEngineService,
     OpaPolicyGuard,
     CsrfGuard,
+    RbacGuard,
+    OpaService,
   ],
 })
 export class GuardsModule {}
