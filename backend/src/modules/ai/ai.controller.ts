@@ -20,6 +20,8 @@ import {
 } from './code-reviewer.service';
 import { ReviewCommitRequestDto } from './dto/review-commit.dto';
 import { PersonaBattleService } from './persona-battle.service';
+import { CodeHintService } from './code-hint.service';
+import { RequestHintDto, HintResponseDto } from './dto/code-hint.dto';
 import {
   TranspileRequestDto,
   TranspileResponseDto,
@@ -47,6 +49,7 @@ export class AiController {
     private readonly codeReviewer: CodeReviewerService,
     private readonly changelogGenerator: ChangelogGeneratorService,
     private readonly personaBattleService: PersonaBattleService,
+    private readonly codeHintService: CodeHintService,
   ) {}
 
   @Post('transpile')
@@ -186,6 +189,22 @@ export class AiController {
     @Body() dto: FinishPracticeMatchDto,
   ): Promise<FinishPracticeMatchResponseDto> {
     return this.personaBattleService.finishPracticeBattle(dto);
+  }
+
+  @Post('battles/hint')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Progressive AI code hint engine with time-decay XP penalty for battles',
+    description:
+      'Provides 3 progressive hint tiers (Tier 1 Conceptual, Tier 2 Pseudocode, Tier 3 Edge-Cases) with strict solution-leak guardrails and a 2-minute rate limit.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Formatted markdown hint with XP penalty details',
+    type: HintResponseDto,
+  })
+  async requestBattleHint(@Body() dto: RequestHintDto): Promise<HintResponseDto> {
+    return this.codeHintService.requestHint(dto);
   }
 }
 

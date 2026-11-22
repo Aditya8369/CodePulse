@@ -451,13 +451,22 @@ export class BattlesService {
             ? battle.challenger.username
             : battle.opponent.username;
 
+        const isChallengerWinner = winnerId === battle.challengerId;
+        const hintPenaltyRate = isChallengerWinner
+          ? (battle as any).challengerXpPenalty || 0
+          : (battle as any).opponentXpPenalty || 0;
+        const netWinnerXp = Math.max(
+          25,
+          Math.round(eloOutcome.winnerXpGain * (1 - hintPenaltyRate)),
+        );
+
         if (this.xpService) {
           await this.xpService.addXp(
             {
               userId: winnerId,
-              amount: eloOutcome.winnerXpGain,
+              amount: netWinnerXp,
               source: 'BATTLE_WIN',
-              reason: `Won DevBattle match against ${loserName}`,
+              reason: `Won DevBattle match against ${loserName}${hintPenaltyRate > 0 ? ` (Hint penalty -${Math.round(hintPenaltyRate * 100)}%)` : ''}`,
             },
             tx,
           );
@@ -475,12 +484,12 @@ export class BattlesService {
             where: { userId: winnerId },
             create: {
               userId: winnerId,
-              gamificationXp: eloOutcome.winnerXpGain,
-              xp: eloOutcome.winnerXpGain,
+              gamificationXp: netWinnerXp,
+              xp: netWinnerXp,
             },
             update: {
-              gamificationXp: { increment: eloOutcome.winnerXpGain },
-              xp: { increment: eloOutcome.winnerXpGain },
+              gamificationXp: { increment: netWinnerXp },
+              xp: { increment: netWinnerXp },
             },
           });
           await tx.developerRating.upsert({
@@ -703,8 +712,17 @@ export class BattlesService {
         });
       }
 
-      // Update Winner XP
-      let winnerXp = (winnerRatingRec?.xp || 0) + eloOutcome.winnerXpGain;
+      // Update Winner XP (accounting for hint penalties)
+      const isChallengerWinnerForfeit = winnerId === battle.challengerId;
+      const forfeitHintPenalty = isChallengerWinnerForfeit
+        ? (battle as any).challengerXpPenalty || 0
+        : (battle as any).opponentXpPenalty || 0;
+      const netForfeitWinnerXp = Math.max(
+        25,
+        Math.round(eloOutcome.winnerXpGain * (1 - forfeitHintPenalty)),
+      );
+
+      let winnerXp = (winnerRatingRec?.xp || 0) + netForfeitWinnerXp;
       let winnerLevel = winnerRatingRec?.level || 1;
       let winnerXpToNext = winnerRatingRec?.xpToNextLevel || 1000;
       let leveledUp = false;

@@ -5,8 +5,10 @@ import { PrAnalyzerService } from './pr-analyzer.service';
 import { CodeReviewerService } from './code-reviewer.service';
 import { ChangelogGeneratorService } from './changelog-generator.service';
 import { PersonaBattleService } from './persona-battle.service';
+import { CodeHintService } from './code-hint.service';
 import { GithubModule } from '../github/github.module';
 import { PrismaModule } from '../../prisma/prisma.module';
+import { RedisService } from '../../common/redis/redis.service';
 
 @Module({
   imports: [GithubModule, PrismaModule],
@@ -17,6 +19,8 @@ import { PrismaModule } from '../../prisma/prisma.module';
     CodeReviewerService,
     ChangelogGeneratorService,
     PersonaBattleService,
+    CodeHintService,
+    RedisService,
   ],
   exports: [
     TranspilerService,
@@ -24,6 +28,7 @@ import { PrismaModule } from '../../prisma/prisma.module';
     CodeReviewerService,
     ChangelogGeneratorService,
     PersonaBattleService,
+    CodeHintService,
   ],
 })
 export class AiModule {}

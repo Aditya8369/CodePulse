@@ -408,6 +408,9 @@ model Battle {
   flaggedForPlagiarism Boolean            @default(false)
   plagiarismDetails    Json?
   submissions          BattleSubmission[]
+  hintHistory        Json?
+  challengerXpPenalty Float       @default(0)
+  opponentXpPenalty   Float       @default(0)
   challenger         User         @relation("BattleChallenger", fields: [challengerId], references: [id])
   opponent           User         @relation("BattleOpponent", fields: [opponentId], references: [id])
   winner             User?        @relation("BattleWinner", fields: [winnerId], references: [id])
