@@ -27,7 +27,7 @@ export class CryptoController {
   @ApiOperation({
     summary: 'Verify Groth16 zk-SNARK proof and return cryptographically verifiable audit certificate',
   })
-  async verifyGroth16Zkp(@Body() payload: ZkProofSubmission) {
+  async verifyGroth16Zkp(@Body() payload: any) {
     if (!payload) {
       throw new BadRequestException('Request body is required');
     }
