@@ -1,0 +1,32 @@
+{
+  "openapi": "3.1.0",
+  "jsonSchemaDialect": "https://spec.openapis.org/oas/3.1/dialect/base",
+  "info": {
+    "title": "CodePulse Enterprise API",
+    "version": "1.0.0",
+    "description": "Developer analytics, competitive coding battles, repository telemetry, and gamification platform API."
+  },
+  "servers": [
+    { "url": "http://localhost:3001/api/v1", "description": "Local Development Server" },
+    { "url": "https://api.codepulse.dev/api/v1", "description": "Production Cloud Gateway" }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "getSystemHealth",
+        "summary": "Check API liveness and version status",
+        "responses": { "200": { "description": "Service healthy" } }
+      }
+    },
+    "/users/{username}": {
+      "get": {
+        "operationId": "getDeveloperByUsername",
+        "summary": "Fetch developer profile and analytics summary",
+        "parameters": [
+          { "name": "username", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "Developer profile payload" } }
+      }
+    }
+  }
+}
