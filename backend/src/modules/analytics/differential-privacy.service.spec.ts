@@ -202,5 +202,21 @@ describe('DifferentialPrivacyService (Laplace/Gaussian Engine & Sensitivity #542
       expect(report.membershipInferenceRisk).toBe('SUPPRESSED');
       expect(report.suppressionReason).toContain('K-anonymity protection');
     });
+
+    it('sanitizes solve times, typing speeds, and peak hours injecting calibrated Laplace noise', () => {
+      const rawMetrics = {
+        solveTimesSeconds: [120, 180, 240, 150, 210, 300],
+        typingSpeedsWpm: [65, 80, 72, 90, 85, 78],
+        peakHours: [14, 15, 14, 16, 15, 14],
+      };
+
+      const result = dp.sanitizeDeveloperMetrics(rawMetrics, 'analyst-key-1', 1.0);
+      expect(result.sanitized).toBe(true);
+      expect(result.noisyMeanSolveTimeSeconds).toBeGreaterThan(0);
+      expect(result.noisyMeanTypingSpeedWpm).toBeGreaterThan(0);
+      expect(result.noisyPeakHour).toBeGreaterThanOrEqual(0);
+      expect(result.noisyPeakHour).toBeLessThanOrEqual(23);
+      expect(result.epsilonConsumed).toBe(1.0);
+    });
   });
 });
