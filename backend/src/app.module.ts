@@ -42,6 +42,7 @@ import { CollabModule } from './modules/collab/collab.module';
 import { AudioModule } from './modules/audio/audio.module';
 import { AiModule } from './modules/ai/ai.module';
 import { TournamentsModule } from './modules/tournaments/tournaments.module';
+import { RealtimeModule } from './modules/realtime/realtime.module';
 
 import { LoggingModule } from './common/logging/logging.module';
 import { MentorshipModule } from './modules/mentorship/mentorship.module';
@@ -149,6 +150,7 @@ import { CommonModule } from './common/common.module';
     AudioModule,
     AiModule,
     TournamentsModule,
+    RealtimeModule,
   ],
   controllers: [AppController],
   providers: [
