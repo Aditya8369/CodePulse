@@ -34,6 +34,7 @@ import {
   accentContrastOnWhite,
 } from "@/lib/developer-themes";
 import { GithubIcon } from "@/components/icons/github";
+import { AudioManager } from "@/lib/audio-manager";
 import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
 import { SoundSettingsCard } from "@/components/settings/sound-settings-card";
@@ -75,6 +76,14 @@ const LANDING_TABS = [
   { id: "leaderboard", label: "Leaderboard" },
   { id: "challenges", label: "Challenges" },
 ];
+
+function playThemeChimePreview() {
+  try {
+    AudioManager.getInstance().playPreviewChime();
+  } catch {
+    // Audio Context might be suspended or unavailable in headless environments
+  }
+}
 
 export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState("profile");
@@ -545,6 +554,7 @@ export default function SettingsPage() {
                           if (item.id !== "system") {
                             applyColorVisionTheme(preferences.appearance.colorVisionTheme, item.id);
                           }
+                          playThemeChimePreview();
                           toast.success(`Theme set to ${item.label}.`);
                         }}
                         className={cn(
@@ -583,6 +593,7 @@ export default function SettingsPage() {
                           setAccentDraft("");
                           updateAppearance({ theme: "dark", developerTheme: id, customAccent: null });
                           applyDeveloperTheme(id, null);
+                          playThemeChimePreview();
                         }}
                         className={cn(
                           "rounded-xl border p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
@@ -617,6 +628,8 @@ export default function SettingsPage() {
                         updateAppearance({ customAccent: accentDraft });
                         applyDeveloperTheme(preferences.appearance.developerTheme, accentDraft);
                         setAccentDraft("");
+                        playThemeChimePreview();
+                        toast.success("Accent color applied.");
                       }}
                       className="rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
                     >
@@ -685,6 +698,7 @@ export default function SettingsPage() {
                         type="button"
                         onClick={() => {
                           updateAppearance({ accentColor: accent.id });
+                          playThemeChimePreview();
                           toast.success(`Accent color set to ${accent.label}.`);
                         }}
                         className={cn(
