@@ -90,6 +90,9 @@ export class HintResponseDto {
   @ApiProperty({ description: 'Estimated XP deducted from victory reward (based on 150 base victory XP)' })
   estimatedXpDeduction: number;
 
+  @ApiPropertyOptional({ description: 'Estimated ELO rating penalty points deducted from victory' })
+  estimatedEloPenalty?: number;
+
   @ApiProperty({ description: 'Mandatory cooldown before next hint request in seconds (120s)' })
   cooldownSeconds: number;
 
@@ -106,5 +109,6 @@ export interface HintUsageRecord {
   requestedAt: string;
   penaltyPercentage: number;
   hintSummary: string;
+  eloPenaltyPoints?: number;
 }
 
