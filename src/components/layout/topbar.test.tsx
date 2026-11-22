@@ -78,4 +78,11 @@ describe("Topbar Component", () => {
     const themeBtn = screen.getByLabelText(/toggle theme/i);
     expect(themeBtn).toBeDefined();
   });
+
+  it("renders responsive breadcrumb navigation", () => {
+    render(<Topbar onOpenCommandPalette={vi.fn()} />);
+    const breadcrumbNav = screen.getByTestId("topbar-breadcrumbs");
+    expect(breadcrumbNav).toBeDefined();
+    expect(screen.getByText("CodePulse")).toBeDefined();
+  });
 });

@@ -37,6 +37,7 @@ import {
   BreadcrumbLink,
   BreadcrumbPage,
   BreadcrumbSeparator,
+  BreadcrumbEllipsis,
 } from "@/components/ui/breadcrumb";
 
 // ===========================
@@ -336,32 +337,83 @@ export function Topbar({ onOpenCommandPalette }: TopbarProps) {
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
     >
-      {/* Left: Breadcrumbs */}
-      <Breadcrumb className="hidden md:block">
-        <BreadcrumbList>
-          {crumbs.map((crumb, index) => (
-            <div key={crumb.title} className="flex items-center gap-1.5">
-              <BreadcrumbItem>
-                {index < crumbs.length - 1 ? (
-                  <BreadcrumbLink
-                    href={crumb.href ?? "#"}
-                    className="text-muted-foreground/70 hover:text-foreground"
-                  >
-                    {crumb.title}
-                  </BreadcrumbLink>
-                ) : (
-                  <BreadcrumbPage className="font-medium text-foreground">
-                    {crumb.title}
-                  </BreadcrumbPage>
+      {/* Left: Responsive Breadcrumbs with Mobile Ellipsis & Text Truncation */}
+      <Breadcrumb className="flex max-w-[200px] sm:max-w-xs md:max-w-md lg:max-w-none overflow-hidden" data-testid="topbar-breadcrumbs">
+        <BreadcrumbList className="flex-nowrap whitespace-nowrap overflow-hidden">
+          {crumbs.length <= 2 ? (
+            crumbs.map((crumb, index) => (
+              <div key={crumb.title} className="flex items-center gap-1.5 shrink-0">
+                <BreadcrumbItem className="max-w-[120px] sm:max-w-[180px] truncate">
+                  {index < crumbs.length - 1 ? (
+                    <BreadcrumbLink
+                      href={crumb.href ?? "#"}
+                      className="text-muted-foreground/70 hover:text-foreground truncate"
+                    >
+                      {crumb.title}
+                    </BreadcrumbLink>
+                  ) : (
+                    <BreadcrumbPage className="font-medium text-foreground truncate">{crumb.title}</BreadcrumbPage>
+                  )}
+                </BreadcrumbItem>
+                {index < crumbs.length - 1 && (
+                  <BreadcrumbSeparator>
+                    <ChevronRight className="h-3 w-3 text-muted-foreground/40" />
+                  </BreadcrumbSeparator>
                 )}
-              </BreadcrumbItem>
-              {index < crumbs.length - 1 && (
+              </div>
+            ))
+          ) : (
+            <>
+              {/* First Crumb */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                <BreadcrumbItem className="max-w-[90px] sm:max-w-[140px] truncate">
+                  <BreadcrumbLink
+                    href={crumbs[0].href ?? "#"}
+                    className="text-muted-foreground/70 hover:text-foreground truncate"
+                  >
+                    {crumbs[0].title}
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
                 <BreadcrumbSeparator>
                   <ChevronRight className="h-3 w-3 text-muted-foreground/40" />
                 </BreadcrumbSeparator>
-              )}
-            </div>
-          ))}
+              </div>
+
+              {/* Mobile Collapsed Ellipsis */}
+              <div className="md:hidden flex items-center gap-1.5 shrink-0">
+                <BreadcrumbItem>
+                  <BreadcrumbEllipsis />
+                </BreadcrumbItem>
+                <BreadcrumbSeparator>
+                  <ChevronRight className="h-3 w-3 text-muted-foreground/40" />
+                </BreadcrumbSeparator>
+              </div>
+
+              {/* Desktop Expanded Intermediates */}
+              {crumbs.slice(1, -1).map((crumb) => (
+                <div key={crumb.title} className="hidden md:flex items-center gap-1.5 shrink-0">
+                  <BreadcrumbItem className="max-w-[120px] sm:max-w-[180px] truncate">
+                    <BreadcrumbLink
+                      href={crumb.href ?? "#"}
+                      className="text-muted-foreground/70 hover:text-foreground truncate"
+                    >
+                      {crumb.title}
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                  <BreadcrumbSeparator>
+                    <ChevronRight className="h-3 w-3 text-muted-foreground/40" />
+                  </BreadcrumbSeparator>
+                </div>
+              ))}
+
+              {/* Last Crumb */}
+              <div className="flex items-center gap-1.5 min-w-0">
+                <BreadcrumbItem className="max-w-[110px] sm:max-w-[160px] truncate">
+                  <BreadcrumbPage className="font-medium text-foreground truncate">{crumbs[crumbs.length - 1].title}</BreadcrumbPage>
+                </BreadcrumbItem>
+              </div>
+            </>
+          )}
         </BreadcrumbList>
       </Breadcrumb>
 
