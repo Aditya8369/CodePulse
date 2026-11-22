@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Flame, Snowflake } from "lucide-react";
 import { buildStreakMonth, getActivityDays, longestActivityStreak } from "@/lib/streak-calendar";
+import { StreakFlameParticles } from "./streak-flame-particles";
 
 interface StreakCalendarProps {
   activity: unknown;
@@ -32,7 +33,18 @@ export function StreakCalendar({
   return (
     <section className="glass-card rounded-[20px] border border-white/10 p-5 sm:p-6" aria-label="Contribution streak calendar">
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div><h2 className="flex items-center gap-2 text-lg font-bold"><Flame className="h-5 w-5 text-orange-400" aria-hidden="true" />Contribution streak</h2><p className="mt-1 text-sm text-muted-foreground">A day-by-day view of your synced GitHub activity.</p></div>
+        <div>
+          <div className="flex items-center gap-2">
+            <h2 className="flex items-center gap-2 text-lg font-bold">
+              <Flame className="h-5 w-5 text-orange-400" aria-hidden="true" />
+              Contribution streak
+            </h2>
+            {currentStreak >= 7 && (
+              <StreakFlameParticles streak={currentStreak} showBadge={true} />
+            )}
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground">A day-by-day view of your synced GitHub activity.</p>
+        </div>
         <div className="flex items-center gap-2" aria-label="Change calendar month">
           <button type="button" onClick={() => shiftMonth(-1)} aria-label="Previous month" className="rounded-lg border border-white/10 p-2 hover:bg-white/5 focus-visible:ring-2 focus-visible:ring-primary"><ChevronLeft className="h-4 w-4" /></button>
           <span className="min-w-32 text-center text-sm font-semibold" aria-live="polite">{monthLabel}</span>
@@ -41,7 +53,18 @@ export function StreakCalendar({
       </div>
 
       <div className="mt-5 grid gap-2 sm:grid-cols-3">
-        <div className="rounded-xl border border-orange-400/20 bg-orange-400/5 p-3"><p className="text-xs text-muted-foreground">Current streak</p><p className="mt-1 text-xl font-bold">{currentStreak} days</p></div>
+        <div className="relative overflow-hidden rounded-xl border border-orange-400/20 bg-orange-400/5 p-3">
+          {currentStreak >= 7 && (
+            <div className="absolute inset-0 pointer-events-none">
+              <StreakFlameParticles streak={currentStreak} showBadge={false} className="h-full w-full" />
+            </div>
+          )}
+          <p className="text-xs text-muted-foreground">Current streak</p>
+          <p className="mt-1 text-xl font-bold text-orange-400 flex items-center gap-1.5">
+            <span>{currentStreak} days</span>
+            {currentStreak >= 7 && <Flame className="h-4 w-4 fill-orange-400/30 animate-pulse" />}
+          </p>
+        </div>
         <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3"><p className="text-xs text-muted-foreground">Best streak</p><p className="mt-1 text-xl font-bold">{best} days</p></div>
         <div className="rounded-xl border border-sky-400/20 bg-sky-400/5 p-3"><p className="text-xs text-muted-foreground">Streak freezes</p><p className="mt-1 text-xl font-bold">{freezeInventory === null ? "Unavailable" : `${freezeInventory} available`}</p></div>
       </div>

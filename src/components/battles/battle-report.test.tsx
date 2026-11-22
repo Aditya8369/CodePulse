@@ -49,4 +49,25 @@ describe('BattleReport Component Flow', () => {
     fireEvent.click(rematchBtn);
     expect(onRematchMock).toHaveBeenCalled();
   });
+
+  it('renders expandable code diff accordion and expands on click', () => {
+    render(
+      <BattleReport
+        player1={mockPlayer1}
+        player2={mockPlayer2}
+        battleType="speed"
+        onRematch={onRematchMock}
+      />
+    );
+
+    const toggleBtn = screen.getByTestId('code-diff-toggle-button');
+    expect(toggleBtn).toBeInTheDocument();
+    expect(toggleBtn).toHaveAttribute('aria-expanded', 'false');
+
+    // Click to expand accordion
+    fireEvent.click(toggleBtn);
+    expect(toggleBtn).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText('Post-Mortem Code Diff & Solution Breakdown')).toBeInTheDocument();
+    expect(screen.getByTestId('view-mode-side-by-side')).toBeInTheDocument();
+  });
 });
