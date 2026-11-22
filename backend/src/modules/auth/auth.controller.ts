@@ -10,11 +10,18 @@ import {
   Post,
   Query,
   Req,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
+import {
+  DEFAULT_CSRF_SECRET,
+  extractCsrfCookie,
+  generateCsrfToken,
+  verifyCsrfTokenSignature,
+} from '../../common/security/csrf.util';
 import { AuthService } from './auth.service';
 import { SamlSsoService } from './saml-sso.service';
 import type { SamlTenantIdpConfig } from './saml-sso.service';
@@ -276,5 +283,56 @@ export class AuthController {
       (req as any).user?.id ||
       (req as any).user?.sub;
     return this.authService.disableTwoFactor(userId, body.code);
+  }
+
+  @Get('csrf-token')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Bootstrap cryptographically signed CSRF token for Single-Page Application initialization',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Cryptographically signed CSRF token bootstrapped and set in cookie',
+  })
+  getCsrfToken(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const isSecure =
+      req.secure ||
+      req.headers?.['x-forwarded-proto'] === 'https' ||
+      process.env.NODE_ENV === 'production';
+
+    const secret =
+      process.env.CSRF_SECRET ||
+      process.env.JWT_SECRET ||
+      DEFAULT_CSRF_SECRET;
+
+    let token = extractCsrfCookie(req);
+    if (!token || !verifyCsrfTokenSignature(token, secret)) {
+      token = generateCsrfToken(secret).token;
+    }
+
+    const cookieOptions = {
+      sameSite: 'strict' as const,
+      httpOnly: false,
+      secure: isSecure,
+      path: '/',
+    };
+
+    if (res && typeof res.cookie === 'function') {
+      if (isSecure) {
+        res.cookie('__Host-csrf-token', token, { ...cookieOptions, secure: true });
+      }
+      res.cookie('csrf-token', token, cookieOptions);
+    }
+
+    if (res && typeof res.setHeader === 'function') {
+      res.setHeader('x-csrf-token', token);
+    }
+
+    return {
+      csrfToken: token,
+      headerName: 'x-csrf-token',
+      cookieName: isSecure ? '__Host-csrf-token' : 'csrf-token',
+      sameSite: 'Strict',
+    };
   }
 }

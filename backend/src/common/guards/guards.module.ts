@@ -5,6 +5,7 @@ import { CustomThrottlerGuard } from './custom-throttler.guard';
 import { PowChallengeGuard } from './pow-challenge.guard';
 import { OpaEngineService } from './opa-engine.service';
 import { OpaPolicyGuard } from './opa-policy.guard';
+import { CsrfGuard } from './csrf.guard';
 
 @Global()
 @Module({
@@ -15,6 +16,7 @@ import { OpaPolicyGuard } from './opa-policy.guard';
     PowChallengeGuard,
     OpaEngineService,
     OpaPolicyGuard,
+    CsrfGuard,
   ],
   exports: [
     RedisService,
@@ -23,6 +25,7 @@ import { OpaPolicyGuard } from './opa-policy.guard';
     PowChallengeGuard,
     OpaEngineService,
     OpaPolicyGuard,
+    CsrfGuard,
   ],
 })
 export class GuardsModule {}
