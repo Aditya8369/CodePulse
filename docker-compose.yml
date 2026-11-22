@@ -1,0 +1,13 @@
+# CodePulse Main Docker Compose Configuration
+# Default entrypoint for local development and one-command execution:
+#   docker compose up --build
+#
+# Launches the full-stack CodePulse environment:
+# - PostgreSQL 16
+# - Redis 7
+# - Mailpit (Local SMTP / Email testing at http://localhost:8025)
+# - NestJS Backend API (http://localhost:3001)
+# - Next.js Frontend (http://localhost:3000)
+
+include:
+  - docker-compose.dev.yml

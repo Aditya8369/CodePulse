@@ -8,7 +8,12 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "prepare": "husky"
+    "prepare": "husky",
+    "docker:up": "docker compose -f docker-compose.dev.yml up",
+    "docker:build": "docker compose -f docker-compose.dev.yml up --build",
+    "docker:down": "docker compose -f docker-compose.dev.yml down",
+    "docker:clean": "docker compose -f docker-compose.dev.yml down -v",
+    "docker:logs": "docker compose -f docker-compose.dev.yml logs -f"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

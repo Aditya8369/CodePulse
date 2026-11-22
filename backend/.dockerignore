@@ -1,4 +1,27 @@
+# Dependencies & Builds
 node_modules
 dist
+build
+
+# Git & CI/CD
+.git
+.github
+
+# IDEs & OS files
+.vscode
+.idea
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Logs & Testing
+*.log
+npm-debug.log*
+coverage
+
+# Temp & Secrets
 .env*
 !.env.example
+scratch
+data

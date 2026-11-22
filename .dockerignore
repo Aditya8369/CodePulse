@@ -1,7 +1,35 @@
+# Dependencies & Builds
 node_modules
 .next
+dist
+out
+build
+backend
+
+# Git & CI/CD
 .git
+.github
+.husky
+
+# IDEs & OS files
+.vscode
+.idea
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Logs & Testing
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+coverage
+.nyc_output
+
+# Temp & Secrets
 .env*
 !.env.example
-backend
+scratch
+data
 *.md
