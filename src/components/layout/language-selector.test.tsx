@@ -54,4 +54,17 @@ describe("LanguageSelector & RTL Layout Mirroring", () => {
       "لوحة التحكم"
     );
   });
+
+  it("includes accessible focus-visible keyboard ring classes on interactive trigger", () => {
+    const engine = new LocalizationEngine({ initialLocale: "en" });
+    render(
+      <LocalizationProvider engine={engine}>
+        <LanguageSelector />
+      </LocalizationProvider>
+    );
+
+    const trigger = screen.getByTestId("language-selector-trigger");
+    expect(trigger.className).toContain("focus-visible:ring-2");
+    expect(trigger.className).toContain("focus-visible:ring-cyan-400");
+  });
 });
