@@ -27,6 +27,7 @@ import {
 } from "@/lib/custom-challenges";
 import { CreateCustomChallengeModal } from "@/components/modals/create-custom-challenge-modal";
 import { ChallengeFilterBar } from "@/components/challenges/challenge-filter-bar";
+import { StreakCalendar } from "@/components/challenges/streak-calendar";
 
 const statusTabs = [
   { id: "all", label: "All", icon: Target },
@@ -217,6 +218,12 @@ export default function ChallengesPage() {
           <span>+ Create Custom Quest</span>
         </button>
       </div>
+
+      <StreakCalendar
+        activity={currentUser?.stats?.contributionData}
+        currentStreak={currentUser?.stats?.streak ?? 0}
+        longestStreak={currentUser?.stats?.longestStreak ?? 0}
+      />
 
       {/* Summary cards connected to live state */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
