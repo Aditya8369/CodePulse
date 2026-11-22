@@ -19,6 +19,8 @@ import { PostQuantumJwtService } from './jwt.service';
 
 import { KeysController } from './keys.controller';
 import { PreKeyService } from './prekey.service';
+import { BruteForceService } from './brute-force.service';
+import { BruteForceGuard } from './guards/brute-force.guard';
 
 
 
@@ -60,8 +62,8 @@ import { PreKeyService } from './prekey.service';
     PostQuantumJwtService,
 
     PreKeyService,
-
-
+    BruteForceService,
+    BruteForceGuard,
   ],
   exports: [
     AuthService,
@@ -72,9 +74,9 @@ import { PreKeyService } from './prekey.service';
     PasskeyService,
     SamlSsoService,
     PostQuantumJwtService,
-
     PreKeyService,
-
+    BruteForceService,
+    BruteForceGuard,
   ],
 })
 export class AuthModule {}

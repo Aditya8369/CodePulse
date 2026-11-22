@@ -15,6 +15,8 @@ import { SyncService } from '../sync/sync.service';
 import { TokenBlacklistService } from './token-blacklist.service';
 import { VaultService } from '../security/vault.service';
 import { TwoFactorService } from './two-factor.service';
+import { BruteForceService } from './brute-force.service';
+import { HttpException, HttpStatus } from '@nestjs/common';
 import axios from 'axios';
 import { Prisma } from '@prisma/client';
 import {
@@ -59,6 +61,7 @@ export class AuthService {
     private readonly blacklistService: TokenBlacklistService,
     @Optional() private readonly vaultService?: VaultService,
     @Optional() private readonly twoFactorService?: TwoFactorService,
+    @Optional() private readonly bruteForceService?: BruteForceService,
   ) {
     this.tfaService = this.twoFactorService || new TwoFactorService();
   }
@@ -112,8 +115,30 @@ export class AuthService {
     rawEmail: string,
     password: string,
     deviceFingerprint?: string,
+    clientIp?: string,
   ): Promise<AuthResponseDto> {
     const email = rawEmail.trim().toLowerCase();
+
+    // Check account lockout status across user and IP dimensions
+    if (this.bruteForceService) {
+      const lockout = await this.bruteForceService.getLockout(email, clientIp);
+      if (lockout.isLocked) {
+        throw new HttpException(
+          {
+            statusCode: HttpStatus.TOO_MANY_REQUESTS,
+            message: lockout.requiresEmailUnlock
+              ? 'Account is locked due to 10+ failed login attempts. Email unlock required.'
+              : `Account is temporarily locked due to excessive failed login attempts. Please try again in ${lockout.retryAfterSeconds} seconds.`,
+            retryAfterSeconds: lockout.retryAfterSeconds,
+            requiresEmailUnlock: lockout.requiresEmailUnlock,
+            attemptCount: lockout.attemptCount,
+            lockoutTier: lockout.lockoutTier,
+          },
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
+      }
+    }
+
     const user = await this.prisma.user.findUnique({
       where: { authEmail: email },
     });
@@ -121,7 +146,15 @@ export class AuthService {
       !user?.passwordHash ||
       !(await this.verifyPassword(password, user.passwordHash))
     ) {
+      if (this.bruteForceService) {
+        await this.bruteForceService.recordFailedAttempt(user?.username || email, clientIp);
+      }
       throw new UnauthorizedException('Invalid email or password.');
+    }
+
+    // Reset failure counter on successful credentials verification
+    if (this.bruteForceService) {
+      await this.bruteForceService.recordSuccessfulLogin(user.username || email, clientIp);
     }
 
     // Two-Factor Authentication Check:
