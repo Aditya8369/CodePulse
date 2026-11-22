@@ -13,10 +13,52 @@ import {
   Check,
   Play,
   RotateCcw,
+  Type,
+  ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+
+export type MonospaceFont = "jetbrains-mono" | "fira-code" | "source-code-pro";
+
+export interface MonospaceFontOption {
+  id: MonospaceFont;
+  name: string;
+  fontFamily: string;
+  description: string;
+}
+
+export const MONOSPACE_FONTS: MonospaceFontOption[] = [
+  {
+    id: "jetbrains-mono",
+    name: "JetBrains Mono",
+    fontFamily: "'JetBrains Mono', var(--font-geist-mono), monospace",
+    description: "Default developer font",
+  },
+  {
+    id: "fira-code",
+    name: "Fira Code",
+    fontFamily: "'Fira Code', 'Cascadia Code', monospace",
+    description: "Ligatures & clean symbols",
+  },
+  {
+    id: "source-code-pro",
+    name: "Source Code Pro",
+    fontFamily: "'Source Code Pro', monospace",
+    description: "Adobe standard coding font",
+  },
+];
 
 export interface SyntaxDiagnostic {
   line: number;
@@ -39,8 +81,10 @@ export interface CodeArenaEditorProps {
   language?: string;
   collaborators?: CollaboratorCursor[];
   readOnly?: boolean;
+  initialFont?: MonospaceFont;
   onCodeChange?: (code: string) => void;
   onExecute?: (code: string) => void;
+  onFontChange?: (font: MonospaceFont) => void;
 }
 
 export function CodeArenaEditor({
@@ -51,10 +95,13 @@ export function CodeArenaEditor({
     { id: "c2", name: "DevSarah", color: "#10B981", line: 6, column: 15 },
   ],
   readOnly = false,
+  initialFont = "jetbrains-mono",
   onCodeChange,
   onExecute,
+  onFontChange,
 }: CodeArenaEditorProps) {
   const [code, setCode] = useState<string>(initialCode);
+  const [selectedFont, setSelectedFont] = useState<MonospaceFont>(initialFont);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<"editor" | "output">("editor");
   const [output, setOutput] = useState<string>("");
@@ -71,24 +118,42 @@ export function CodeArenaEditor({
 
   const lines = useMemo(() => code.split("\n"), [code]);
 
+  const activeFontOption = useMemo(() => {
+    return (
+      MONOSPACE_FONTS.find((f) => f.id === selectedFont) || MONOSPACE_FONTS[0]
+    );
+  }, [selectedFont]);
+
+  const handleFontChange = useCallback(
+    (fontId: MonospaceFont) => {
+      setSelectedFont(fontId);
+      onFontChange?.(fontId);
+      const font = MONOSPACE_FONTS.find((f) => f.id === fontId);
+      toast.success(`Editor font set to ${font?.name || fontId}`);
+    },
+    [onFontChange],
+  );
+
   const handleFormatCode = useCallback(() => {
     try {
       if (language === "go") {
-        const formatted = code
-          .split("\n")
-          .map((l) => l.trimEnd())
-          .join("\n")
-          .trim() + "\n";
+        const formatted =
+          code
+            .split("\n")
+            .map((l) => l.trimEnd())
+            .join("\n")
+            .trim() + "\n";
         setCode(formatted);
         onCodeChange?.(formatted);
         setDiagnostics([]);
         toast.success("Formatted with gofmt standard!");
       } else {
-        const formatted = code
-          .split("\n")
-          .map((l) => l.trimEnd())
-          .join("\n")
-          .trim() + "\n";
+        const formatted =
+          code
+            .split("\n")
+            .map((l) => l.trimEnd())
+            .join("\n")
+            .trim() + "\n";
         setCode(formatted);
         onCodeChange?.(formatted);
         setDiagnostics([]);
@@ -108,7 +173,9 @@ export function CodeArenaEditor({
 
   const handleRun = useCallback(() => {
     setActiveTab("output");
-    setOutput("Executing code in sandbox container...\n[Output]: Hello, CodePulse Arena!\nExecution completed in 18ms with exit code 0.");
+    setOutput(
+      "Executing code in sandbox container...\n[Output]: Hello, CodePulse Arena!\nExecution completed in 18ms with exit code 0.",
+    );
     onExecute?.(code);
     toast.success("Execution completed successfully");
   }, [code, onExecute]);
@@ -116,29 +183,37 @@ export function CodeArenaEditor({
   return (
     <div
       className={`flex flex-col border border-border rounded-xl bg-card overflow-hidden shadow-lg transition-all ${
-        isFullscreen ? "fixed inset-0 z-50 rounded-none" : "w-full min-h-[500px]"
+        isFullscreen
+          ? "fixed inset-0 z-50 rounded-none"
+          : "w-full min-h-[500px]"
       }`}
     >
       {/* Editor Header Toolbar */}
-      <div className="flex items-center justify-between px-4 py-2.5 bg-muted/40 border-b border-border">
+      <div className="flex items-center justify-between px-4 py-2.5 bg-muted/40 border-b border-border flex-wrap gap-2">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
             <Code2 className="w-5 h-5 text-primary" />
-            <span className="font-semibold text-sm capitalize">{language} Arena Editor</span>
+            <span className="font-semibold text-sm capitalize">
+              {language} Arena Editor
+            </span>
           </div>
           <Badge variant="outline" className="text-xs uppercase font-mono">
             {language}
           </Badge>
           {diagnostics.length > 0 && (
-            <Badge variant="destructive" className="text-xs flex items-center gap-1">
+            <Badge
+              variant="destructive"
+              className="text-xs flex items-center gap-1"
+            >
               <AlertCircle className="w-3 h-3" />
-              {diagnostics.length} {diagnostics.length === 1 ? "issue" : "issues"}
+              {diagnostics.length}{" "}
+              {diagnostics.length === 1 ? "issue" : "issues"}
             </Badge>
           )}
         </div>
 
         {/* Collaborators & Controls */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <div className="hidden sm:flex items-center gap-1.5 mr-2">
             <Users className="w-4 h-4 text-muted-foreground" />
             {collaborators.map((c) => (
@@ -152,6 +227,67 @@ export function CodeArenaEditor({
               </span>
             ))}
           </div>
+
+          {/* Monospace Font Toggle Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              aria-label="Toggle Monospace Font"
+              data-testid="font-toggle-button"
+              className={cn(
+                "inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium",
+                "border border-border bg-background/50 hover:bg-muted/80 text-foreground transition-colors",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+              )}
+            >
+              <Type className="w-3.5 h-3.5 text-primary shrink-0" />
+              <span className="hidden sm:inline font-mono text-[11px] font-semibold">
+                {activeFontOption.name}
+              </span>
+              <ChevronDown className="w-3 h-3 text-muted-foreground shrink-0" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              className="w-56 p-1 border border-border bg-popover/95 backdrop-blur-md shadow-xl rounded-xl z-50"
+            >
+              <DropdownMenuGroup>
+                <DropdownMenuLabel className="flex items-center justify-between text-xs text-muted-foreground px-2 py-1.5">
+                  <span>Monospace Font</span>
+                  <span className="font-mono text-[10px] text-primary">
+                    3 Styles
+                  </span>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator className="bg-border/60" />
+                {MONOSPACE_FONTS.map((font) => {
+                  const isSelected = font.id === selectedFont;
+                  return (
+                    <DropdownMenuItem
+                      key={font.id}
+                      data-testid={`font-option-${font.id}`}
+                      onClick={() => handleFontChange(font.id)}
+                      className={cn(
+                        "flex items-center justify-between gap-2 px-2.5 py-2 text-xs rounded-lg cursor-pointer transition-colors",
+                        isSelected
+                          ? "bg-primary/10 text-primary font-semibold"
+                          : "text-foreground hover:bg-muted/60",
+                      )}
+                    >
+                      <div className="flex flex-col">
+                        <span style={{ fontFamily: font.fontFamily }}>
+                          {font.name}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground font-sans">
+                          {font.description}
+                        </span>
+                      </div>
+                      {isSelected && (
+                        <Check className="w-3.5 h-3.5 text-primary shrink-0" />
+                      )}
+                    </DropdownMenuItem>
+                  );
+                })}
+              </DropdownMenuGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           <Button
             size="sm"
@@ -170,7 +306,11 @@ export function CodeArenaEditor({
             onClick={handleCopyCode}
             className="h-8 gap-1 text-xs"
           >
-            {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+            {isCopied ? (
+              <Check className="w-3.5 h-3.5 text-emerald-500" />
+            ) : (
+              <Copy className="w-3.5 h-3.5" />
+            )}
             {isCopied ? "Copied" : "Copy"}
           </Button>
 
@@ -190,24 +330,37 @@ export function CodeArenaEditor({
             onClick={() => setIsFullscreen(!isFullscreen)}
             className="h-8 w-8 text-muted-foreground"
           >
-            {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            {isFullscreen ? (
+              <Minimize2 className="w-4 h-4" />
+            ) : (
+              <Maximize2 className="w-4 h-4" />
+            )}
           </Button>
         </div>
       </div>
 
       {/* Main Workspace Body */}
-      <div className="flex-1 flex flex-col md:flex-row relative font-mono text-sm">
+      <div
+        className="flex-1 flex flex-col md:flex-row relative text-sm"
+        style={{ fontFamily: activeFontOption.fontFamily }}
+      >
         {/* Monaco Line Gutter + Editor Area */}
         <div className="flex-1 flex overflow-auto min-h-[380px] bg-background">
           {/* Gutter with line numbers, collaborative markers, and diagnostics */}
-          <div className="select-none flex flex-col py-3 px-2 border-r border-border/50 bg-muted/20 text-muted-foreground text-right w-14 shrink-0 font-mono text-xs">
+          <div
+            className="select-none flex flex-col py-3 px-2 border-r border-border/50 bg-muted/20 text-muted-foreground text-right w-14 shrink-0 text-xs"
+            style={{ fontFamily: activeFontOption.fontFamily }}
+          >
             {lines.map((_, idx) => {
               const lineNum = idx + 1;
               const hasDiag = diagnostics.find((d) => d.line === lineNum);
               const collab = collaborators.find((c) => c.line === lineNum);
 
               return (
-                <div key={lineNum} className="relative h-6 flex items-center justify-end pr-1 group">
+                <div
+                  key={lineNum}
+                  className="relative h-6 flex items-center justify-end pr-1 group"
+                >
                   {collab && (
                     <span
                       style={{ backgroundColor: collab.color }}
@@ -216,11 +369,16 @@ export function CodeArenaEditor({
                     />
                   )}
                   {hasDiag && (
-                    <span className="absolute left-2.5 text-amber-500 cursor-help" title={hasDiag.message}>
+                    <span
+                      className="absolute left-2.5 text-amber-500 cursor-help"
+                      title={hasDiag.message}
+                    >
                       <AlertCircle className="w-3 h-3" />
                     </span>
                   )}
-                  <span className={hasDiag ? "text-amber-500 font-bold" : ""}>{lineNum}</span>
+                  <span className={hasDiag ? "text-amber-500 font-bold" : ""}>
+                    {lineNum}
+                  </span>
                 </div>
               );
             })}
@@ -229,6 +387,7 @@ export function CodeArenaEditor({
           {/* Editable Area */}
           <div className="flex-1 relative p-3">
             <textarea
+              data-testid="code-arena-textarea"
               value={code}
               readOnly={readOnly}
               onChange={(e) => {
@@ -236,7 +395,8 @@ export function CodeArenaEditor({
                 onCodeChange?.(e.target.value);
               }}
               spellCheck={false}
-              className="w-full h-full min-h-[350px] resize-none outline-none border-none bg-transparent font-mono text-xs sm:text-sm text-foreground leading-6"
+              style={{ fontFamily: activeFontOption.fontFamily }}
+              className="w-full h-full min-h-[350px] resize-none outline-none border-none bg-transparent text-xs sm:text-sm text-foreground leading-6"
             />
           </div>
         </div>
@@ -272,7 +432,9 @@ export function CodeArenaEditor({
                 <div className="flex flex-col items-center justify-center h-48 text-muted-foreground text-center">
                   <CheckCircle2 className="w-8 h-8 text-emerald-500 mb-2" />
                   <p>All syntax checks passed!</p>
-                  <span className="text-[11px]">No errors or formatting warnings detected.</span>
+                  <span className="text-[11px]">
+                    No errors or formatting warnings detected.
+                  </span>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -283,7 +445,9 @@ export function CodeArenaEditor({
                     >
                       <div className="flex items-center gap-1.5 font-semibold text-amber-500 mb-1">
                         <AlertCircle className="w-3.5 h-3.5" />
-                        <span>Line {diag.line}:{diag.column}</span>
+                        <span>
+                          Line {diag.line}:{diag.column}
+                        </span>
                         {diag.ruleId && (
                           <span className="text-[10px] text-muted-foreground font-mono ml-auto">
                             [{diag.ruleId}]
@@ -309,7 +473,10 @@ export function CodeArenaEditor({
                     Clear
                   </Button>
                 </div>
-                <pre className="p-3 bg-muted/40 rounded-lg text-foreground font-mono text-xs whitespace-pre-wrap min-h-[140px]">
+                <pre
+                  style={{ fontFamily: activeFontOption.fontFamily }}
+                  className="p-3 bg-muted/40 rounded-lg text-foreground text-xs whitespace-pre-wrap min-h-[140px]"
+                >
                   {output || "No output yet. Click 'Run' to execute."}
                 </pre>
               </div>
@@ -320,3 +487,5 @@ export function CodeArenaEditor({
     </div>
   );
 }
+
+export default CodeArenaEditor;
