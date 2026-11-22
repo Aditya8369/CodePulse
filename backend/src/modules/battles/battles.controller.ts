@@ -192,4 +192,36 @@ export class BattlesController {
     const max = limit ? parseInt(limit, 10) : 10000;
     return this.replayStream.getMatchReplayTimeline(id, start, end, max);
   }
+
+  @Get(':id/plagiarism')
+  @ApiOperation({ summary: 'Get plagiarism inspection report, similarity scores, and diff overlays for a battle' })
+  async getPlagiarismReport(@Param('id') id: string) {
+    return this.battlesService.getPlagiarismReport(id);
+  }
+
+  @Post(':id/check-plagiarism')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Run automated AST Winnowing plagiarism and similarity detection analysis on a submission' })
+  async checkBattlePlagiarism(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() dto: {
+      code: string;
+      language?: string;
+      opponentCode?: string;
+      opponentUserId?: string;
+      standardTemplate?: string;
+    },
+  ) {
+    return this.battlesService.checkPlagiarism(
+      id,
+      req.user?.id || 'anonymous',
+      dto.code,
+      dto.language,
+      dto.opponentCode,
+      dto.opponentUserId,
+      dto.standardTemplate,
+    );
+  }
 }

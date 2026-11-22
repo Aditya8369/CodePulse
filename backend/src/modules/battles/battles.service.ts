@@ -17,6 +17,7 @@ import {
 import { decayFloorForElo } from './rating-decay';
 import { AntiSmurfService } from './anti-smurf.service';
 import { TranspilerService } from '../ai/transpiler.service';
+import { PlagiarismService } from './plagiarism.service';
 import type { MatchResultTelemetryDto } from './dto/match-result.dto';
 
 export interface EloOutcome {
@@ -36,6 +37,7 @@ export class BattlesService {
     @Optional() private readonly xpService?: XpService,
     @Optional() private readonly antiSmurfService?: AntiSmurfService,
     @Optional() private readonly transpilerService?: TranspilerService,
+    @Optional() private readonly plagiarismService?: PlagiarismService,
   ) {}
 
   /**
@@ -327,12 +329,27 @@ export class BattlesService {
       const initialWinnerRating = winnerBattleRating?.elo ?? 1200;
       const initialLoserRating = loserBattleRating?.elo ?? 1200;
 
-      const eloOutcome = this.calculateElo(
+      let eloOutcome = this.calculateElo(
         initialWinnerRating,
         initialLoserRating,
         placementKFactor(winnerBattleRating?.placementMatchesRemaining ?? 5),
         placementKFactor(loserBattleRating?.placementMatchesRemaining ?? 5),
       );
+
+      // Nullify Elo outcome and XP gains when blatant plagiarism is detected (> 85% similarity)
+      if (
+        battle.flaggedForPlagiarism ||
+        (battle.similarityScore && battle.similarityScore >= 85.0)
+      ) {
+        eloOutcome = {
+          winnerRating: initialWinnerRating,
+          loserRating: initialLoserRating,
+          winnerDelta: 0,
+          loserDelta: 0,
+          winnerXpGain: 0,
+          loserXpGain: 0,
+        };
+      }
 
       // Execute all rating, XP, activity, and battle status updates atomically in a Prisma Transaction
       return this.prisma.$transaction(async (tx) => {
@@ -878,6 +895,46 @@ export class BattlesService {
           language: targetLanguage,
         },
       },
+    });
+  }
+
+  /**
+   * Retrieves plagiarism report and historical diff analysis for a battle.
+   */
+  async getPlagiarismReport(battleId: string) {
+    if (!this.plagiarismService) {
+      throw new BadRequestException('Plagiarism service is not available');
+    }
+    const report = await this.plagiarismService.getPlagiarismReportForBattle(battleId);
+    if (!report) {
+      throw new NotFoundException(`Battle ${battleId} not found`);
+    }
+    return report;
+  }
+
+  /**
+   * Runs automated AST Winnowing plagiarism detection on a candidate code submission.
+   */
+  async checkPlagiarism(
+    battleId: string,
+    userId: string,
+    code: string,
+    language?: string,
+    opponentCode?: string,
+    opponentUserId?: string,
+    standardTemplate?: string,
+  ) {
+    if (!this.plagiarismService) {
+      throw new BadRequestException('Plagiarism service is not available');
+    }
+    return this.plagiarismService.analyzeBattleSubmission({
+      battleId,
+      userId,
+      code,
+      language,
+      opponentCode,
+      opponentUserId,
+      standardTemplate,
     });
   }
 }

@@ -67,4 +67,69 @@ describe('BattlesService - ELO Rating Engine (#87)', () => {
     );
     expect(outcome.loserRating).toBeGreaterThanOrEqual(100);
   });
+
+  it('5. Plagiarism Protection (#315): nullifies Elo gains and losses when battle is flagged for plagiarism', async () => {
+    const mockTx = {
+      battleRating: {
+        upsert: jest.fn(),
+      },
+      badge: {
+        upsert: jest.fn(),
+      },
+      userBadge: {
+        createMany: jest.fn(),
+      },
+      activity: {
+        create: jest.fn(),
+        createMany: jest.fn(),
+      },
+      developerRating: {
+        upsert: jest.fn(),
+      },
+      notification: {
+        createMany: jest.fn(),
+      },
+      battle: {
+        update: jest.fn().mockResolvedValue({ id: 'b-1', status: 'COMPLETED', winnerId: 'p1' }),
+      },
+    };
+
+    const prismaWithBattle: any = {
+      battle: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'b-1',
+          challengerId: 'p1',
+          opponentId: 'p2',
+          status: 'ACTIVE',
+          flaggedForPlagiarism: true,
+          similarityScore: 92.5,
+          challenger: { username: 'alice' },
+          opponent: { username: 'bob' },
+        }),
+      },
+      developerRating: {
+        findUnique: jest.fn().mockResolvedValue(null),
+      },
+      battleRating: {
+        findUnique: jest.fn().mockResolvedValue({ elo: 1300, placementMatchesRemaining: 0 }),
+      },
+      $transaction: jest.fn().mockImplementation((cb: any) => cb(mockTx)),
+    };
+
+    const serviceWithPrisma = new BattlesService(prismaWithBattle);
+    await serviceWithPrisma.updateBattleStatus('b-1', {
+      status: 'COMPLETED',
+      winnerId: 'p1',
+    });
+
+    // Rating upsert for winner must have 0 delta (rating remains 1300)
+    expect(mockTx.battleRating.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: 'p1' },
+        update: expect.objectContaining({
+          elo: 1300,
+        }),
+      }),
+    );
+  });
 });
