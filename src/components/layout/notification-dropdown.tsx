@@ -16,11 +16,18 @@ import {
   Clock,
   ExternalLink,
   Search,
+  AtSign,
+  Shield,
+  Layers,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@/lib/utils";
 import type { Notification } from "@/types";
-import { categoryForNotification, notificationCategories, type NotificationCategory } from "@/lib/notification-categories";
+import {
+  categoryForNotification,
+  notificationCategories,
+  type NotificationCategory,
+} from "@/lib/notification-categories";
 
 // ===========================
 // Notification Category Helpers
@@ -70,6 +77,27 @@ const CATEGORY_MAP: Record<string, CategoryConfig> = {
     bg: "bg-cyan-500/10",
     border: "border-cyan-500/20",
   },
+  mention: {
+    icon: AtSign,
+    color: "text-sky-400",
+    bg: "bg-sky-500/10",
+    border: "border-sky-500/20",
+  },
+  guild: {
+    icon: Shield,
+    color: "text-indigo-400",
+    bg: "bg-indigo-500/10",
+    border: "border-indigo-500/20",
+  },
+};
+
+const CATEGORY_PILL_ICONS: Record<NotificationCategory, LucideIcon> = {
+  all: Layers,
+  mentions: AtSign,
+  battles: Swords,
+  guilds: Shield,
+  system: Bell,
+  achievements: Trophy,
 };
 
 // ===========================
@@ -90,6 +118,8 @@ function actionUrlFor(notification: Notification): string | null {
   const url = notification.actionUrl;
   if (url?.startsWith("/") && !url.startsWith("//") && !url.includes("\\")) return url;
   if (notification.type === "battle") return "/battles";
+  if (notification.type === "guild") return "/guilds";
+  if (notification.type === "mention") return "/discussions";
   if (notification.type === "achievement" || notification.type === "level_up") return "/achievements";
   if (notification.type === "challenge") return "/challenges";
   return null;
@@ -139,12 +169,17 @@ export function NotificationDropdown({
   const filteredNotifications = notifications.filter((n) => {
     const matchesCategory = filter === "all" || categoryForNotification(n.type) === filter;
     const query = search.trim().toLowerCase();
-    return matchesCategory && (!unreadOnly || !n.isRead) &&
-      (!query || `${n.title} ${n.message}`.toLowerCase().includes(query));
+    return (
+      matchesCategory &&
+      (!unreadOnly || !n.isRead) &&
+      (!query || `${n.title} ${n.message}`.toLowerCase().includes(query))
+    );
   });
-  const unreadInCategory = filter === "all" ? unreadCount : notifications.filter(
-    (n) => !n.isRead && categoryForNotification(n.type) === filter,
-  ).length;
+
+  const unreadInCategory =
+    filter === "all"
+      ? unreadCount
+      : notifications.filter((n) => !n.isRead && categoryForNotification(n.type) === filter).length;
 
   const handleItemClick = (notification: Notification) => {
     if (!notification.isRead) {
@@ -168,7 +203,7 @@ export function NotificationDropdown({
           transition={{ duration: 0.18, ease: "easeOut" }}
           className={cn(
             "absolute right-0 top-full mt-2 z-50",
-            "w-[calc(100vw-2rem)] sm:w-96 max-w-sm",
+            "w-[calc(100vw-2rem)] sm:w-[420px] max-w-md",
             "rounded-2xl bg-[#0B0F19]/95 backdrop-blur-2xl",
             "border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.6)]",
             "overflow-hidden flex flex-col text-white"
@@ -188,6 +223,7 @@ export function NotificationDropdown({
 
               {unreadCount > 0 && (
                 <button
+                  type="button"
                   onClick={onMarkAllAsRead}
                   className="flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary/80 transition-colors cursor-pointer"
                   title="Mark all as read"
@@ -198,11 +234,21 @@ export function NotificationDropdown({
               )}
             </div>
 
-            <div aria-label="Notification categories" className="flex gap-1 overflow-x-auto rounded-xl bg-black/30 p-1 border border-white/5">
+            {/* In-App Notification Center Filter Pills (Mentions, Battles, Guilds, System) */}
+            <div
+              aria-label="Notification categories"
+              data-testid="notification-filter-pills"
+              className="flex gap-1.5 overflow-x-auto rounded-xl bg-black/40 p-1.5 border border-white/5 scrollbar-none"
+            >
               {notificationCategories.map((category) => {
-                const count = category === "all" ? unreadCount : notifications.filter(
-                  (n) => !n.isRead && categoryForNotification(n.type) === category,
-                ).length;
+                const count =
+                  category === "all"
+                    ? unreadCount
+                    : notifications.filter(
+                        (n) => !n.isRead && categoryForNotification(n.type) === category
+                      ).length;
+                const IconComponent = CATEGORY_PILL_ICONS[category] || Layers;
+
                 return (
                   <button
                     key={category}
@@ -210,17 +256,34 @@ export function NotificationDropdown({
                     aria-pressed={filter === category}
                     onClick={() => setFilter(category)}
                     className={cn(
-                      "shrink-0 px-2 py-1.5 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer capitalize",
-                      filter === category ? "bg-white/10 text-white shadow-sm" : "text-muted-foreground hover:text-white",
+                      "shrink-0 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer capitalize flex items-center gap-1.5",
+                      filter === category
+                        ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30 scale-[1.02]"
+                        : "text-slate-400 hover:text-white hover:bg-white/5"
                     )}
                   >
-                    {category} <span aria-label={`${count} unread`}>({count})</span>
+                    <IconComponent className="h-3 w-3" />
+                    <span>{category}</span>
+                    <span
+                      aria-label={`${count} unread`}
+                      className={cn(
+                        "text-[10px] px-1.5 py-0.2 rounded-full",
+                        filter === category
+                          ? "bg-white/20 text-white"
+                          : count > 0
+                          ? "bg-indigo-500/20 text-indigo-300 font-bold"
+                          : "text-slate-500"
+                      )}
+                    >
+                      ({count})
+                    </span>
                   </button>
                 );
               })}
             </div>
-            <div className="flex items-center gap-2 mt-2">
-              <label className="flex flex-1 items-center gap-1.5 rounded-lg border border-white/10 bg-black/20 px-2 py-1 text-muted-foreground">
+
+            <div className="flex items-center gap-2 mt-2.5">
+              <label className="flex flex-1 items-center gap-1.5 rounded-lg border border-white/10 bg-black/20 px-2.5 py-1 text-muted-foreground focus-within:border-indigo-500/50">
                 <Search className="h-3.5 w-3.5" aria-hidden="true" />
                 <input
                   aria-label="Search notifications"
@@ -230,9 +293,25 @@ export function NotificationDropdown({
                   className="min-w-0 flex-1 bg-transparent text-xs text-white outline-none placeholder:text-muted-foreground"
                 />
               </label>
-              <button type="button" aria-pressed={unreadOnly} onClick={() => setUnreadOnly((value) => !value)} className={cn("rounded-lg px-2 py-1 text-[11px]", unreadOnly ? "bg-white/10 text-white" : "text-muted-foreground hover:text-white")}>Unread</button>
+              <button
+                type="button"
+                aria-pressed={unreadOnly}
+                onClick={() => setUnreadOnly((value) => !value)}
+                className={cn(
+                  "rounded-lg px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer",
+                  unreadOnly
+                    ? "bg-indigo-600 text-white shadow-sm"
+                    : "border border-white/10 text-muted-foreground hover:text-white hover:bg-white/5"
+                )}
+              >
+                Unread
+              </button>
               {filter !== "all" && unreadInCategory > 0 && (
-                <button type="button" onClick={() => onMarkCategoryAsRead(filter)} className="text-[11px] text-primary hover:text-primary/80">
+                <button
+                  type="button"
+                  onClick={() => onMarkCategoryAsRead(filter)}
+                  className="text-xs text-primary hover:text-primary/80 font-medium cursor-pointer"
+                >
                   Mark category read
                 </button>
               )}
@@ -240,7 +319,13 @@ export function NotificationDropdown({
           </div>
 
           {/* Notifications Scrollable List */}
-          <motion.div key={filter} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.16 }} className="max-h-[380px] overflow-y-auto divide-y divide-white/5 scrollbar-thin">
+          <motion.div
+            key={filter}
+            initial={{ opacity: 0, x: 8 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.16 }}
+            className="max-h-[380px] overflow-y-auto divide-y divide-white/5 scrollbar-thin"
+          >
             {filteredNotifications.length > 0 ? (
               filteredNotifications.map((notification) => {
                 const config =
@@ -300,8 +385,25 @@ export function NotificationDropdown({
                         <span>{formatRelativeTime(notification.createdAt)}</span>
                       </div>
                       {actionUrlFor(notification) && (
-                        <button type="button" onClick={(event) => { event.stopPropagation(); handleItemClick(notification); }} className="mt-1 text-[11px] font-medium text-primary hover:text-primary/80">
-                          {notification.type === "battle" ? "View battle" : notification.type === "achievement" || notification.type === "level_up" ? "View achievement" : notification.type === "challenge" ? "View challenge" : "Open notification"}
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleItemClick(notification);
+                          }}
+                          className="mt-1 text-[11px] font-medium text-primary hover:text-primary/80 cursor-pointer"
+                        >
+                          {notification.type === "battle"
+                            ? "View battle"
+                            : notification.type === "guild"
+                            ? "View guild"
+                            : notification.type === "mention"
+                            ? "View discussion"
+                            : notification.type === "achievement" || notification.type === "level_up"
+                            ? "View achievement"
+                            : notification.type === "challenge"
+                            ? "View challenge"
+                            : "Open notification"}
                         </button>
                       )}
                     </div>
@@ -309,11 +411,12 @@ export function NotificationDropdown({
                     {/* Quick mark as read button */}
                     {!notification.isRead && (
                       <button
+                        type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           onMarkAsRead(notification.id);
                         }}
-                        className="opacity-0 group-hover:opacity-100 p-1 rounded-md text-muted-foreground hover:text-white hover:bg-white/10 transition-all self-center"
+                        className="opacity-0 group-hover:opacity-100 p-1 rounded-md text-muted-foreground hover:text-white hover:bg-white/10 transition-all self-center cursor-pointer"
                         title="Mark as read"
                       >
                         <Check className="w-3.5 h-3.5" />
@@ -329,7 +432,11 @@ export function NotificationDropdown({
                   <Bell className="w-6 h-6" />
                 </div>
                 <h4 className="font-semibold text-sm text-white mb-1">
-                  {search ? "No matching notifications" : filter === "all" ? "No notifications" : `No ${filter} notifications`}
+                  {search
+                    ? "No matching notifications"
+                    : filter === "all"
+                    ? "No notifications"
+                    : `No ${filter} notifications`}
                 </h4>
                 <p className="text-xs text-muted-foreground max-w-[200px]">
                   {search ? "Try another search term." : "No notifications to show at this moment."}

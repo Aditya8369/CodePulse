@@ -183,7 +183,7 @@ export type LeaderboardCategory = "global" | "country" | "friends" | "college" |
 
 export interface Notification {
   id: string;
-  type: "achievement" | "challenge" | "battle" | "friend" | "system" | "level_up";
+  type: "achievement" | "challenge" | "battle" | "friend" | "system" | "level_up" | "mention" | "guild";
   title: string;
   message: string;
   isRead: boolean;
