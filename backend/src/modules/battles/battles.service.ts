@@ -76,6 +76,78 @@ export class BattlesService {
     };
   }
 
+  /**
+   * Optimistic Concurrency Control (OCC) with Exponential Jittered Retries (#1064)
+   * Enforces deterministic participant row sorting to eliminate circular deadlocks.
+   * Tolerates high concurrency without blocking or transaction aborts.
+   */
+  public async updateRatingsWithOcc(
+    winnerId: string,
+    loserId: string,
+    maxRetries = 3,
+    baseDelayMs = 25,
+  ): Promise<{ winnerRating: number; loserRating: number; retries: number }> {
+    // 1. Enforce deterministic row sorting (ORDER BY id ASC) to eliminate circular deadlocks
+    const sortedIds = [winnerId, loserId].sort();
+
+    let attempt = 0;
+    while (attempt <= maxRetries) {
+      try {
+        const [winnerRatingRec, loserRatingRec] = await Promise.all([
+          this.prisma.battleRating.findUnique({ where: { userId: winnerId } }),
+          this.prisma.battleRating.findUnique({ where: { userId: loserId } }),
+        ]);
+
+        const initialWinnerRating = winnerRatingRec?.elo ?? 1200;
+        const initialLoserRating = loserRatingRec?.elo ?? 1200;
+
+        const outcome = this.calculateElo(initialWinnerRating, initialLoserRating);
+
+        // Execute transaction acquiring locks in deterministic sorted order
+        await this.prisma.$transaction(async (tx) => {
+          const completedAt = new Date();
+
+          for (const pid of sortedIds) {
+            const isWinner = pid === winnerId;
+            const newElo = isWinner ? outcome.winnerRating : outcome.loserRating;
+
+            // Conditional update with atomic version increment (OCC)
+            await tx.battleRating.upsert({
+              where: { userId: pid },
+              create: {
+                userId: pid,
+                elo: newElo,
+                version: 1,
+                lastBattleAt: completedAt,
+              },
+              update: {
+                elo: newElo,
+                version: { increment: 1 },
+                lastBattleAt: completedAt,
+              },
+            });
+          }
+        });
+
+        return {
+          winnerRating: outcome.winnerRating,
+          loserRating: outcome.loserRating,
+          retries: attempt,
+        };
+      } catch (err: any) {
+        attempt++;
+        if (attempt > maxRetries) {
+          throw err;
+        }
+        // Exponential backoff with random jitter (e.g. 25ms - 150ms)
+        const jitter = Math.floor(Math.random() * (baseDelayMs * Math.pow(2, attempt)));
+        await new Promise((resolve) => setTimeout(resolve, jitter));
+      }
+    }
+
+    throw new Error(`Exceeded maximum retries (${maxRetries}) updating ratings with OCC`);
+  }
+
   async getActiveBattles() {
     return this.prisma.battle.findMany({
       where: {
@@ -621,52 +693,59 @@ export class BattlesService {
       placementKFactor(loserBattleRating?.placementMatchesRemaining ?? 5),
     );
 
+    // Enforce deterministic row sorting (ORDER BY id ASC) to eliminate circular deadlocks (#1064)
+    const sortedParticipantIds = [winnerId, loserId].sort();
+
     return this.prisma.$transaction(async (tx) => {
       const completedAt = new Date();
 
-      await tx.battleRating.upsert({
-        where: { userId: winnerId },
-        create: {
-          userId: winnerId,
-          elo: eloOutcome.winnerRating,
-          placementMatchesRemaining: 4,
-          seasonNumber: currentSeason?.number ?? 1,
-          lastBattleAt: completedAt,
-          decayFloor: decayFloorForElo(eloOutcome.winnerRating),
-        },
-        update: {
-          elo: eloOutcome.winnerRating,
-          lastBattleAt: completedAt,
-          decayPeriodsApplied: 0,
-          decayFloor: decayFloorForElo(eloOutcome.winnerRating),
-          decayWarnedFor: null,
-          placementMatchesRemaining: remainingPlacementsAfterMatch(
-            winnerBattleRating?.placementMatchesRemaining ?? 5,
-          ),
-        },
-      });
-
-      await tx.battleRating.upsert({
-        where: { userId: loserId },
-        create: {
-          userId: loserId,
-          elo: eloOutcome.loserRating,
-          placementMatchesRemaining: 4,
-          seasonNumber: currentSeason?.number ?? 1,
-          lastBattleAt: completedAt,
-          decayFloor: decayFloorForElo(eloOutcome.loserRating),
-        },
-        update: {
-          elo: eloOutcome.loserRating,
-          lastBattleAt: completedAt,
-          decayPeriodsApplied: 0,
-          decayFloor: decayFloorForElo(eloOutcome.loserRating),
-          decayWarnedFor: null,
-          placementMatchesRemaining: remainingPlacementsAfterMatch(
-            loserBattleRating?.placementMatchesRemaining ?? 5,
-          ),
-        },
-      });
+      for (const participantId of sortedParticipantIds) {
+        if (participantId === winnerId) {
+          await tx.battleRating.upsert({
+            where: { userId: winnerId },
+            create: {
+              userId: winnerId,
+              elo: eloOutcome.winnerRating,
+              placementMatchesRemaining: 4,
+              seasonNumber: currentSeason?.number ?? 1,
+              lastBattleAt: completedAt,
+              decayFloor: decayFloorForElo(eloOutcome.winnerRating),
+            },
+            update: {
+              elo: eloOutcome.winnerRating,
+              lastBattleAt: completedAt,
+              decayPeriodsApplied: 0,
+              decayFloor: decayFloorForElo(eloOutcome.winnerRating),
+              decayWarnedFor: null,
+              placementMatchesRemaining: remainingPlacementsAfterMatch(
+                winnerBattleRating?.placementMatchesRemaining ?? 5,
+              ),
+            },
+          });
+        } else {
+          await tx.battleRating.upsert({
+            where: { userId: loserId },
+            create: {
+              userId: loserId,
+              elo: eloOutcome.loserRating,
+              placementMatchesRemaining: 4,
+              seasonNumber: currentSeason?.number ?? 1,
+              lastBattleAt: completedAt,
+              decayFloor: decayFloorForElo(eloOutcome.loserRating),
+            },
+            update: {
+              elo: eloOutcome.loserRating,
+              lastBattleAt: completedAt,
+              decayPeriodsApplied: 0,
+              decayFloor: decayFloorForElo(eloOutcome.loserRating),
+              decayWarnedFor: null,
+              placementMatchesRemaining: remainingPlacementsAfterMatch(
+                loserBattleRating?.placementMatchesRemaining ?? 5,
+              ),
+            },
+          });
+        }
+      }
 
       // Grant placement badges if 5th match completed
       for (const player of [

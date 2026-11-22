@@ -138,6 +138,7 @@ model DeveloperRating {
 model BattleRating {
   userId                    String   @id
   elo                       Float    @default(1200)
+  version                   Int      @default(0) // Optimistic Concurrency Control counter (#1064)
   placementMatchesRemaining Int      @default(0)
   seasonNumber              Int      @default(1)
   lastBattleAt              DateTime?
