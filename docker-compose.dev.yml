@@ -19,7 +19,7 @@ x-logging: &default-logging
 services:
   postgres:
     <<: *default-logging
-    image: postgres:16-alpine
+    image: postgres:16
     environment:
       POSTGRES_USER: devbattle
       POSTGRES_PASSWORD: devbattle_password
@@ -37,7 +37,7 @@ services:
 
   redis:
     <<: *default-logging
-    image: redis:7-alpine
+    image: redis:7
     ports:
       - '6379:6379'
     volumes:
@@ -51,10 +51,10 @@ services:
 
   mailpit:
     <<: *default-logging
-    image: axllent/mailpit:latest
+    image: maildev/maildev:latest
     ports:
       - '1025:1025'
-      - '8025:8025'
+      - '8025:1080'
     restart: unless-stopped
 
   backend:
