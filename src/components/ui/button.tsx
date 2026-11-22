@@ -90,7 +90,7 @@ function CopyButton({
 
   const handleCopy = React.useCallback(
     async (e: React.MouseEvent<HTMLButtonElement>) => {
-      onClick?.(e);
+      (onClick as any)?.(e);
       if (e.defaultPrevented) return;
 
       try {

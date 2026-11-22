@@ -11,7 +11,7 @@ const DEFAULT_CATEGORIES: Record<SoundCategory, boolean> = {
   victory: true,
 };
 
-class AudioManager {
+export class AudioManager {
   private static instance: AudioManager;
   private soundEnabled = true;
   private volume = 0.7;
