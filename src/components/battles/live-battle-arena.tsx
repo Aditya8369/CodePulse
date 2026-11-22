@@ -108,7 +108,7 @@ export function LiveBattleArena({ roomId, currentUser, opponent, onMatchComplete
           <span className="text-xs uppercase font-extrabold tracking-widest text-slate-400">Round {round} of 3</span>
           <div className="flex items-center gap-1.5 text-2xl font-mono font-black text-amber-400 mt-1">
             <Clock className="w-5 h-5 animate-pulse" />
-            <span>00:{timeRemaining.toString().padStart(2, "0")}</span>
+            <span>00:{Math.max(0, timeRemaining).toString().padStart(2, "0")}</span>
           </div>
         </div>
 
