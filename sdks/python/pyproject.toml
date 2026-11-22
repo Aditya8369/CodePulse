@@ -1,0 +1,11 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "codepulse-py"
+version = "1.0.0"
+description = "Official Python SDK for CodePulse Enterprise API (OpenAPI 3.1.0)"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = []

@@ -1,0 +1,87 @@
+name: OpenAPI 3.1 SDK Generation, Verification & Release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "backend/src/**/*.controller.ts"
+      - "backend/src/**/*.dto.ts"
+      - "backend/src/openapi/**"
+      - "scripts/generate-sdks.sh"
+      - "scripts/sdk-generator-core.mjs"
+    tags:
+      - "sdk-v*"
+  pull_request:
+    paths:
+      - "backend/src/openapi/**"
+      - "scripts/generate-sdks.sh"
+      - "scripts/sdk-generator-core.mjs"
+
+jobs:
+  generate-and-test-sdks:
+    name: Generate & Test TypeScript, Python, and Go SDKs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Setup Go 1.22
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+
+      - name: Install backend dependencies & build OpenAPI 3.1 spec
+        working-directory: backend
+        run: |
+          npm ci
+          npx prisma generate
+          npm run build
+
+      - name: Run SDK generator pipeline
+        run: bash scripts/generate-sdks.sh
+
+      - name: Compile & test generated TypeScript SDK (@codepulse/sdk)
+        working-directory: sdks/typescript
+        run: |
+          npx tsc -p tsconfig.json
+
+      - name: Validate & build Python SDK wheel (codepulse-py)
+        working-directory: sdks/python
+        run: |
+          python3 -m py_compile codepulse_py/__init__.py codepulse_py/client.py
+
+      - name: Compile & vet Go SDK (codepulse-go)
+        working-directory: sdks/go
+        run: |
+          go vet ./...
+          go build ./...
+
+      - name: Publish TypeScript SDK to npm (on sdk-v* tags)
+        if: startsWith(github.ref, 'refs/tags/sdk-v')
+        working-directory: sdks/typescript
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public
+
+      - name: Publish Python SDK to PyPI (on sdk-v* tags)
+        if: startsWith(github.ref, 'refs/tags/sdk-v')
+        working-directory: sdks/python
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          python3 -m pip install --upgrade build twine
+          python3 -m build
+          python3 -m twine upload dist/*
