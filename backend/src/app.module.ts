@@ -56,6 +56,7 @@ import { TokenBucketRateLimitGuard } from './common/guards/token-bucket-rate-lim
 import { GuardsModule } from './common/guards/guards.module';
 import { SystemMetricsService } from './common/services/system-metrics.service';
 import { LoadShedderMiddleware } from './common/middleware/load-shedder.middleware';
+import { CsrfMiddleware } from './common/middleware/csrf.middleware';
 import { CommonModule } from './common/common.module';
 
 @Module({
@@ -161,6 +162,6 @@ import { CommonModule } from './common/common.module';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
-    consumer.apply(LoadShedderMiddleware).forRoutes('*path');
+    consumer.apply(LoadShedderMiddleware, CsrfMiddleware).forRoutes('*path');
   }
 }
