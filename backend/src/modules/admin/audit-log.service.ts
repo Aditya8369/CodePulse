@@ -162,7 +162,7 @@ export class AuditLogService {
       }),
     ]);
 
-    const mappedData = data.map((item) => ({
+    const mappedData = data.map((item: any) => ({
       ...item,
       targetResource: item.targetType,
     }));

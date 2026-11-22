@@ -17,10 +17,19 @@ import { ReplayStreamService } from './replay-stream.service';
 import { CryptoModule } from '../crypto/crypto.module';
 import { WatermarkService } from './watermark.service';
 import { HypeMeterService } from './hype-meter.service';
+import { HypeStormGateway } from './hype-storm.gateway';
+import { RedisService } from '../../common/redis/redis.service';
 import { TournamentEngineService } from './tournament-engine.service';
 import { EsportsModule } from '../esports/esports.module';
+import { AiModule } from '../ai/ai.module';
 import { RaidBossService } from './raid-boss.service';
 import { AntiSmurfService } from './anti-smurf.service';
+import { AntiCheatBiometricsService } from './anti-cheat-biometrics.service';
+import { SabotageEngineService } from './sabotage-engine.service';
+import { EdgeRelayService } from './edge-relay.service';
+import { PlagiarismService } from './plagiarism.service';
+import { RoomService } from './room.service';
+import { EvaluatorService } from './evaluator.service';
 
 @Module({
   imports: [
@@ -34,6 +43,7 @@ import { AntiSmurfService } from './anti-smurf.service';
     AnalyticsModule,
     CryptoModule,
     EsportsModule,
+    AiModule,
   ],
   controllers: [BattlesController, TournamentsController],
   providers: [
@@ -48,9 +58,17 @@ import { AntiSmurfService } from './anti-smurf.service';
     ReplayStreamService,
     WatermarkService,
     HypeMeterService,
+    HypeStormGateway,
+    RedisService,
     TournamentEngineService,
     RaidBossService,
     AntiSmurfService,
+    AntiCheatBiometricsService,
+    SabotageEngineService,
+    EdgeRelayService,
+    PlagiarismService,
+    RoomService,
+    EvaluatorService,
   ],
   exports: [
     BattlesService,
@@ -58,9 +76,17 @@ import { AntiSmurfService } from './anti-smurf.service';
     ReplayStreamService,
     WatermarkService,
     HypeMeterService,
+    HypeStormGateway,
+    RedisService,
     TournamentEngineService,
+    SabotageEngineService,
     RaidBossService,
     AntiSmurfService,
+    AntiCheatBiometricsService,
+    EdgeRelayService,
+    PlagiarismService,
+    RoomService,
+    EvaluatorService,
   ],
 })
 export class BattlesModule {}

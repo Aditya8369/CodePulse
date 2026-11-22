@@ -267,5 +267,4 @@ export class BattlesController {
       dto.standardTemplate,
     );
   }
-  }
 }
