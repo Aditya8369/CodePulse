@@ -1,94 +1,178 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { Play, Pause, RotateCcw, FastForward, Download } from 'lucide-react';
+import React, { useState, useMemo, useEffect, useCallback } from "react";
+import {
+  Play,
+  Pause,
+  RotateCcw,
+  SkipBack,
+  SkipForward,
+  FastForward,
+  History,
+  Code2,
+  Clock,
+  Sparkles,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 
-interface ReplayScrubberProps {
-  totalDurationMs?: number;
-  currentTimestampMs?: number;
-  onSeek?: (timestampMs: number) => void;
-  onSpeedChange?: (speed: number) => void;
-  className?: string;
+export interface KeystrokeDelta {
+  timestampMs: number;
+  type: "insert" | "delete" | "replace";
+  position: number;
+  text: string;
+  author: string;
 }
 
-export const ReplayScrubber: React.FC<ReplayScrubberProps> = ({
-  totalDurationMs = 120000,
-  currentTimestampMs = 0,
-  onSeek,
-  onSpeedChange,
-  className = '',
-}) => {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [speed, setSpeed] = useState<number>(1);
-  const [currentProgress, setCurrentProgress] = useState(currentTimestampMs);
+export interface ReplayScrubberProps {
+  battleId?: string;
+  deltas?: KeystrokeDelta[];
+  initialCode?: string;
+  onCodeScrub?: (reconstructedCode: string, stepIndex: number) => void;
+}
 
-  const playbackSpeeds = [0.5, 1, 2, 4, 8];
+export function ReplayScrubber({
+  battleId = "battle-xyz",
+  initialCode = "function solve() {\n",
+  deltas = [
+    { timestampMs: 120, type: "insert", position: 19, text: "  let maxVal = 0;\n", author: "P1" },
+    { timestampMs: 450, type: "insert", position: 37, text: "  for (let num of arr) {\n", author: "P1" },
+    { timestampMs: 820, type: "insert", position: 62, text: "    if (num > maxVal) maxVal = num;\n", author: "P1" },
+    { timestampMs: 1150, type: "insert", position: 98, text: "  }\n  return maxVal;\n}\n", author: "P1" },
+  ],
+  onCodeScrub,
+}: ReplayScrubberProps) {
+  const [currentStep, setCurrentStep] = useState<number>(deltas.length);
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
 
-  const handleSpeedSelect = (s: number) => {
-    setSpeed(s);
-    onSpeedChange?.(s);
-  };
+  // Reconstruct code at currentStep
+  const reconstructedCode = useMemo(() => {
+    let result = initialCode;
+    for (let i = 0; i < currentStep; i++) {
+      const delta = deltas[i];
+      if (delta.type === "insert") {
+        result += delta.text;
+      }
+    }
+    return result;
+  }, [initialCode, deltas, currentStep]);
 
-  const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = Number(e.target.value);
-    setCurrentProgress(val);
-    onSeek?.(val);
-  };
+  useEffect(() => {
+    onCodeScrub?.(reconstructedCode, currentStep);
+  }, [reconstructedCode, currentStep, onCodeScrub]);
 
-  const formatTime = (ms: number) => {
-    const totalSecs = Math.floor(ms / 1000);
-    const mins = Math.floor(totalSecs / 60);
-    const secs = totalSecs % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
+  // Playback timer
+  useEffect(() => {
+    if (!isPlaying) return;
+
+    const interval = setInterval(() => {
+      setCurrentStep((prev) => {
+        if (prev >= deltas.length) {
+          setIsPlaying(false);
+          toast.info("Replay playback reached the end");
+          return prev;
+        }
+        return prev + 1;
+      });
+    }, 1000 / playbackSpeed);
+
+    return () => clearInterval(interval);
+  }, [isPlaying, playbackSpeed, deltas.length]);
 
   return (
-    <div
-      className={`rounded-2xl border border-white/10 bg-slate-900/90 backdrop-blur-md p-4 shadow-xl space-y-3 ${className}`}
-    >
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col border border-border rounded-xl bg-card overflow-hidden shadow-lg w-full">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-2.5 bg-muted/40 border-b border-border">
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setIsPlaying(!isPlaying)}
-            className="p-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white transition shadow"
-          >
-            {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-          </button>
-
-          <span className="text-xs font-mono text-slate-300">
-            {formatTime(currentProgress)} / {formatTime(totalDurationMs)}
-          </span>
+          <History className="w-5 h-5 text-primary" />
+          <span className="font-semibold text-sm">Keystroke Delta Replay Scrubber</span>
+          <Badge variant="outline" className="text-xs font-mono ml-2">
+            Step {currentStep}/{deltas.length}
+          </Badge>
         </div>
 
-        {/* Speed Controls (0.5x, 1x, 2x, 4x, 8x) */}
-        <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl border border-white/5">
-          {playbackSpeeds.map((s) => (
-            <button
-              key={s}
-              onClick={() => handleSpeedSelect(s)}
-              className={`px-2 py-0.5 rounded-lg text-xs font-semibold transition ${
-                speed === s
-                  ? 'bg-indigo-600 text-white shadow'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              {s}x
-            </button>
-          ))}
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setPlaybackSpeed((s) => (s === 1 ? 2 : s === 2 ? 4 : 1))}
+            className="h-7 text-xs font-mono"
+          >
+            <FastForward className="w-3 h-3 mr-1" />
+            {playbackSpeed}x
+          </Button>
         </div>
       </div>
 
-      {/* Scrubber Timeline */}
-      <div className="space-y-1">
-        <input
-          type="range"
-          min={0}
-          max={totalDurationMs}
-          value={currentProgress}
-          onChange={handleSliderChange}
-          className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
-        />
+      {/* Code Display Area */}
+      <div className="p-4 bg-slate-950 font-mono text-xs text-slate-100 min-h-[220px] max-h-[350px] overflow-auto">
+        <pre className="whitespace-pre-wrap leading-5">{reconstructedCode}</pre>
+      </div>
+
+      {/* Scrubber Controls */}
+      <div className="p-4 bg-muted/20 border-t border-border flex flex-col gap-3">
+        {/* Progress Slider */}
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-muted-foreground w-8">0</span>
+          <Slider
+            value={[currentStep]}
+            max={deltas.length}
+            step={1}
+            onValueChange={([val]) => setCurrentStep(val)}
+            className="flex-1 cursor-pointer"
+          />
+          <span className="text-xs text-muted-foreground w-8 text-right">{deltas.length}</span>
+        </div>
+
+        {/* Media Buttons */}
+        <div className="flex items-center justify-center gap-2">
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={() => setCurrentStep(0)}
+            className="h-8 w-8"
+            title="Jump to Start"
+          >
+            <SkipBack className="w-4 h-4" />
+          </Button>
+
+          <Button
+            size="sm"
+            variant="default"
+            onClick={() => setIsPlaying(!isPlaying)}
+            className="h-8 px-4 gap-1.5 bg-primary hover:bg-primary/90"
+          >
+            {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 fill-current" />}
+            {isPlaying ? "Pause" : "Play"}
+          </Button>
+
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={() => setCurrentStep(deltas.length)}
+            className="h-8 w-8"
+            title="Jump to End"
+          >
+            <SkipForward className="w-4 h-4" />
+          </Button>
+
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={() => {
+              setCurrentStep(0);
+              setIsPlaying(false);
+            }}
+            className="h-8 w-8"
+            title="Reset"
+          >
+            <RotateCcw className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
     </div>
   );
-};
+}
