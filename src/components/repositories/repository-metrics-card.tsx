@@ -6,6 +6,7 @@ import { GitCommit, GitPullRequest, AlertCircle, FileCode, ShieldCheck, CheckCir
 import { formatNumber, cn } from "@/lib/utils";
 
 export interface RepositoryMetricsCardProps {
+  repoName?: string;
   commitsCount: number;
   openIssuesCount: number;
   openPrsCount: number;
@@ -20,6 +21,7 @@ export interface RepositoryMetricsCardProps {
 }
 
 export function RepositoryMetricsCard({
+  repoName,
   commitsCount,
   openIssuesCount,
   openPrsCount,
@@ -41,12 +43,18 @@ export function RepositoryMetricsCard({
         className
       )}
     >
-      <div className="flex items-center justify-between border-b border-white/5 pb-4">
-        <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-          <GitCommit className="h-5 w-5 text-indigo-400" />
-          Repository Metrics & Hygiene
+      <div className="flex items-center justify-between border-b border-white/5 pb-4 gap-2">
+        <h3 className="text-lg font-semibold text-white flex items-center gap-2 min-w-0 max-w-[calc(100%-130px)]">
+          <GitCommit className="h-5 w-5 text-indigo-400 shrink-0" />
+          <span
+            className="truncate inline-block"
+            title={repoName || "Repository Metrics & Hygiene"}
+            data-testid="repo-title"
+          >
+            {repoName ? `${repoName} - Metrics & Hygiene` : "Repository Metrics & Hygiene"}
+          </span>
         </h3>
-        <span className="text-xs px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-medium">
+        <span className="text-xs px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-medium shrink-0">
           Analytics Deep Dive
         </span>
       </div>

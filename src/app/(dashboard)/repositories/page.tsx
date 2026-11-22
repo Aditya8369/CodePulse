@@ -265,11 +265,16 @@ export default function RepositoriesPage() {
               >
                 <Code className="w-5 h-5" style={{ color: repo.languageColor || "#fff" }} />
               </div>
-              <div>
-                <h3 className="font-bold text-lg text-white group-hover:text-primary transition-colors flex items-center gap-2">
-                  {repo.name}
+              <div className="min-w-0 flex-1">
+                <h3
+                  className="font-bold text-lg text-white group-hover:text-primary transition-colors flex items-center gap-2 min-w-0"
+                  title={repo.name}
+                >
+                  <span className="truncate max-w-[220px] sm:max-w-[260px] inline-block">
+                    {repo.name}
+                  </span>
                   {isFork && (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/10 text-muted-foreground border border-white/5">
+                    <span className="shrink-0 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/10 text-muted-foreground border border-white/5">
                       <GitFork className="w-2.5 h-2.5" /> Fork
                     </span>
                   )}
