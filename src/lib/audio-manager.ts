@@ -71,6 +71,23 @@ export class AudioManager {
   public getTheme() { return this.theme; }
   public isCategoryEnabled(category: SoundCategory) { return this.categories[category]; }
 
+  public isSuspended(): boolean {
+    return this.audioCtx !== null && this.audioCtx.state === "suspended";
+  }
+
+  public async resumeContext(): Promise<boolean> {
+    const ctx = this.getAudioContext();
+    if (!ctx) return false;
+    if (ctx.state === "suspended") {
+      try {
+        await ctx.resume();
+      } catch {
+        return false;
+      }
+    }
+    return ctx.state === "running";
+  }
+
   public setEnabled(enabled: boolean) {
     this.soundEnabled = enabled;
     this.store(STORAGE_SOUND_ENABLED, String(enabled));
