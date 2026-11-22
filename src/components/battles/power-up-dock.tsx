@@ -175,6 +175,7 @@ export const PowerUpDock: React.FC<PowerUpDockProps> = ({
   return (
     <div
       role="region"
+      aria-live="polite"
       aria-label="Battle Power-Ups Sabotage Dock"
       className={cn(
         "rounded-2xl border border-white/10 bg-slate-900/90 dark:bg-slate-900/90 backdrop-blur-xl p-3 md:p-4 shadow-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 md:gap-4",
