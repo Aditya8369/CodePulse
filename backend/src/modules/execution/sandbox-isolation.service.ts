@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as path from 'path';
+import { OtelTracerService } from '../../common/observability/otel-tracer.service';
 
 export interface CgroupLimits {
   cpuQuotaUs: number; // e.g. 100000 -> 100% of 1 core (cpu.max = "100000 100000")
@@ -304,5 +305,27 @@ export class SandboxIsolationService {
       killedBySecurity,
       violation,
     };
+  }
+
+  /**
+   * Profiles compile phase vs test evaluation execution using custom OpenTelemetry spans.
+   */
+  async executeSubprocessWithTracing<T>(
+    phase: 'compile' | 'test_eval',
+    metadata: {
+      sandboxId?: string;
+      language?: string;
+      submissionId?: string;
+    },
+    fn: () => Promise<T>,
+  ): Promise<T> {
+    return OtelTracerService.getInstance().measureExecutionSubprocess(
+      phase,
+      {
+        language: metadata.language,
+        submissionId: metadata.submissionId,
+      },
+      fn,
+    );
   }
 }

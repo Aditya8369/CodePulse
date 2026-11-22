@@ -53,6 +53,7 @@
   },
   "devDependencies": {
     "@kubernetes/client-node": "^2.0.2",
+    "@opentelemetry/api": "^1.10.0",
     "@playwright/test": "^1.65.1",
     "@tailwindcss/postcss": "^4",
     "@testing-library/dom": "^10.4.0",

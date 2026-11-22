@@ -186,7 +186,7 @@ export class ApiKeyService {
           requestCount: { increment: 1 },
         },
       })
-      .catch((err) => {
+      .catch((err: any) => {
         this.logger.warn(
           `Failed to asynchronously update API key metrics for ${keyId}: ${err?.message}`,
         );

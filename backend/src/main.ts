@@ -1,4 +1,9 @@
 import 'dotenv/config';
+import { OtelTracerService } from './common/observability/otel-tracer.service';
+
+// Initialize OpenTelemetry NodeSDK distributed tracing before application bootstrap
+void OtelTracerService.getInstance().initSdk();
+
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
@@ -9,6 +14,7 @@ import {
   buildOpenApi31Document,
   exportOpenApi31SpecToFile,
 } from './openapi/openapi-31.builder';
+import { TraceInterceptor } from './common/interceptors/trace.interceptor';
 
 async function bootstrap() {
   const isSpecExportOnly = process.env.OPENAPI_EXPORT_ONLY === 'true';
@@ -71,8 +77,11 @@ async function bootstrap() {
     }),
   );
 
-  // Global Interceptor for standard response
-  app.useGlobalInterceptors(new TransformInterceptor());
+  // Global Interceptors
+  app.useGlobalInterceptors(
+    new TraceInterceptor(),
+    new TransformInterceptor(),
+  );
 
   // Strict OpenAPI 3.1.0 Specification Generation & Export
   const document = buildOpenApi31Document(app);
