@@ -7,10 +7,11 @@ import { createBattleSocket, MAX_RECONNECT_ATTEMPTS } from "@/lib/socket-client"
 
 export type BattleSocketStatus = "connecting" | "connected" | "reconnecting" | "disconnected";
 
-interface BattleSocketContextValue {
+export interface BattleSocketContextValue {
   status: BattleSocketStatus;
   attempt: number;
   retry: () => void;
+  socket: Socket | null;
 }
 
 const BattleSocketContext = createContext<BattleSocketContextValue | null>(null);
@@ -87,7 +88,7 @@ export function BattleSocketProvider({ children }: { children: React.ReactNode }
   }, []);
 
   return (
-    <BattleSocketContext.Provider value={{ status, attempt, retry }}>
+    <BattleSocketContext.Provider value={{ status, attempt, retry, socket: socketRef.current }}>
       {children}
     </BattleSocketContext.Provider>
   );

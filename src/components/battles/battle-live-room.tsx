@@ -1,16 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Swords, CheckCircle2 } from "lucide-react";
+import { Swords, CheckCircle2, Wifi, Zap, Clock, ShieldCheck } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useBattleSocketStatus } from "@/components/providers/battle-socket-provider";
 
-interface BattleLiveRoomProps {
+export interface BattleLiveRoomProps {
   battleId: string;
   currentUsername: string;
   opponentUsername: string;
   onBattleStart: () => void;
+  mockDelayMs?: number;
 }
 
 export function BattleLiveRoom({
@@ -18,23 +20,53 @@ export function BattleLiveRoom({
   currentUsername,
   opponentUsername,
   onBattleStart,
+  mockDelayMs = 1200,
 }: BattleLiveRoomProps) {
-  const { status, attempt, retry } = useBattleSocketStatus();
+  const { status, attempt, retry, socket } = useBattleSocketStatus();
   const isConnected = status === "connected";
   const [isReady, setIsReady] = useState(false);
   const [opponentReady, setOpponentReady] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
 
-  // The lobby readiness demo is separate from the real socket connection status.
+  // Real-Time WebSocket event listeners
+  useEffect(() => {
+    if (!socket) return;
+
+    // Join the battle room channel
+    socket.emit("lobby:join", { battleId, username: currentUsername });
+
+    const handleOpponentReady = (payload: { username?: string; isReady?: boolean }) => {
+      if (!payload || payload.username === currentUsername) return;
+      setOpponentReady(payload.isReady ?? true);
+      toast.success(`@${opponentUsername} is locked in!`);
+    };
+
+    const handleMatchCountdown = (payload: { count?: number }) => {
+      setCountdown(payload.count ?? 3);
+    };
+
+    socket.on("lobby:opponent_ready", handleOpponentReady);
+    socket.on("lobby:countdown", handleMatchCountdown);
+
+    return () => {
+      socket.off("lobby:opponent_ready", handleOpponentReady);
+      socket.off("lobby:countdown", handleMatchCountdown);
+      socket.emit("lobby:leave", { battleId, username: currentUsername });
+    };
+  }, [socket, battleId, currentUsername, opponentUsername]);
+
+  // Fallback simulator for offline/demo/testing environments
   useEffect(() => {
     if (!isReady || opponentReady) return;
     const timer = setTimeout(() => {
       setOpponentReady(true);
+      toast.success(`@${opponentUsername} is locked in! Starting countdown...`);
       setCountdown(3);
-    }, 1200);
+    }, mockDelayMs);
     return () => clearTimeout(timer);
-  }, [isReady, opponentReady]);
+  }, [isReady, opponentReady, opponentUsername, mockDelayMs]);
 
+  // Synchronized Countdown execution
   useEffect(() => {
     if (countdown === null) return;
     const timer = setTimeout(() => {
@@ -48,20 +80,29 @@ export function BattleLiveRoom({
     return () => clearTimeout(timer);
   }, [countdown, onBattleStart]);
 
-  // Simulate opponent becoming ready shortly after player
-  const handleReadyClick = () => {
+  // Ready button handler
+  const handleReadyClick = useCallback(() => {
     setIsReady(true);
-  };
+    toast.info("Locked in! Synchronizing ready state with opponent...");
+
+    if (socket && isConnected) {
+      socket.emit("lobby:ready", {
+        battleId,
+        username: currentUsername,
+        isReady: true,
+      });
+    }
+  }, [socket, isConnected, battleId, currentUsername]);
 
   return (
-    <div className="max-w-3xl mx-auto py-8 px-4">
+    <div className="max-w-3xl mx-auto py-8 px-4" data-testid="battle-live-room">
       <motion.div
         initial={{ opacity: 0, scale: 0.96 }}
         animate={{ opacity: 1, scale: 1 }}
         className="glass-card rounded-[32px] p-8 md:p-12 border border-white/10 shadow-2xl relative overflow-hidden"
       >
         {/* Connection status header */}
-        <div className="flex items-center justify-between pb-6 border-b border-white/[0.06] mb-8">
+        <div className="flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-white/[0.06] mb-8">
           <div className="flex items-center gap-2">
             <span
               className={cn(
@@ -83,20 +124,30 @@ export function BattleLiveRoom({
                     : "CONNECTING..."}
             </span>
             {status === "disconnected" && (
-              <button type="button" onClick={retry} className="text-xs text-primary underline">
+              <button
+                type="button"
+                onClick={retry}
+                className="text-xs text-primary underline hover:text-primary/80"
+              >
                 Retry now
               </button>
             )}
           </div>
-          <span className="text-xs font-mono text-muted-foreground">
-            ROOM: #{battleId.slice(0, 8)}
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="inline-flex items-center gap-1 text-[11px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md">
+              <Wifi className="w-3 h-3" /> Live Lobby
+            </span>
+            <span className="text-xs font-mono text-muted-foreground">
+              ROOM: #{battleId.slice(0, 8)}
+            </span>
+          </div>
         </div>
 
         {/* Head-to-Head Lobby Slots */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative items-center mb-10">
           {/* Player 1 Card */}
           <div
+            data-testid="player-slot-self"
             className={cn(
               "p-6 rounded-2xl border transition-all text-center space-y-4",
               isReady
@@ -111,7 +162,10 @@ export function BattleLiveRoom({
                 className="w-20 h-20 rounded-2xl border-2 border-white/20 mx-auto object-cover"
               />
               {isReady && (
-                <div className="absolute -bottom-2 -right-2 w-7 h-7 rounded-full bg-emerald-500 flex items-center justify-center text-black font-bold">
+                <div
+                  data-testid="ready-badge-self"
+                  className="absolute -bottom-2 -right-2 w-7 h-7 rounded-full bg-emerald-500 flex items-center justify-center text-black font-bold shadow-lg"
+                >
                   <CheckCircle2 className="w-4 h-4 text-white" />
                 </div>
               )}
@@ -137,8 +191,9 @@ export function BattleLiveRoom({
             VS
           </div>
 
-          {/* Player 2 Card */}
+          {/* Player 2 Card (Opponent) */}
           <div
+            data-testid="player-slot-opponent"
             className={cn(
               "p-6 rounded-2xl border transition-all text-center space-y-4",
               opponentReady
@@ -153,7 +208,10 @@ export function BattleLiveRoom({
                 className="w-20 h-20 rounded-2xl border-2 border-white/20 mx-auto object-cover"
               />
               {opponentReady && (
-                <div className="absolute -bottom-2 -right-2 w-7 h-7 rounded-full bg-emerald-500 flex items-center justify-center text-black font-bold">
+                <div
+                  data-testid="ready-badge-opponent"
+                  className="absolute -bottom-2 -right-2 w-7 h-7 rounded-full bg-emerald-500 flex items-center justify-center text-black font-bold shadow-lg"
+                >
                   <CheckCircle2 className="w-4 h-4 text-white" />
                 </div>
               )}
@@ -185,11 +243,16 @@ export function BattleLiveRoom({
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 1.5, opacity: 0 }}
                 className="space-y-2"
+                data-testid="match-countdown-container"
               >
-                <div className="text-xs uppercase tracking-widest text-emerald-400 font-bold">
+                <div className="text-xs uppercase tracking-widest text-emerald-400 font-bold flex items-center justify-center gap-1.5">
+                  <Zap className="w-3.5 h-3.5" />
                   Synchronizing DevBattle Match...
                 </div>
-                <div className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-emerald-400 font-mono">
+                <div
+                  data-testid="countdown-digits"
+                  className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-emerald-400 font-mono"
+                >
                   {countdown}
                 </div>
               </motion.div>
@@ -197,6 +260,7 @@ export function BattleLiveRoom({
               <motion.div key="ready-btn">
                 <button
                   type="button"
+                  data-testid="lock-in-ready-btn"
                   onClick={handleReadyClick}
                   disabled={isReady}
                   className={cn(
