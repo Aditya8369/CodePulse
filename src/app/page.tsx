@@ -1,8 +1,10 @@
 "use client";
 
-import { motion, useReducedMotion } from "motion/react";
+import { animate, motion, useMotionValue, useReducedMotion, useTransform } from "motion/react";
+import { useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useInView } from "react-intersection-observer";
 import {
   ArrowRight,
   BarChart3,
@@ -58,14 +60,54 @@ const features = [
 ];
 
 const stats = [
-  { value: "250K+", label: "Active Developers" },
-  { value: "12M+", label: "Commits Analyzed" },
-  { value: "500K+", label: "Battles Fought" },
-  { value: "99.9%", label: "Uptime" },
+  { value: 250_000, divisor: 1_000, precision: 0, suffix: "K+", label: "Active Developers" },
+  { value: 12_000_000, divisor: 1_000_000, precision: 1, suffix: "M+", label: "Commits Analyzed" },
+  { value: 500_000, divisor: 1_000, precision: 0, suffix: "K+", label: "Battles Fought" },
+  { value: 99.9, divisor: 1, precision: 1, suffix: "%", label: "Uptime" },
 ];
+
+function StatCount({
+  value,
+  divisor,
+  precision,
+  suffix,
+  inView,
+  reduceMotion,
+}: {
+  value: number;
+  divisor: number;
+  precision: number;
+  suffix: string;
+  inView: boolean;
+  reduceMotion: boolean | null;
+}) {
+  const count = useMotionValue(0);
+  const displayValue = useTransform(count, (current) => {
+    const formattedNumber = Number((current / divisor).toFixed(precision));
+    return `${formattedNumber}${suffix}`;
+  });
+
+  useEffect(() => {
+    if (!inView) return;
+
+    if (reduceMotion) {
+      count.set(value);
+      return;
+    }
+
+    const controls = animate(count, value, { duration: 2.5, ease: "easeOut" });
+    return () => controls.stop();
+  }, [count, inView, reduceMotion, value]);
+
+  return <motion.span>{displayValue}</motion.span>;
+}
 
 export default function LandingPage() {
   const shouldReduceMotion = useReducedMotion();
+  const { ref: statsRef, inView: statsInView } = useInView({
+    threshold: 0.25,
+    triggerOnce: true,
+  });
 
   return (
     <div className="min-h-screen text-slate-200 bg-[#020617] relative" style={{
@@ -170,7 +212,7 @@ export default function LandingPage() {
         <Hero3D />
 
         {/* Stats Section */}
-        <section id="stats" aria-label="Platform Statistics" className="py-24 px-6 relative">
+        <section ref={statsRef} id="stats" aria-label="Platform Statistics" className="py-24 px-6 relative">
           <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6">
             {stats.map((stat, i) => (
               <motion.div
@@ -196,7 +238,14 @@ export default function LandingPage() {
               >
                 <div className="absolute inset-0 bg-sky-500/5 opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden="true" />
                 <div className="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-blue-500 mb-2 relative z-10">
-                  {stat.value}
+                  <StatCount
+                    value={stat.value}
+                    divisor={stat.divisor}
+                    precision={stat.precision}
+                    suffix={stat.suffix}
+                    inView={statsInView}
+                    reduceMotion={shouldReduceMotion}
+                  />
                 </div>
                 <div className="text-sm text-slate-400 relative z-10">{stat.label}</div>
               </motion.div>
