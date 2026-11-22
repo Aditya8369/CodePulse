@@ -12,6 +12,7 @@ interface BattleIntroProps {
   selectedBot?: { name: string; avatar: string; banter: string[]; difficulty: string; color: string } | null;
   isBotBattle?: boolean;
   onIntroComplete: () => void;
+  initialCountdown?: number;
 }
 
 const STEPS = [
@@ -22,22 +23,44 @@ const STEPS = [
   "⚔️ Battle Begins",
 ];
 
-export function BattleIntro({ p1Username, p2Username, selectedBot, isBotBattle = false, onIntroComplete }: BattleIntroProps) {
+export function BattleIntro({
+  p1Username,
+  p2Username,
+  selectedBot,
+  isBotBattle = false,
+  onIntroComplete,
+  initialCountdown = 3,
+}: BattleIntroProps) {
   const [stepIndex, setStepIndex] = useState(0);
+  const [countdownSeconds, setCountdownSeconds] = useState(initialCountdown);
 
   useEffect(() => {
     if (stepIndex < STEPS.length - 1) {
       const timer = setTimeout(() => {
-        setStepIndex(stepIndex + 1);
+        setStepIndex((prev) => prev + 1);
       }, 800);
       return () => clearTimeout(timer);
     } else {
-      const timer = setTimeout(() => {
+      const startTime = Date.now();
+      const totalDurationMs = initialCountdown * 1000;
+
+      const interval = setInterval(() => {
+        const elapsed = Date.now() - startTime;
+        const remaining = Math.max(0, Math.ceil((totalDurationMs - elapsed) / 1000));
+        setCountdownSeconds(remaining);
+      }, 100);
+
+      const redirectTimer = setTimeout(() => {
+        setCountdownSeconds(0);
         onIntroComplete();
-      }, 1500);
-      return () => clearTimeout(timer);
+      }, totalDurationMs);
+
+      return () => {
+        clearInterval(interval);
+        clearTimeout(redirectTimer);
+      };
     }
-  }, [stepIndex, onIntroComplete]);
+  }, [stepIndex, initialCountdown, onIntroComplete]);
 
   const trashTalk = selectedBot?.banter?.[stepIndex % selectedBot.banter.length];
 
@@ -128,11 +151,19 @@ export function BattleIntro({ p1Username, p2Username, selectedBot, isBotBattle =
               exit={{ y: -20, opacity: 0 }}
               transition={{ duration: 0.3 }}
               className={cn(
-                "text-lg font-medium tracking-wide",
+                "text-lg font-medium tracking-wide flex items-center justify-center gap-2",
                 stepIndex === STEPS.length - 1 ? "text-primary text-2xl font-bold" : "text-muted-foreground"
               )}
             >
-              {STEPS[stepIndex]}
+              <span>{STEPS[stepIndex]}</span>
+              {stepIndex === STEPS.length - 1 && (
+                <span
+                  data-testid="arena-countdown-timer"
+                  className="inline-flex items-center justify-center min-w-[2.5rem] px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-mono font-bold shadow-sm"
+                >
+                  {Math.max(0, countdownSeconds)}s
+                </span>
+              )}
             </motion.div>
           </AnimatePresence>
         </div>
