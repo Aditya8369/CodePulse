@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { LeaderboardRowSkeleton, LeaderboardTableSkeleton } from "@/components/leaderboard/leaderboard-skeleton";
 import { useFollowStatus } from "@/hooks/api/use-friends";
+import { BackToTop } from "@/components/ui/back-to-top";
 
 const GithubIcon = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" className={className}>
@@ -510,6 +511,9 @@ export default function LeaderboardPage() {
           </motion.div>
         </div>
       )}
+
+      {/* Floating Back to Top Button */}
+      <BackToTop className="bottom-20 md:bottom-6" />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { ArrowUp } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -14,26 +14,28 @@ export function BackToTop({ className, threshold = 350 }: BackToTopProps) {
   const [isVisible, setIsVisible] = useState(false);
   const shouldReduceMotion = useReducedMotion();
 
-  useEffect(() => {
-    const handleScroll = () => {
-      if (window.scrollY > threshold) {
-        setIsVisible(true);
-      } else {
-        setIsVisible(false);
-      }
-    };
+  const handleScroll = useCallback(() => {
+    if (typeof window === "undefined") return;
+    setIsVisible(window.scrollY > threshold);
+  }, [threshold]);
 
+  useEffect(() => {
     handleScroll();
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [threshold]);
+  }, [handleScroll]);
 
-  const scrollToTop = () => {
-    window.scrollTo({
-      top: 0,
-      behavior: shouldReduceMotion ? "auto" : "smooth",
-    });
-  };
+  const scrollToTop = useCallback(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.scrollTo({
+        top: 0,
+        behavior: shouldReduceMotion ? "auto" : "smooth",
+      });
+    } catch {
+      window.scrollTo(0, 0);
+    }
+  }, [shouldReduceMotion]);
 
   return (
     <AnimatePresence>
@@ -63,15 +65,15 @@ export function BackToTop({ className, threshold = 350 }: BackToTopProps) {
           className={cn(
             "fixed bottom-6 right-6 z-40 flex items-center justify-center",
             "w-10 h-10 md:w-11 md:h-11 rounded-full",
-            "glass-strong border border-white/10 text-slate-300",
+            "glass-strong border border-white/10 dark:border-white/10 text-slate-300 dark:text-slate-300",
             "hover:text-white hover:border-sky-500/50 hover:shadow-[0_0_24px_rgba(56,189,248,0.35)]",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#020617]",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 focus-visible:ring-offset-background dark:focus-visible:ring-offset-[#020617]",
             "transition-colors duration-200 group cursor-pointer",
             className,
           )}
         >
           <ArrowUp
-            className="w-5 h-5 text-slate-200 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:text-white"
+            className="w-5 h-5 text-slate-200 dark:text-slate-200 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:text-white"
             aria-hidden="true"
           />
         </motion.button>
