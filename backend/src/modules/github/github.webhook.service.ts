@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { ChangelogGeneratorService } from '../ai/changelog-generator.service';
 
 export interface WebhookPushPayload {
   commits?: Array<{ id: string; message: string; author?: { username?: string; email?: string } }>;
@@ -26,12 +27,29 @@ export interface WebhookStarPayload {
   repository?: { full_name: string; name: string };
 }
 
+export interface WebhookReleasePayload {
+  action: string;
+  release?: {
+    id: number;
+    tag_name: string;
+    name: string;
+    body: string;
+    prerelease: boolean;
+    published_at?: string;
+    author?: { login: string };
+  };
+  repository?: { full_name: string; name: string };
+}
+
 @Injectable()
 export class GithubWebhookService {
   private readonly logger = new Logger(GithubWebhookService.name);
   private readonly processedDeliveries = new Set<string>();
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly changelogGenerator?: ChangelogGeneratorService,
+  ) {}
 
   isDeliveryProcessed(deliveryId: string): boolean {
     if (!deliveryId) return false;
@@ -174,4 +192,76 @@ export class GithubWebhookService {
 
     return { awardedXp: 0 };
   }
+
+  async processReleaseEvent(payload: WebhookReleasePayload) {
+    const isPublished = ['published', 'created', 'prereleased'].includes(payload.action);
+    const releaseTag = payload.release?.tag_name || 'latest';
+    const repoName = payload.repository?.full_name || 'repository';
+
+    this.logger.log(`Processing GitHub release event: ${payload.action} for tag ${releaseTag} in ${repoName}`);
+
+    let changelogMarkdown = '';
+    if (this.changelogGenerator && isPublished) {
+      try {
+        const result = await this.changelogGenerator.generateChangelogFromWebhook(payload);
+        changelogMarkdown = result.markdown;
+      } catch (err: any) {
+        this.logger.warn(`Failed to auto-generate changelog from release webhook: ${err?.message}`);
+      }
+    }
+
+    // Award XP to release publisher if user exists in database
+    const authorUsername = payload.release?.author?.login;
+    if (authorUsername && isPublished) {
+      try {
+        const user = await this.prisma.user.findFirst({
+          where: {
+            OR: [{ username: authorUsername }, { githubId: authorUsername }],
+          },
+        });
+        if (user) {
+          const xpGained = 100;
+          await this.prisma.user.update({
+            where: { id: user.id },
+            data: {
+              xpTransactions: {
+                create: {
+                  amount: xpGained,
+                  source: 'GITHUB_RELEASE',
+                  description: `GitHub Webhook: Published release ${releaseTag} in ${payload.repository?.name || 'repo'}`,
+                },
+              },
+              activities: {
+                create: {
+                  type: 'PULL_REQUEST',
+                  title: `Release ${releaseTag} Published`,
+                  description: payload.release?.name || `Release ${releaseTag}`,
+                  repository: payload.repository?.name,
+                },
+              },
+            },
+          });
+          return {
+            releaseTag,
+            action: payload.action,
+            changelogGenerated: !!changelogMarkdown,
+            changelog: changelogMarkdown,
+            awardedXp: xpGained,
+            userId: user.id,
+          };
+        }
+      } catch (err: any) {
+        this.logger.warn(`Could not award Release XP: ${err?.message}`);
+      }
+    }
+
+    return {
+      releaseTag,
+      action: payload.action,
+      changelogGenerated: !!changelogMarkdown,
+      changelog: changelogMarkdown,
+      awardedXp: 0,
+    };
+  }
 }
+

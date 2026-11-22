@@ -3,14 +3,24 @@ import { AiController } from './ai.controller';
 import { TranspilerService } from './transpiler.service';
 import { PrAnalyzerService } from './pr-analyzer.service';
 import { CodeReviewerService } from './code-reviewer.service';
+import { ChangelogGeneratorService } from './changelog-generator.service';
 import { GithubModule } from '../github/github.module';
 import { PrismaModule } from '../../prisma/prisma.module';
 
 @Module({
   imports: [GithubModule, PrismaModule],
   controllers: [AiController],
-  providers: [TranspilerService, PrAnalyzerService, CodeReviewerService],
-  exports: [TranspilerService, PrAnalyzerService, CodeReviewerService],
+  providers: [
+    TranspilerService,
+    PrAnalyzerService,
+    CodeReviewerService,
+    ChangelogGeneratorService,
+  ],
+  exports: [
+    TranspilerService,
+    PrAnalyzerService,
+    CodeReviewerService,
+    ChangelogGeneratorService,
+  ],
 })
 export class AiModule {}
-

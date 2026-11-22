@@ -1353,3 +1353,23 @@ model CodeReviewFinding {
   @@index([status])
   @@map("code_review_findings")
 }
+model ReleaseChangelog {
+  id                 String   @id @default(uuid())
+  repository         String
+  targetVersion      String
+  previousVersion    String?
+  tagRange           String?
+  title              String
+  markdown           String   @db.Text
+  prCount            Int      @default(0)
+  contributorsCount  Int      @default(0)
+  rawCategories      Json?
+  breakingChanges    Json?
+  contributors       Json?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([repository, targetVersion])
+  @@map("release_changelogs")
+}
+
