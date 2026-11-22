@@ -26,6 +26,7 @@ import {
   UserCheck,
 } from "lucide-react";
 import { LeaderboardRowSkeleton, LeaderboardTableSkeleton } from "@/components/leaderboard/leaderboard-skeleton";
+import { LeaderboardPodium } from "@/components/leaderboard/leaderboard-podium";
 import { useFollowStatus } from "@/hooks/api/use-friends";
 import { BackToTop } from "@/components/ui/back-to-top";
 
@@ -248,7 +249,15 @@ export default function LeaderboardPage() {
             </p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-6">
+            {!searchQuery && displayUsers.length >= 3 && (
+              <LeaderboardPodium
+                topUsers={displayUsers.slice(0, 3)}
+                categoryTitle={CATEGORY_META[activeTab].title}
+                onSelectUser={(u) => setSelectedUser(u)}
+              />
+            )}
+            <div className="space-y-3">
             <AnimatePresence mode="popLayout">
               {displayUsers.map((user: any, index: number) => {
                 // If it's a search result, don't show rank (or calculate it). Otherwise, index + 1
@@ -343,6 +352,7 @@ export default function LeaderboardPage() {
                 )}
               </div>
             )}
+            </div>
           </div>
         )}
       </div>
