@@ -18,6 +18,8 @@ import { CryptoModule } from '../crypto/crypto.module';
 import { WatermarkService } from './watermark.service';
 
 import { HypeMeterService } from './hype-meter.service';
+import { HypeStormGateway } from './hype-storm.gateway';
+import { RedisService } from '../../common/redis/redis.service';
 import { TournamentEngineService } from './tournament-engine.service';
 import { EsportsModule } from '../esports/esports.module';
 import { RaidBossService } from './raid-boss.service';
@@ -52,6 +54,8 @@ import { SabotageEngineService } from './sabotage-engine.service';
     ReplayStreamService,
     WatermarkService,
     HypeMeterService,
+    HypeStormGateway,
+    RedisService,
     TournamentEngineService,
     RaidBossService,
     AntiSmurfService,
@@ -64,6 +68,8 @@ import { SabotageEngineService } from './sabotage-engine.service';
     ReplayStreamService,
     WatermarkService,
     HypeMeterService,
+    HypeStormGateway,
+    RedisService,
     TournamentEngineService,
     SabotageEngineService,
     RaidBossService,
