@@ -331,4 +331,12 @@ export class ZkpVerifierService {
   getVerificationKey(problemId = 'default'): Groth16VerificationKey | undefined {
     return this.verificationKeys.get(problemId);
   }
+
+  /**
+   * Asserts cryptographic soundness against tampered output or forged coordinates.
+   */
+  assertProofSoundness(proof: Groth16Proof, publicSignals: string[]): boolean {
+    const vk = this.verificationKeys.get('default')!;
+    return this.verifyGroth16BilinearPairing(proof, publicSignals, vk);
+  }
 }
