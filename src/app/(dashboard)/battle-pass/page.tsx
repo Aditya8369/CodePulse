@@ -80,7 +80,51 @@ function buildRoadmapTiers(): RoadmapTierItem[] {
 
 const ROADMAP_TIERS = buildRoadmapTiers();
 
-export default function BattlePassPage() {
+export function BattlePassTierSkeleton() {
+  return (
+    <div
+      data-testid="battle-pass-tier-skeleton"
+      className="relative flex flex-col gap-2.5 rounded-xl border border-zinc-800/70 bg-zinc-900/40 p-3.5 overflow-hidden"
+    >
+      {/* Animated Shimmer sweep overlay */}
+      <div
+        className="pointer-events-none absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/[0.08] to-transparent"
+        aria-hidden="true"
+      />
+
+      {/* Header skeleton */}
+      <div className="flex items-center justify-between">
+        <div className="h-4 w-16 rounded bg-zinc-800/80 animate-pulse" />
+        <div className="h-3 w-14 rounded bg-zinc-800/60 animate-pulse" />
+      </div>
+
+      {/* Free Track Slot Skeleton */}
+      <div className="rounded-lg border border-zinc-800 bg-zinc-950/70 p-2.5 space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="h-2.5 w-24 rounded bg-zinc-800 animate-pulse" />
+          <div className="h-3 w-3 rounded-full bg-zinc-800 animate-pulse" />
+        </div>
+        <div className="h-3.5 w-3/4 rounded bg-zinc-800/80 animate-pulse" />
+        <div className="h-6 w-full rounded bg-zinc-800/60 animate-pulse" />
+      </div>
+
+      {/* Elite Track Slot Skeleton */}
+      <div className="rounded-lg border border-amber-500/20 bg-amber-950/20 p-2.5 space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="h-2.5 w-24 rounded bg-amber-500/20 animate-pulse" />
+          <div className="h-3 w-3 rounded-full bg-amber-500/20 animate-pulse" />
+        </div>
+        <div className="h-3.5 w-3/4 rounded bg-amber-500/30 animate-pulse" />
+        <div className="h-6 w-full rounded bg-amber-500/20 animate-pulse" />
+      </div>
+    </div>
+  );
+}
+
+export default function BattlePassPage({
+  initialLoading = false,
+}: { initialLoading?: boolean } = {}) {
+  const [isLoading, setIsLoading] = useState<boolean>(initialLoading);
   const [totalXp, setTotalXp] = useState<number>(1650);
   const [isElite, setIsElite] = useState<boolean>(true);
   const [claimedFree, setClaimedFree] = useState<number[]>([1]);
@@ -263,7 +307,11 @@ export default function BattlePassPage() {
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {ROADMAP_TIERS.slice(0, 12).map((item) => {
+          {isLoading
+            ? Array.from({ length: 8 }).map((_, i) => (
+                <BattlePassTierSkeleton key={i} />
+              ))
+            : ROADMAP_TIERS.slice(0, 12).map((item) => {
             const unlocked = currentTier >= item.tier;
             const freeClaimed = claimedFree.includes(item.tier);
             const eliteClaimed = claimedElite.includes(item.tier);

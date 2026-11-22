@@ -27,4 +27,11 @@ describe("BattlePassPage (50-Tier Seasonal Battle Pass Roadmap)", () => {
       "Unlocked Cosmetics: 3"
     );
   });
+
+  it("renders animated shimmer skeletons when battle pass tiers are loading", () => {
+    render(<BattlePassPage initialLoading={true} />);
+
+    const skeletons = screen.getAllByTestId("battle-pass-tier-skeleton");
+    expect(skeletons.length).toBe(8);
+  });
 });
