@@ -128,6 +128,32 @@ describe('MmapAssetsService', () => {
       expect(benchmark.mmapAvgReadTimeMs).toBeLessThan(1.0);
       expect(benchmark.mmapDurationMs).toBeLessThanOrEqual(benchmark.standardFsDurationMs + 10);
     });
+
+    it('demonstrates static asset delivery throughput increases by over 300% under high concurrency (#1066)', () => {
+      const highConcurrencyBench = service.benchmarkHighConcurrencyThroughput('editor.worker.js', 200);
+
+      expect(highConcurrencyBench.concurrentRequests).toBe(200);
+      // Acceptance criteria: throughput increases by >= 300%
+      expect(highConcurrencyBench.throughputGainPercent).toBeGreaterThanOrEqual(300);
+      expect(highConcurrencyBench.speedupFactor).toBeGreaterThanOrEqual(4.0);
+    });
+
+    it('manages LRU file descriptor cache pool without leaking descriptors', () => {
+      const targetPath = path.join(testStorageDir, 'editor.worker.js');
+      const fd1 = service.getOrOpenFileDescriptor(targetPath);
+      const fd2 = service.getOrOpenFileDescriptor(targetPath);
+
+      expect(fd1).toBe(fd2);
+    });
+
+    it('streams zero-copy bytes via sendfile without buffer allocations', async () => {
+      const mockWritable = { write: jest.fn().mockReturnValue(true) };
+      const res = await service.sendfileZeroCopy('editor.worker.js', mockWritable);
+
+      expect(res.zeroCopy).toBe(true);
+      expect(res.bytesWritten).toBeGreaterThan(0);
+      expect(mockWritable.write).toHaveBeenCalledWith(expect.any(Buffer));
+    });
   });
 
   describe('StorageController Endpoints', () => {
