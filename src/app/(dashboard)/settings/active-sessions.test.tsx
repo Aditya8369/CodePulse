@@ -3,6 +3,13 @@ import { render, screen, fireEvent, act } from "@testing-library/react";
 import React from "react";
 import { ActiveSessionsTable } from "@/components/settings/active-sessions-table";
 
+vi.mock("motion/react", () => ({
+  motion: {
+    div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
+  },
+  AnimatePresence: ({ children }: any) => <>{children}</>,
+}));
+
 vi.mock("sonner", () => ({
   toast: {
     success: vi.fn(),
