@@ -15,6 +15,10 @@ import {
 } from './tenant-sharding.service';
 import { VaultService } from '../modules/security/vault.service';
 import { ReplicaRouter, RouteContext } from '../common/db/replica-router';
+import {
+  DeadlockResolverService,
+  type DeadlockRetryOptions,
+} from '../common/monitoring/deadlock-resolver.service';
 
 const DEFAULT_SLOW_QUERY_THRESHOLD_MS = 200;
 
@@ -58,6 +62,8 @@ export class PrismaService
     public readonly tenantSharding?: TenantShardingService,
     @Optional()
     public readonly replicaRouter?: ReplicaRouter,
+    @Optional()
+    public readonly deadlockResolver?: DeadlockResolverService,
   ) {
     const dynamicCreds = vaultService?.getCurrentDatabaseCredential();
     const baseDbUrl = process.env.DATABASE_URL;
@@ -269,5 +275,20 @@ export class PrismaService
       return this.replicaRouter.getClient(context);
     }
     return this;
+  }
+
+  /**
+   * Executes a Prisma interactive transaction wrapped in full-jitter exponential backoff
+   * deadlock recovery (40P01 / 40001 / 55P03).
+   */
+  async executeTransactionWithDeadlockRetry<T>(
+    fn: (tx: any) => Promise<T>,
+    options?: DeadlockRetryOptions,
+  ): Promise<T> {
+    const runTx = () => (this as any).$transaction((tx: any) => fn(tx));
+    if (this.deadlockResolver) {
+      return this.deadlockResolver.executeWithDeadlockRetry(() => runTx(), options);
+    }
+    return runTx();
   }
 }
