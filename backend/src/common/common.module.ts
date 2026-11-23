@@ -45,5 +45,9 @@ import { FeatureFlagService } from './features/feature-flag.service';
 import { LoadShedderService } from './resilience/load-shedder.service';
   providers: [SystemMetricsService, LoadShedderMiddleware, EtcdWatcherService, LoadShedderService],
   exports: [SystemMetricsService, LoadShedderMiddleware, EtcdWatcherService, LoadShedderService],
+
+import { DistributedDeadlockDetectorService } from './concurrency/deadlock-detector.service';
+  providers: [SystemMetricsService, LoadShedderMiddleware, EtcdWatcherService, DistributedDeadlockDetectorService],
+  exports: [SystemMetricsService, LoadShedderMiddleware, EtcdWatcherService, DistributedDeadlockDetectorService],
 })
 export class CommonModule {}
