@@ -46,6 +46,8 @@ import { FuzzingEvaluatorService } from './fuzzing-evaluator.service';
 import { BattleDisputeService } from './dispute.service';
 import { MutationTestingService } from './mutation-testing.service';
 
+import { TrueSkill2Service } from './trueskill2.service';
+
 @Module({
   imports: [
     BullModule.registerQueue(
@@ -100,6 +102,8 @@ import { MutationTestingService } from './mutation-testing.service';
     MutationTestingService,
 
     TeamMatchmakingService,
+
+    TrueSkill2Service,
   ],
   exports: [
     BattlesService,
@@ -133,6 +137,8 @@ import { MutationTestingService } from './mutation-testing.service';
     MutationTestingService,
 
     TeamMatchmakingService,
+
+    TrueSkill2Service,
   ],
 })
 export class BattlesModule {}
