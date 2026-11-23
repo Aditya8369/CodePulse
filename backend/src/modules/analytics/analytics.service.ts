@@ -13,6 +13,7 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
 import axios from 'axios';
 import { DifferentialPrivacyService } from './differential-privacy.service';
+import { TDigestService, type TDigestPercentileSummary } from '../../common/math/t-digest.service';
 import {
   OrgProductivityQueryDto,
   OrgBenchmarkReportDto,
@@ -31,6 +32,7 @@ export class AnalyticsService {
     private readonly config: ConfigService,
     @Inject(CACHE_MANAGER) private readonly cache: Cache,
     @Optional() private readonly dpService?: DifferentialPrivacyService,
+    @Optional() private readonly tDigestService?: TDigestService,
   ) {}
 
   async getRepositoryCommitPunchcard(userId: string, repositoryId: string, timezone = 'UTC') {
@@ -266,5 +268,16 @@ export class AnalyticsService {
   getPrivacyBudgetStatus(consumerKey: string) {
     const dp = this.dpService ?? new DifferentialPrivacyService();
     return dp.getBudgetStatus(consumerKey);
+  }
+
+  recordStreamingMetric(streamKey: string, values: number[]): void {
+    if (!this.tDigestService) return;
+    this.tDigestService.recordBatch(streamKey, values);
+  }
+
+  async getStreamingMetricPercentiles(streamKey: string): Promise<TDigestPercentileSummary | null> {
+    if (!this.tDigestService) return null;
+    await this.tDigestService.persistStreamToCache(streamKey);
+    return this.tDigestService.getPercentileSummary(streamKey);
   }
 }
