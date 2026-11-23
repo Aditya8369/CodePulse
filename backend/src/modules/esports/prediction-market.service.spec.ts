@@ -95,4 +95,48 @@ describe('PredictionMarketService (Parimutuel Odds, Spoiler Lock & PulseBits Pay
       ForbiddenException,
     );
   });
+
+  describe('Zero Rounding Leak & Large-Scale Pari-Mutuel Disbursal (#1089)', () => {
+    it('locks betting window 60 seconds after match commences to prevent spoiler cheating', async () => {
+      const matchStartMs = 5_000_000;
+      service.createPredictionPool({
+        battleId: 'speed-battle-60s',
+        outcomes: { p1: 'Player 1', p2: 'Player 2' },
+        matchStartedAtMs: matchStartMs,
+        lockWindowMs: 60_000,
+      });
+
+      // At 59s: bet is accepted
+      const bet59 = await service.placePrediction({
+        battleId: 'speed-battle-60s',
+        userId: 'spec-on-time',
+        outcomeKey: 'p1',
+        stakeBits: 50,
+        nowMs: matchStartMs + 59_000,
+      });
+      expect(bet59.wager).toBeDefined();
+
+      // At 61s: locked
+      await expect(
+        service.placePrediction({
+          battleId: 'speed-battle-60s',
+          userId: 'spec-too-late',
+          outcomeKey: 'p2',
+          stakeBits: 50,
+          nowMs: matchStartMs + 61_000,
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('disburses exact pro-rata payouts across thousands of spectators with zero rounding leaks', async () => {
+      // Run simulation across 1,500 spectators with odd wager amounts
+      const sim = await service.simulateLargeSpectatorPayout('mega-tournament-finals', 1500);
+
+      expect(sim.spectatorCount).toBe(1500);
+      expect(sim.totalPool).toBeGreaterThan(0);
+      expect(sim.totalDisbursed).toBe(sim.totalPool);
+      expect(sim.roundingLeak).toBe(0); // Zero rounding leaks!
+      expect(sim.zeroRoundingLeak).toBe(true);
+    });
+  });
 });
