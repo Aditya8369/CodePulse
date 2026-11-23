@@ -5,6 +5,7 @@ import { RocksDbService } from './rocksdb.service';
 import { RocksDbAstService } from './rocksdb-ast.service';
 import { WorkspaceStateService } from './workspace-state.service';
 import { HsmService } from './hsm.service';
+import { HsmArchivalService } from './hsm-archival.service';
 import { StorageController } from './storage.controller';
 import { PrismaModule } from '../../prisma/prisma.module';
 
@@ -18,6 +19,7 @@ import { PrismaModule } from '../../prisma/prisma.module';
     RocksDbAstService,
     WorkspaceStateService,
     HsmService,
+    HsmArchivalService,
   ],
   exports: [
     MmapStorageService,
@@ -26,6 +28,7 @@ import { PrismaModule } from '../../prisma/prisma.module';
     RocksDbAstService,
     WorkspaceStateService,
     HsmService,
+    HsmArchivalService,
   ],
 })
 export class StorageModule {}
