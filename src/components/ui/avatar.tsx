@@ -1,35 +1,54 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { Avatar as AvatarPrimitive } from "@base-ui/react/avatar"
-import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
+import * as React from "react";
+import { Avatar as AvatarPrimitive } from "@base-ui/react/avatar";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
-import { cn } from "@/lib/utils"
+export interface AvatarProps extends AvatarPrimitive.Root.Props {
+  size?: "default" | "sm" | "lg";
+  zoomOnHover?: boolean;
+  tooltip?: string;
+  status?: "online" | "offline" | "busy" | "away";
+}
 
 function Avatar({
   className,
   size = "default",
   zoomOnHover = false,
   tooltip,
+  status,
+  children,
   ...props
-}: AvatarPrimitive.Root.Props & {
-  size?: "default" | "sm" | "lg"
-  zoomOnHover?: boolean
-  tooltip?: string
-}) {
+}: AvatarProps) {
   const avatarElement = (
     <AvatarPrimitive.Root
       data-slot="avatar"
       data-size={size}
       title={tooltip || props.title}
       className={cn(
-        "group/avatar relative flex size-8 shrink-0 rounded-full select-none after:absolute after:inset-0 after:rounded-full after:border after:border-border after:mix-blend-darken data-[size=lg]:size-10 data-[size=sm]:size-6 dark:after:mix-blend-lighten transition-transform duration-200 ease-out",
+        "group/avatar relative flex size-8 shrink-0 rounded-full select-none after:absolute after:inset-0 after:rounded-full after:border after:border-border after:mix-blend-darken data-[size=lg]:size-10 data-[size=sm]:size-6 dark:after:mix-blend-lighten transition-transform duration-200 ease-out will-change-transform",
         zoomOnHover && "hover:scale-115 hover:z-20 cursor-pointer shadow-md",
-        className
+        className,
       )}
       {...props}
-    />
-  )
+    >
+      {children}
+      {status && (
+        <span
+          data-slot="avatar-status"
+          aria-label={`Status: ${status}`}
+          className={cn(
+            "absolute bottom-0 right-0 z-10 size-2.5 rounded-full ring-2 ring-background transition-colors duration-200",
+            status === "online" && "bg-emerald-500",
+            status === "busy" && "bg-rose-500",
+            status === "away" && "bg-amber-500",
+            status === "offline" && "bg-slate-400 dark:bg-slate-500",
+          )}
+        />
+      )}
+    </AvatarPrimitive.Root>
+  );
 
   if (tooltip) {
     return (
@@ -37,15 +56,15 @@ function Avatar({
         <TooltipTrigger render={avatarElement} />
         <TooltipContent
           side="top"
-          className="rounded-lg bg-slate-900 border border-white/10 px-2.5 py-1 text-xs font-medium text-white shadow-xl animate-in fade-in-0 zoom-in-95"
+          className="rounded-lg bg-popover text-popover-foreground border border-border px-2.5 py-1 text-xs font-medium shadow-xl animate-in fade-in-0 zoom-in-95"
         >
           {tooltip}
         </TooltipContent>
       </Tooltip>
-    )
+    );
   }
 
-  return avatarElement
+  return avatarElement;
 }
 
 function AvatarImage({ className, ...props }: AvatarPrimitive.Image.Props) {
@@ -54,11 +73,11 @@ function AvatarImage({ className, ...props }: AvatarPrimitive.Image.Props) {
       data-slot="avatar-image"
       className={cn(
         "aspect-square size-full rounded-full object-cover",
-        className
+        className,
       )}
       {...props}
     />
-  )
+  );
 }
 
 function AvatarFallback({
@@ -69,12 +88,12 @@ function AvatarFallback({
     <AvatarPrimitive.Fallback
       data-slot="avatar-fallback"
       className={cn(
-        "flex size-full items-center justify-center rounded-full bg-muted text-sm text-muted-foreground group-data-[size=sm]/avatar:text-xs",
-        className
+        "flex size-full items-center justify-center rounded-full bg-muted text-sm text-muted-foreground group-data-[size=sm]/avatar:text-xs font-medium select-none",
+        className,
       )}
       {...props}
     />
-  )
+  );
 }
 
 function AvatarBadge({ className, ...props }: React.ComponentProps<"span">) {
@@ -86,11 +105,11 @@ function AvatarBadge({ className, ...props }: React.ComponentProps<"span">) {
         "group-data-[size=sm]/avatar:size-2 group-data-[size=sm]/avatar:[&>svg]:hidden",
         "group-data-[size=default]/avatar:size-2.5 group-data-[size=default]/avatar:[&>svg]:size-2",
         "group-data-[size=lg]/avatar:size-3 group-data-[size=lg]/avatar:[&>svg]:size-2",
-        className
+        className,
       )}
       {...props}
     />
-  )
+  );
 }
 
 function AvatarGroup({ className, ...props }: React.ComponentProps<"div">) {
@@ -98,12 +117,12 @@ function AvatarGroup({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="avatar-group"
       className={cn(
-        "group/avatar-group flex -space-x-2 *:data-[slot=avatar]:ring-2 *:data-[slot=avatar]:ring-background *:data-[slot=avatar]:transition-transform *:data-[slot=avatar]:duration-200 *:data-[slot=avatar]:hover:scale-120 *:data-[slot=avatar]:hover:z-30",
-        className
+        "group/avatar-group flex -space-x-2 *:data-[slot=avatar]:ring-2 *:data-[slot=avatar]:ring-background *:data-[slot=avatar]:transition-transform *:data-[slot=avatar]:duration-200 *:data-[slot=avatar]:hover:scale-120 *:data-[slot=avatar]:hover:z-30 *:data-[slot=avatar]:cursor-pointer",
+        className,
       )}
       {...props}
     />
-  )
+  );
 }
 
 function AvatarGroupCount({
@@ -115,11 +134,11 @@ function AvatarGroupCount({
       data-slot="avatar-group-count"
       className={cn(
         "relative flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-sm text-muted-foreground ring-2 ring-background group-has-data-[size=lg]/avatar-group:size-10 group-has-data-[size=sm]/avatar-group:size-6 [&>svg]:size-4 group-has-data-[size=lg]/avatar-group:[&>svg]:size-5 group-has-data-[size=sm]/avatar-group:[&>svg]:size-3",
-        className
+        className,
       )}
       {...props}
     />
-  )
+  );
 }
 
 export {
@@ -129,4 +148,5 @@ export {
   AvatarGroup,
   AvatarGroupCount,
   AvatarBadge,
-}
+};
+export default Avatar;
