@@ -37,5 +37,9 @@ import { ReplicaRouter } from './db/replica-router';
     QuorumWitnessService,
 
     ZeroCopyStreamService,
+
+import { FeatureFlagService } from './features/feature-flag.service';
+  providers: [SystemMetricsService, LoadShedderMiddleware, EtcdWatcherService, FeatureFlagService],
+  exports: [SystemMetricsService, LoadShedderMiddleware, EtcdWatcherService, FeatureFlagService],
 })
 export class CommonModule {}
