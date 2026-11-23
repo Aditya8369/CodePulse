@@ -24,6 +24,7 @@ import { ApiKeyService } from './api-key.service';
 import { ApiKeyGuard } from '../../common/guards/api-key.guard';
 import { BruteForceService } from './brute-force.service';
 import { BruteForceGuard } from './guards/brute-force.guard';
+import { GdprShredderService } from './gdpr-shredder.service';
 
 
 
@@ -72,6 +73,7 @@ import { BruteForceGuard } from './guards/brute-force.guard';
     ApiKeyGuard,
     BruteForceService,
     BruteForceGuard,
+    GdprShredderService,
   ],
   exports: [
     AuthService,
@@ -87,6 +89,7 @@ import { BruteForceGuard } from './guards/brute-force.guard';
     ApiKeyGuard,
     BruteForceService,
     BruteForceGuard,
+    GdprShredderService,
   ],
 })
 export class AuthModule {}
