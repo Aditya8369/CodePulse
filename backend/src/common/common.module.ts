@@ -22,5 +22,9 @@ import { IdempotencyInterceptor } from './idempotency/idempotency.interceptor';
     IdempotencyService,
     IdempotencyInterceptor,
   ],
+
+import { ReplicaRouter } from './db/replica-router';
+  providers: [SystemMetricsService, LoadShedderMiddleware, EtcdWatcherService, ReplicaRouter],
+  exports: [SystemMetricsService, LoadShedderMiddleware, EtcdWatcherService, ReplicaRouter],
 })
 export class CommonModule {}
