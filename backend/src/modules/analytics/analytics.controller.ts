@@ -23,6 +23,7 @@ import type {
   ScyllaEngineStats,
 } from './scylladb-telemetry.service';
 import { ComplexityService } from './complexity.service';
+import { GreenCarbonEstimatorService } from './green-carbon-estimator.service';
 import {
   CodeAnalysisRequestDto,
   BatchFilesAnalysisRequestDto,
@@ -38,6 +39,7 @@ export class AnalyticsController {
     private readonly analyticsService: AnalyticsService,
     @Optional() private readonly scyllaTelemetry?: ScyllaDbTelemetryService,
     @Optional() private readonly complexityService?: ComplexityService,
+    @Optional() private readonly greenCarbonEstimator?: GreenCarbonEstimatorService,
   ) {}
 
   @Get('platform')
@@ -241,5 +243,51 @@ export class AnalyticsController {
     }
     return this.complexityService.getHotspots(repositoryId);
   }
-}
 
+  // ==========================================
+  // Green Software Carbon & Energy Endpoints (#597)
+  // ==========================================
+
+  @Get('green-carbon/regions')
+  @ApiOperation({ summary: 'List cloud regional grid carbon intensity factors (gCO2eq/kWh)' })
+  getGreenCarbonRegions() {
+    return this.greenCarbonEstimator?.getSupportedRegions() ?? [];
+  }
+
+  @Post('green-carbon/estimate')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Estimate execution energy (mJ/kWh), CO2 grams, O(N^2) energy hotspots, and Green Code badge',
+  })
+  estimateExecutionCarbon(
+    @Body()
+    body: {
+      runId: string;
+      repositoryId: string;
+      region?: string;
+      cpuEnergyMj: number;
+      dramEnergyMj: number;
+      durationMs: number;
+      sourceCode?: string;
+      baselineEnergyMj?: number;
+    },
+  ) {
+    return this.greenCarbonEstimator?.estimateExecutionCarbon(body);
+  }
+
+  @Post('green-carbon/parse-perf')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Parse Linux AMD/Intel perf stat energy counters into mJ and kWh' })
+  parsePerfCounters(@Body() body: { perfOutput: string; durationMs: number }) {
+    return this.greenCarbonEstimator?.parsePerfStatEnergyOutput(
+      body.perfOutput,
+      body.durationMs,
+    );
+  }
+
+  @Get('green-carbon/repository/:repositoryId')
+  @ApiOperation({ summary: 'Get repository cumulative carbon footprint and Green Code badge summary' })
+  getRepositoryCarbonSummary(@Param('repositoryId') repositoryId: string) {
+    return this.greenCarbonEstimator?.getRepositoryCarbonSummary(repositoryId);
+  }
+}
