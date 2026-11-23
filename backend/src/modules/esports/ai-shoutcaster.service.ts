@@ -2,20 +2,32 @@ import { Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
 
-export type CommentaryStyle = 'HYPE_CASTER' | 'TECHNICAL_ANALYST';
+export type CommentaryStyle =
+  | 'HYPE_CASTER'
+  | 'TECHNICAL_ANALYST'
+  | 'HYPE'
+  | 'ANALYTICAL'
+  | 'COMEDIC'
+  | 'COMEDIC_CASTER';
 
 export type CommentaryEmotionTag =
   | 'Hype'
   | 'Suspense'
   | 'Analytical'
-  | 'Climax';
+  | 'Climax'
+  | 'Humorous';
 
 export type MatchTelemetryEventType =
   | 'fast_typing_burst'
   | 'failing_test_cases'
   | 'optimization_breakthrough'
   | 'score_lead_change'
-  | 'match_climax';
+  | 'match_climax'
+  | 'compilation'
+  | 'compilation_error'
+  | 'test_case_pass'
+  | 'sabotage_used'
+  | 'sudden_death';
 
 export interface ShoutcasterMatchEvent {
   battleId: string;
@@ -30,6 +42,7 @@ export interface ShoutcasterMatchEvent {
   actorScore?: number;
   opponentScore?: number;
   secondsRemaining?: number;
+  sabotageName?: string;
   style?: CommentaryStyle;
   timestampMs?: number;
 }
@@ -209,15 +222,22 @@ export class AiShoutcasterService {
   }
 
   classifyEmotion(event: ShoutcasterMatchEvent): CommentaryEmotionTag {
+    if (event.style === 'COMEDIC' || event.style === 'COMEDIC_CASTER') {
+      return 'Humorous';
+    }
     switch (event.eventType) {
       case 'optimization_breakthrough':
+      case 'test_case_pass':
         return 'Hype';
       case 'failing_test_cases':
+      case 'compilation_error':
+      case 'sabotage_used':
         return 'Suspense';
       case 'fast_typing_burst':
-        return event.style === 'TECHNICAL_ANALYST' ? 'Analytical' : 'Hype';
+        return event.style === 'TECHNICAL_ANALYST' || event.style === 'ANALYTICAL' ? 'Analytical' : 'Hype';
       case 'score_lead_change':
       case 'match_climax':
+      case 'sudden_death':
         return 'Climax';
       default:
         return 'Analytical';
@@ -225,15 +245,59 @@ export class AiShoutcasterService {
   }
 
   generateCommentaryScript(event: ShoutcasterMatchEvent): CommentaryScriptLine {
-    const style = event.style ?? this.getBattleStyle(event.battleId);
-    const { emotion } = this.buildPromptForEvent(event, style);
+    const rawStyle = event.style ?? this.getBattleStyle(event.battleId);
+    // Normalize style: HYPE, ANALYTICAL, COMEDIC
+    const isComedic = rawStyle === 'COMEDIC' || rawStyle === 'COMEDIC_CASTER';
+    const isAnalytical = rawStyle === 'TECHNICAL_ANALYST' || rawStyle === 'ANALYTICAL';
+    const isHype = !isComedic && !isAnalytical;
+
+    const { emotion } = this.buildPromptForEvent(event, rawStyle);
     const actor = event.actorUsername || 'Player A';
     const opponent = event.opponentUsername || 'Player B';
+    const sabotage = event.sabotageName || 'Sabotage';
 
     let text: string;
 
-    if (style === 'HYPE_CASTER') {
+    if (isComedic) {
       switch (event.eventType) {
+        case 'sabotage_used':
+          text = `Oh, that is downright vicious! ${actor} just unleashed ${sabotage} on ${opponent}! Enjoy coding blindfolded!`;
+          break;
+        case 'compilation_error':
+          text = `Oops! ${actor} tried to argue with the compiler, and the compiler undefeatedly won! Semicolons matter, folks!`;
+          break;
+        case 'test_case_pass':
+          text = `Hold the phone! It actually compiled and passed the tests! Nobody move, don't jinx it!`;
+          break;
+        case 'optimization_breakthrough':
+          text = `${actor} just went from turtle speed to hyperdrive! ${opponent} is sweating through their mechanical keyboard!`;
+          break;
+        case 'failing_test_cases':
+          text = `NullPointerException alert! ${actor} looking at the monitor like it personally insulted their ancestors!`;
+          break;
+        case 'fast_typing_burst':
+          text = `${actor} is slamming keys so hard I think the spacebar just asked for worker compensation!`;
+          break;
+        case 'score_lead_change':
+          text = `Plot twist! ${actor} takes the lead! Quick, somebody check if ${opponent} unplugged their router!`;
+          break;
+        case 'sudden_death':
+        case 'match_climax':
+        default:
+          text = `Down to the final seconds! Two programmers enter, one emerges with working code and bragging rights!`;
+          break;
+      }
+    } else if (isHype) {
+      switch (event.eventType) {
+        case 'sabotage_used':
+          text = `TACTICAL SABOTAGE! ${actor} hits ${opponent} with ${sabotage} right in the middle of an algorithm refactor!`;
+          break;
+        case 'compilation_error':
+          text = `CRITICAL STALL! ${actor} runs into a syntax error under intense tournament pressure!`;
+          break;
+        case 'test_case_pass':
+          text = `GREEN LIGHT! ${actor} locks in passing test cases and puts massive pressure on ${opponent}!`;
+          break;
         case 'optimization_breakthrough':
           text = `${actor} has just optimized their loop to ${event.complexityAfter ?? 'O(N)'}! Can ${opponent} catch up before time expires?!`;
           break;
@@ -246,13 +310,26 @@ export class AiShoutcasterService {
         case 'score_lead_change':
           text = `LEAD CHANGE! ${actor} surges ahead ${event.actorScore ?? 100} to ${event.opponentScore ?? 90} in a massive momentum swing!`;
           break;
+        case 'sudden_death':
+          text = `SUDDEN DEATH ACTIVATED! Next correct test submission takes the entire tournament match!`;
+          break;
         case 'match_climax':
         default:
           text = `Final ${event.secondsRemaining ?? 15} seconds on the clock! Both coders locked in a razor-thin sprint to the finish!`;
           break;
       }
     } else {
+      // Analytical / Technical
       switch (event.eventType) {
+        case 'sabotage_used':
+          text = `${actor} executed ${sabotage}, disrupting ${opponent}'s cognitive focus during active buffer manipulation.`;
+          break;
+        case 'compilation_error':
+          text = `Compilation diagnostics flag an unresolved token error in ${actor}'s AST parsing pipeline.`;
+          break;
+        case 'test_case_pass':
+          text = `${actor} successfully satisfied ${event.passedTests ?? 'all'} verification constraints within linear time complexity.`;
+          break;
         case 'optimization_breakthrough':
           text = `${actor} reduced asymptotic runtime from ${event.complexityBefore ?? 'O(N^2)'} to ${event.complexityAfter ?? 'O(N)'}, eliminating the inner bottleneck.`;
           break;
@@ -265,6 +342,7 @@ export class AiShoutcasterService {
         case 'score_lead_change':
           text = `${actor} takes a ${event.actorScore ?? 100} to ${event.opponentScore ?? 90} lead after passing hidden stress benchmarks.`;
           break;
+        case 'sudden_death':
         case 'match_climax':
         default:
           text = `With ${event.secondsRemaining ?? 15} seconds left, ${actor} holds a slight execution-time advantage over ${opponent}.`;
@@ -277,7 +355,7 @@ export class AiShoutcasterService {
       battleId: event.battleId,
       text,
       emotion,
-      style,
+      style: rawStyle,
       eventType: event.eventType,
       generatedAtMs: event.timestampMs ?? Date.now(),
     };

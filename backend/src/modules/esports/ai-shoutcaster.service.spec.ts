@@ -83,4 +83,74 @@ describe('AiShoutcasterService (Live Esports Commentary & TTS Streaming)', () =>
     expect(second.throttled).toBe(true);
     expect(second.chunks).toHaveLength(0);
   });
+
+  describe('Multi-Tone Play-by-Play Commentary & Battle Event Ingestion (#1090)', () => {
+    it('generates humorous commentary when in COMEDIC tone', () => {
+      const comedicSabotage = service.generateCommentaryScript({
+        battleId: 'battle-404',
+        eventType: 'sabotage_used',
+        actorUsername: 'alice',
+        opponentUsername: 'bob',
+        sabotageName: 'Reverse Editor',
+        style: 'COMEDIC',
+      });
+
+      expect(comedicSabotage.emotion).toBe('Humorous');
+      expect(comedicSabotage.text).toContain('alice');
+      expect(comedicSabotage.text).toContain('Reverse Editor');
+
+      const comedicError = service.generateCommentaryScript({
+        battleId: 'battle-404',
+        eventType: 'compilation_error',
+        actorUsername: 'charlie',
+        style: 'COMEDIC',
+      });
+
+      expect(comedicError.text).toContain('compiler');
+      expect(comedicError.text).toContain('Semicolons');
+    });
+
+    it('generates energetic play-by-play for sabotage and passing tests in HYPE style', () => {
+      const hypeSabotage = service.generateCommentaryScript({
+        battleId: 'battle-505',
+        eventType: 'sabotage_used',
+        actorUsername: 'neo',
+        opponentUsername: 'morpheus',
+        sabotageName: 'Key Jammer',
+        style: 'HYPE',
+      });
+
+      expect(hypeSabotage.emotion).toBe('Suspense');
+      expect(hypeSabotage.text).toContain('TACTICAL SABOTAGE');
+
+      const hypePass = service.generateCommentaryScript({
+        battleId: 'battle-505',
+        eventType: 'test_case_pass',
+        actorUsername: 'neo',
+        style: 'HYPE',
+      });
+
+      expect(hypePass.emotion).toBe('Hype');
+      expect(hypePass.text).toContain('GREEN LIGHT');
+    });
+
+    it('triggers play-by-play audio commentary synthesis well under 800ms acceptance criteria', async () => {
+      const start = Date.now();
+      const result = await service.processMatchEvent({
+        battleId: 'battle-606',
+        eventType: 'test_case_pass',
+        actorUsername: 'speedy',
+        passedTests: 10,
+        totalTests: 10,
+        style: 'HYPE',
+        timestampMs: 200_000,
+      });
+      const elapsed = Date.now() - start;
+
+      expect(result.throttled).toBe(false);
+      expect(result.totalLatencyMs).toBeLessThan(800);
+      expect(elapsed).toBeLessThan(800); // Triggers within 800ms
+      expect(result.chunks.length).toBeGreaterThan(0);
+    });
+  });
 });
