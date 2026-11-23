@@ -23,6 +23,11 @@ import type {
   ScyllaEngineStats,
 } from './scylladb-telemetry.service';
 import { ComplexityService } from './complexity.service';
+import { ArchitecturalDriftService } from './architectural-drift.service';
+import {
+  AnalyzeArchitectureDto,
+  PrArchitecturalCheckDto,
+} from './dto/arch-rules.dto';
 import {
   CodeAnalysisRequestDto,
   BatchFilesAnalysisRequestDto,
@@ -38,6 +43,7 @@ export class AnalyticsController {
     private readonly analyticsService: AnalyticsService,
     @Optional() private readonly scyllaTelemetry?: ScyllaDbTelemetryService,
     @Optional() private readonly complexityService?: ComplexityService,
+    @Optional() private readonly architecturalDrift?: ArchitecturalDriftService,
   ) {}
 
   @Get('platform')
@@ -241,5 +247,30 @@ export class AnalyticsController {
     }
     return this.complexityService.getHotspots(repositoryId);
   }
-}
 
+  // ==========================================
+  // Architectural Drift & Boundary Violation Endpoints (#592)
+  // ==========================================
+
+  @Post('architecture/analyze')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Analyze module dependency graph for circular cycles (Johnson algorithm) and boundary violations',
+  })
+  analyzeArchitecturalDrift(@Body() dto: AnalyzeArchitectureDto) {
+    return this.architecturalDrift?.analyzeArchitecture(dto.files, dto.rules);
+  }
+
+  @Post('architecture/pr-check')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Evaluate PR diff against architectural boundaries and block new cyclic dependencies',
+  })
+  evaluateArchitecturalPrGate(@Body() dto: PrArchitecturalCheckDto) {
+    return this.architecturalDrift?.evaluatePullRequestGate(
+      dto.baseFiles,
+      dto.headFiles,
+      dto.rules,
+    );
+  }
+}
