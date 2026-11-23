@@ -20,5 +20,9 @@ import { FailoverGatewayService } from './failover-gateway.service';
     SpotBidderService,
     FailoverGatewayService,
   ],
+
+import { DataArchiverService } from './data-archiver.service';
+  providers: [ChaosRunnerService, EtcdConfigService, ActiveActiveReplicatorService, DataArchiverService],
+  exports: [ChaosRunnerService, EtcdConfigService, ActiveActiveReplicatorService, DataArchiverService],
 })
 export class OpsModule {}
