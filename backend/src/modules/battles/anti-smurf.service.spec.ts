@@ -126,4 +126,94 @@ describe('AntiSmurfService & Fast MMR Placement', () => {
     expect(createAudit).toHaveBeenCalledTimes(1);
     expect(createNotif).toHaveBeenCalledTimes(1);
   });
+
+  describe('Typing Biometrics & Smurf Classifier', () => {
+    it('extracts keystroke biometrics with digraph flight times and burst acceleration', () => {
+      // Simulate typing "const value"
+      const chars = ['c', 'o', 'n', 's', 't', ' ', 'v', 'a', 'l', 'u', 'e'];
+      let time = 1000;
+      const keystrokes = chars.map((char) => {
+        const down = time;
+        const up = time + 60; // 60ms dwell
+        time += 110; // 50ms flight
+        return { key: char, downTimestamp: down, upTimestamp: up };
+      });
+
+      const features = service.extractBiometricFeatures({
+        userId: 'player-1',
+        battleId: 'battle-1',
+        keystrokes,
+        backspaceCount: 1,
+        totalKeystrokes: chars.length,
+        observedWpm: 110,
+      });
+
+      expect(features.meanDwellMs).toBeCloseTo(60, 0);
+      expect(features.meanFlightMs).toBeCloseTo(50, 0);
+      expect(features.commonDigraphMeanFlightMs).toBeDefined();
+      expect(features.backspaceRatio).toBeLessThan(0.1);
+      expect(features.burstAcceleration).toBeGreaterThanOrEqual(1.0);
+    });
+
+    it('accurately flags accounts exhibiting Grandmaster typing rhythm in Bronze brackets (>85% probability) and accelerates to true ELO in 3 matches', () => {
+      const chars = 'function solve(nodes) { const res = []; return res; }'.split('');
+      let time = 5000;
+      const keystrokes = chars.map((char) => {
+        const down = time;
+        const up = time + 55; // 55ms crisp dwell
+        time += 120; // ~65ms rapid flight
+        return { key: char, downTimestamp: down, upTimestamp: up };
+      });
+
+      const result = service.classifyTypingBiometrics(
+        {
+          userId: 'smurf-gm-in-bronze',
+          battleId: 'match-101',
+          keystrokes,
+          backspaceCount: 1,
+          totalKeystrokes: chars.length,
+          observedWpm: 125,
+          currentTier: 'BRONZE',
+        },
+        1100, // Bronze ELO
+      );
+
+      expect(result.smurfProbability).toBeGreaterThan(0.85);
+      expect(result.isSmurfFlagged).toBe(true);
+      expect(result.detectedSkillTier).toBe('GRANDMASTER');
+      expect(result.targetElo).toBe(2400);
+      expect(result.matchesToTrueElo).toBe(3);
+      // (2400 - 1100) / 3 = 434
+      expect(result.perMatchEloAcceleration).toBeGreaterThanOrEqual(400);
+      expect(result.rationale.length).toBeGreaterThan(0);
+    });
+
+    it('retains beginner typing cadence unflagged in Bronze bracket', () => {
+      const chars = 'let x = 10;'.split('');
+      let time = 10000;
+      const keystrokes = chars.map((char) => {
+        const down = time;
+        const up = time + 140; // 140ms dwell
+        time += 380; // 240ms slow hesitant flight
+        return { key: char, downTimestamp: down, upTimestamp: up };
+      });
+
+      const result = service.classifyTypingBiometrics(
+        {
+          userId: 'beginner-dev',
+          battleId: 'match-102',
+          keystrokes,
+          backspaceCount: 4,
+          totalKeystrokes: chars.length,
+          observedWpm: 35,
+          currentTier: 'BRONZE',
+        },
+        1100,
+      );
+
+      expect(result.isSmurfFlagged).toBe(false);
+      expect(result.smurfProbability).toBeLessThan(0.85);
+      expect(result.perMatchEloAcceleration).toBeLessThanOrEqual(25);
+    });
+  });
 });
