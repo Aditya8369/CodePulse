@@ -94,4 +94,54 @@ describe('RaidBossService (4-Player Cooperative Boss Raids)', () => {
     expect(wiped.remainingSeconds).toBe(0);
     expect(wiped.status).toBe('WIPED');
   });
+
+  describe('Collective Guild Raid Boss (100 Simultaneous Members)', () => {
+    it('coordinates 100 simultaneous guild members attacking a shared 1,000,000 HP boss with sub-10ms state updates', () => {
+      const raid = service.createRaidEncounter({
+        raidId: 'guild-raid-100',
+        maxPlayers: 100,
+        archetype: 'MEMORY_LEAK_HYDRA',
+      });
+
+      // Generate 100 simultaneous attack contributions
+      const attacks = Array.from({ length: 100 }, (_, i) => ({
+        userId: `guild-member-${i + 1}`,
+        username: `ClanStriker_${i + 1}`,
+        damage: 10_000,
+        testsPassed: 5,
+      }));
+
+      const result = service.applyConcurrentGuildDamage(raid.raidId, attacks);
+
+      expect(result.attacksProcessed).toBe(100);
+      expect(result.totalDamageDealt).toBe(1_000_000);
+      expect(result.remainingHp).toBeLessThanOrEqual(250_000);
+      expect(result.currentShield).toBe(0);
+      expect(result.phase).toBeGreaterThanOrEqual(2);
+      // Verify sub-10ms latency requirement
+      expect(result.latencyMs).toBeLessThan(10);
+      expect(Object.keys(service.getEncounter(raid.raidId).participants)).toHaveLength(100);
+    });
+
+    it('triggers dynamic boss spells (screen shake, code obfuscation) during battle', () => {
+      const raid = service.createRaidEncounter({
+        raidId: 'spell-test-raid',
+        archetype: 'MEMORY_LEAK_HYDRA',
+      });
+
+      const spell = service.triggerBossSpell(
+        raid.raidId,
+        'SCREEN_SHAKE',
+        5,
+        4000,
+        'Seismic tremor shakes player editor!',
+      );
+
+      expect(spell.type).toBe('SCREEN_SHAKE');
+      expect(spell.intensity).toBe(5);
+      const encounter = service.getEncounter(raid.raidId);
+      expect(encounter.activeSpells).toHaveLength(1);
+      expect(encounter.activeSpells[0].message).toContain('Seismic tremor');
+    });
+  });
 });
