@@ -42,6 +42,7 @@ import { CollabModule } from './modules/collab/collab.module';
 import { AudioModule } from './modules/audio/audio.module';
 import { AiModule } from './modules/ai/ai.module';
 import { TournamentsModule } from './modules/tournaments/tournaments.module';
+import { SreModule } from './modules/sre/sre.module';
 
 import { LoggingModule } from './common/logging/logging.module';
 import { MentorshipModule } from './modules/mentorship/mentorship.module';
@@ -133,6 +134,7 @@ import { CommonModule } from './common/common.module';
     CloudModule,
     GraphModule,
     ObservabilityModule,
+    SreModule,
     StorageModule,
     EsportsModule,
     CryptoModule,
