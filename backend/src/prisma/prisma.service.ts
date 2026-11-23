@@ -14,6 +14,7 @@ import {
   MapReduceResult,
 } from './tenant-sharding.service';
 import { VaultService } from '../modules/security/vault.service';
+import { ReplicaRouter, RouteContext } from '../common/db/replica-router';
 
 const DEFAULT_SLOW_QUERY_THRESHOLD_MS = 200;
 
@@ -55,6 +56,8 @@ export class PrismaService
     public readonly shardingRouter?: ShardingRouterService,
     @Optional()
     public readonly tenantSharding?: TenantShardingService,
+    @Optional()
+    public readonly replicaRouter?: ReplicaRouter,
   ) {
     const dynamicCreds = vaultService?.getCurrentDatabaseCredential();
     const baseDbUrl = process.env.DATABASE_URL;
@@ -237,5 +240,15 @@ export class PrismaService
     const shards = new Map<string, PrismaClient>([['default', this]]);
     const result = await txPlan(shards, `tx-local-${Date.now()}`);
     return { txId: 'tx-local', result, status: 'COMMITTED' };
+  }
+
+  /**
+   * Routes query to Primary or Read Replica connection pool based on context
+   */
+  async getRoutedClient(context?: RouteContext): Promise<PrismaClient> {
+    if (this.replicaRouter) {
+      return this.replicaRouter.getClient(context);
+    }
+    return this;
   }
 }

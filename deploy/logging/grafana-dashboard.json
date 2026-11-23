@@ -1,0 +1,54 @@
+{
+  "title": "CodePulse - Real-Time ClickHouse Log Analytics",
+  "uid": "codepulse-clickhouse-logs",
+  "tags": ["logging", "clickhouse", "observability", "codepulse"],
+  "timezone": "browser",
+  "schemaVersion": 36,
+  "refresh": "5s",
+  "panels": [
+    {
+      "id": 1,
+      "title": "Log Volume by Severity (Events/Sec)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "query": "SELECT toStartOfInterval(timestamp, INTERVAL 5 SECOND) as time, level, count() as events FROM codepulse.codepulse_logs WHERE $__timeFilter(timestamp) GROUP BY time, level ORDER BY time"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "HTTP Error Rate (4xx / 5xx %)",
+      "type": "gauge",
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "query": "SELECT countIf(status_code >= 400) / count() * 100 as error_rate FROM codepulse.codepulse_logs WHERE $__timeFilter(timestamp)"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "P99 Request Latency (ms)",
+      "type": "stat",
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 0 },
+      "targets": [
+        {
+          "query": "SELECT quantile(0.99)(duration_ms) FROM codepulse.codepulse_logs WHERE $__timeFilter(timestamp)"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Live Error & Warn Log Stream",
+      "type": "logs",
+      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "query": "SELECT timestamp, service, level, message, trace_id FROM codepulse.codepulse_logs WHERE level IN ('ERROR', 'WARN') AND $__timeFilter(timestamp) ORDER BY timestamp DESC LIMIT 500"
+        }
+      ]
+    }
+  ]
+}

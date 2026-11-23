@@ -49,7 +49,7 @@ function generateWeeklyStandup(
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
   const weeklyActivities = activities.filter((a) => {
-    const actDate = new Date(a.createdAt || a.timestamp || Date.now());
+    const actDate = new Date(a.createdAt || (a as any).timestamp || Date.now());
     return actDate >= sevenDaysAgo;
   });
 

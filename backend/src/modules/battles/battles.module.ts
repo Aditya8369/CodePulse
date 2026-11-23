@@ -33,6 +33,18 @@ import { EvaluatorService } from './evaluator.service';
 import { RaftStateService } from './consensus/raft-state.service';
 import { WalLogService } from './consensus/wal-log.service';
 
+import { CrdtRelayGateway } from './crdt-relay.gateway';
+import { ShardedMatchmakingQueueService } from './matchmaking/sharded-queue.service';
+import { DistributedLeaderElectionService } from './consensus/leader-election.service';
+import { DistributedDisruptorRelayService } from './distributed-disruptor-relay.service';
+import { BattlesFirecrackerPoolService } from './firecracker-pool.service';
+import { CodeSandboxService } from './code-sandbox.service';
+import { ProtobufStreamService } from './protobuf-stream.service';
+import { WebRtcSignalingGateway } from './webrtc-signaling.gateway';
+import { FuzzingEvaluatorService } from './fuzzing-evaluator.service';
+import { BattleDisputeService } from './dispute.service';
+import { MutationTestingService } from './mutation-testing.service';
+
 @Module({
   imports: [
     BullModule.registerQueue(
@@ -74,6 +86,17 @@ import { WalLogService } from './consensus/wal-log.service';
     EvaluatorService,
     RaftStateService,
     WalLogService,
+    CrdtRelayGateway,
+    ShardedMatchmakingQueueService,
+    DistributedLeaderElectionService,
+    DistributedDisruptorRelayService,
+    BattlesFirecrackerPoolService,
+    CodeSandboxService,
+    ProtobufStreamService,
+    WebRtcSignalingGateway,
+    FuzzingEvaluatorService,
+    BattleDisputeService,
+    MutationTestingService,
   ],
   exports: [
     BattlesService,
@@ -94,6 +117,17 @@ import { WalLogService } from './consensus/wal-log.service';
     EvaluatorService,
     RaftStateService,
     WalLogService,
+    CrdtRelayGateway,
+    ShardedMatchmakingQueueService,
+    DistributedLeaderElectionService,
+    DistributedDisruptorRelayService,
+    BattlesFirecrackerPoolService,
+    CodeSandboxService,
+    ProtobufStreamService,
+    WebRtcSignalingGateway,
+    FuzzingEvaluatorService,
+    BattleDisputeService,
+    MutationTestingService,
   ],
 })
 export class BattlesModule {}

@@ -10,6 +10,8 @@ import { TokenBlacklistService } from './token-blacklist.service';
 import { AttestationValidatorService } from './attestation-validator.service';
 import { PasskeyService } from './passkey.service';
 import { PasskeyController } from './passkey.controller';
+import { WebAuthnService } from './webauthn.service';
+import { WebAuthnController } from './webauthn.controller';
 import { SamlSsoService } from './saml-sso.service';
 import { Fido2AttestationService } from './fido2-attestation.service';
 import { TwoFactorService } from './two-factor.service';
@@ -25,6 +27,11 @@ import { ApiKeyGuard } from '../../common/guards/api-key.guard';
 import { BruteForceService } from './brute-force.service';
 import { BruteForceGuard } from './guards/brute-force.guard';
 import { GdprShredderService } from './gdpr-shredder.service';
+
+import { OAuthPkceService } from './oauth-pkce.service';
+import { TokenRotationService } from './token-rotation.service';
+
+import { SessionMeshService } from './session-mesh.service';
 
 
 
@@ -55,6 +62,7 @@ import { GdprShredderService } from './gdpr-shredder.service';
   controllers: [
     AuthController,
     PasskeyController,
+    WebAuthnController,
     KeysController,
     ApiKeyController,
   ],
@@ -74,6 +82,13 @@ import { GdprShredderService } from './gdpr-shredder.service';
     BruteForceService,
     BruteForceGuard,
     GdprShredderService,
+
+    WebAuthnService,
+
+    OAuthPkceService,
+    TokenRotationService,
+
+    SessionMeshService,
   ],
   exports: [
     AuthService,
@@ -90,6 +105,13 @@ import { GdprShredderService } from './gdpr-shredder.service';
     BruteForceService,
     BruteForceGuard,
     GdprShredderService,
+
+    WebAuthnService,
+
+    OAuthPkceService,
+    TokenRotationService,
+
+    SessionMeshService,
   ],
 })
 export class AuthModule {}

@@ -42,6 +42,11 @@
     "deploy",
     "extensions",
     "e2e",
-    "playwright.config.ts"
+    "playwright.config.ts",
+    "remotion",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx"
   ]
 }

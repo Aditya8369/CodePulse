@@ -140,7 +140,9 @@ export class SingleflightService {
     if (this.redis?.getClient) {
       try {
         const client = this.redis.getClient();
-        await client.set(key, JSON.stringify(entry), 'EX', ttlSeconds);
+        if (client) {
+          await client.set(key, JSON.stringify(entry), 'EX', ttlSeconds);
+        }
       } catch (err) {
         this.logger.warn(`Failed to store key ${key} in Redis: ${err}`);
       }
@@ -161,11 +163,13 @@ export class SingleflightService {
     if (this.redis?.getClient) {
       try {
         const client = this.redis.getClient();
-        const data = await client.get(key);
-        if (data) {
-          const parsed = JSON.parse(data) as CacheEntry<T>;
-          this.localCache.set(key, parsed);
-          return parsed;
+        if (client) {
+          const data = await client.get(key);
+          if (data) {
+            const parsed = JSON.parse(data) as CacheEntry<T>;
+            this.localCache.set(key, parsed);
+            return parsed;
+          }
         }
       } catch {
         // Fallback to local

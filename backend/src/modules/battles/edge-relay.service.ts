@@ -10,6 +10,7 @@ export interface EdgeNodeConfig {
   country: string;
   coordinates: { lat: number; lng: number };
   endpoint: string;
+  quicEndpoint?: string;
   anycastIp: string;
   isHealthy: boolean;
 }
@@ -22,6 +23,7 @@ export const EDGE_REGIONS: Record<EdgeRegion, EdgeNodeConfig> = {
     country: 'US',
     coordinates: { lat: 39.0438, lng: -77.4874 },
     endpoint: 'wss://us-east.edge.codepulse.io/battles',
+    quicEndpoint: 'https://us-east.edge.codepulse.io:4433/webtransport',
     anycastIp: '198.51.100.1',
     isHealthy: true,
   },
@@ -32,6 +34,7 @@ export const EDGE_REGIONS: Record<EdgeRegion, EdgeNodeConfig> = {
     country: 'DE',
     coordinates: { lat: 50.1109, lng: 8.6821 },
     endpoint: 'wss://eu-central.edge.codepulse.io/battles',
+    quicEndpoint: 'https://eu-central.edge.codepulse.io:4433/webtransport',
     anycastIp: '198.51.100.2',
     isHealthy: true,
   },
@@ -42,6 +45,7 @@ export const EDGE_REGIONS: Record<EdgeRegion, EdgeNodeConfig> = {
     country: 'IN',
     coordinates: { lat: 19.076, lng: 72.8777 },
     endpoint: 'wss://ap-south.edge.codepulse.io/battles',
+    quicEndpoint: 'https://ap-south.edge.codepulse.io:4433/webtransport',
     anycastIp: '198.51.100.3',
     isHealthy: true,
   },
