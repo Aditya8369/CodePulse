@@ -6,5 +6,10 @@ import { EloReadProjection } from './projections/elo-read.projection';
 @Module({
   providers: [EventStoreService, BattleReadProjection, EloReadProjection],
   exports: [EventStoreService, BattleReadProjection, EloReadProjection],
+
+import { CdcDispatcherService } from './cdc-dispatcher.service';
+import { RedisService } from '../../common/redis/redis.service';
+  providers: [CdcDispatcherService, EventStoreService, RedisService],
+  exports: [CdcDispatcherService, EventStoreService],
 })
 export class EventsModule {}
