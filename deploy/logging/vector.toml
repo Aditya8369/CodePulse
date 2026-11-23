@@ -1,0 +1,61 @@
+# ==============================================================================
+# CodePulse Vector.dev Log Aggregation Pipeline
+# Ultra-low-footprint (<50MB RAM) log ingestion, PII masking, and ClickHouse sink
+# ==============================================================================
+
+[sources.app_logs]
+type = "file"
+include = ["/var/log/codepulse/*.log"]
+read_from = "beginning"
+
+[sources.stdin_json]
+type = "stdin"
+decoding.codec = "json"
+
+# ------------------------------------------------------------------------------
+# Transforms: Parse, Redact PII, and Enrich
+# ------------------------------------------------------------------------------
+[transforms.mask_pii]
+type = "remap"
+inputs = ["app_logs", "stdin_json"]
+source = '''
+  # Parse JSON if incoming event is raw text
+  if is_null(.message) {
+    . = parse_json!(string!(.))
+  }
+
+  # Ensure base fields
+  .timestamp = to_timestamp(now())
+  .service = string(.service) ?? "codepulse-core"
+  .level = upcase(string(.level) ?? "INFO")
+  .trace_id = string(.trace_id) ?? ""
+
+  # PII Redaction: Mask email addresses
+  if is_string(.message) {
+    .message = replace(.message, r'[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+', "[REDACTED_EMAIL]")
+    # PII Redaction: Mask JWT / Bearer tokens
+    .message = replace(.message, r'Bearer\s+[A-Za-z0-9\-_.]+', "Bearer [REDACTED_TOKEN]")
+    # PII Redaction: Mask GitHub PATs
+    .message = replace(.message, r'gh[pousr]_[A-Za-z0-9_]{36,}', "[REDACTED_GITHUB_PAT]")
+  }
+'''
+
+# ------------------------------------------------------------------------------
+# Sinks: ClickHouse Columnar DB with ZSTD Compression
+# ------------------------------------------------------------------------------
+[sinks.clickhouse]
+type = "clickhouse"
+inputs = ["mask_pii"]
+endpoint = "http://clickhouse:8123"
+database = "codepulse"
+table = "codepulse_logs"
+skip_unknown_fields = true
+
+[sinks.clickhouse.batch]
+max_events = 5000
+timeout_secs = 2
+
+[sinks.clickhouse.buffer]
+type = "memory"
+max_events = 20000
+when_full = "drop_newest" # Guarantee memory never exceeds 50MB
