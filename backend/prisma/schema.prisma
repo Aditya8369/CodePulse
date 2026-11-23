@@ -293,10 +293,23 @@ model Challenge {
   searchVector Unsupported("tsvector")? // PostgreSQL tsvector for BM25 full-text search
   expiresAt   DateTime
   createdAt   DateTime        @default(now())
+
+  // Dynamic Glicko-2 Problem Difficulty & Pass-Rate Calibrator (#403)
+  difficultyRating Float           @default(1500.0)
+  ratingDeviation  Float           @default(350.0)
+  volatility       Float           @default(0.06)
+  passRate         Float           @default(0.0)
+  totalAttempts    Int             @default(0)
+  solvedAttempts   Int             @default(0)
+  lastCalibratedAt DateTime?
+
   users       UserChallenge[]
+  battles     Battle[]
+  submissions BattleSubmission[]
 
   @@index([expiresAt])
   @@index([category, expiresAt])
+  @@index([difficultyRating])
   @@map("challenges")
 }
 
@@ -396,6 +409,7 @@ model Battle {
   id                 String       @id @default(uuid())
   challengerId       String
   opponentId         String
+  challengeId        String?
   status             BattleStatus @default(PENDING)
   category           String
   challengerScore    Float?
@@ -417,9 +431,11 @@ model Battle {
   challenger         User         @relation("BattleChallenger", fields: [challengerId], references: [id])
   opponent           User         @relation("BattleOpponent", fields: [opponentId], references: [id])
   winner             User?        @relation("BattleWinner", fields: [winnerId], references: [id])
+  challenge          Challenge?   @relation(fields: [challengeId], references: [id], onDelete: SetNull)
   privateRoom        PrivateBattleRoom?
 
   @@index([status, endsAt])
+  @@index([challengeId])
   @@index([challengerId, status])
   @@index([opponentId, status])
   @@map("battles")
@@ -1314,20 +1330,24 @@ model AuditLog {
 // Declarative Range Partitioning by Month on createdAt (#1058)
 // Managed via backend/prisma/migrations/partitioning.sql
 model BattleSubmission {
-  id              String   @id @default(uuid())
+  id              String     @id @default(uuid())
   battleId        String
   userId          String
-  code            String   @db.Text
-  language        String   @default("typescript")
-  tokensCount     Int      @default(0)
-  fingerprints    String[] @default([])
+  challengeId     String?
+  passed          Boolean    @default(false)
+  code            String     @db.Text
+  language        String     @default("typescript")
+  tokensCount     Int        @default(0)
+  fingerprints    String[]   @default([])
   similarityScore Float?
-  flagged         Boolean  @default(false)
-  createdAt       DateTime @default(now())
-  battle          Battle   @relation(fields: [battleId], references: [id], onDelete: Cascade)
+  flagged         Boolean    @default(false)
+  createdAt       DateTime   @default(now())
+  battle          Battle     @relation(fields: [battleId], references: [id], onDelete: Cascade)
+  challenge       Challenge? @relation(fields: [challengeId], references: [id], onDelete: SetNull)
 
   @@index([battleId])
   @@index([userId])
+  @@index([challengeId])
   @@index([createdAt])
   @@map("battle_submissions")
 }
