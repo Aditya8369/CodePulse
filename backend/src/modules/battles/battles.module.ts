@@ -33,6 +33,8 @@ import { ShardedMatchmakingQueueService } from './matchmaking/sharded-queue.serv
 
 import { DistributedLeaderElectionService } from './consensus/leader-election.service';
 
+import { DistributedDisruptorRelayService } from './distributed-disruptor-relay.service';
+
 @Module({
   imports: [
     PrismaModule,
@@ -72,6 +74,8 @@ import { DistributedLeaderElectionService } from './consensus/leader-election.se
     ShardedMatchmakingQueueService,
 
     DistributedLeaderElectionService,
+
+    DistributedDisruptorRelayService,
   ],
   exports: [
     BattlesService,
@@ -96,6 +100,8 @@ import { DistributedLeaderElectionService } from './consensus/leader-election.se
     ShardedMatchmakingQueueService,
 
     DistributedLeaderElectionService,
+
+    DistributedDisruptorRelayService,
   ],
 })
 export class BattlesModule {}

@@ -30,6 +30,7 @@ import { EvaluatorService } from './evaluator.service';
 import type { BattlePerformanceMetrics, SuddenDeathSession } from './evaluator.service';
 import { PersonaBattleService } from '../ai/persona-battle.service';
 import { CodeHintService } from '../ai/code-hint.service';
+import { DistributedDisruptorRelayService } from './distributed-disruptor-relay.service';
 
 interface PlayerState {
   userId: string;
@@ -82,6 +83,7 @@ export class BattlesGateway
     @Optional() private readonly evaluatorService?: EvaluatorService,
     @Optional() private readonly personaBattleService?: PersonaBattleService,
     @Optional() private readonly codeHintService?: CodeHintService,
+    @Optional() private readonly disruptorRelay?: DistributedDisruptorRelayService,
   ) {}
 
   @WebSocketServer()
@@ -212,6 +214,11 @@ export class BattlesGateway
 
   afterInit() {
     this.startDisruptorConsumerLoop();
+    if (this.disruptorRelay) {
+      this.disruptorRelay.onCrossPodEvent((crossPodEvent) => {
+        this.processRingBufferEvent(crossPodEvent, false);
+      });
+    }
     if (this.hypeMeterService) {
       this.hypeMeterService.onTick((snapshot) => {
         // Broadcast single aggregated 100ms hype tick to all spectators
@@ -257,11 +264,14 @@ export class BattlesGateway
   /**
    * Internal processor for events drained from the lock-free ring buffer.
    */
-  private processRingBufferEvent(event: BattleIngestEvent) {
+  private processRingBufferEvent(event: BattleIngestEvent, publishToStream = true) {
     if (!event) return;
     const { eventType, battleId, userId, data } = event;
 
     if (eventType === 'keystroke') {
+      if (publishToStream && this.disruptorRelay) {
+        void this.disruptorRelay.publishToStream(battleId, event);
+      }
       const emitKeystroke = () => {
         this.server
           ?.to(`battle:${battleId}`)
