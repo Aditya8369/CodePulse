@@ -5,6 +5,8 @@ import { DisruptorRingBuffer } from './concurrency/disruptor-ring-buffer';
 import { EtcdWatcherService } from '../config/etcd-watcher.service';
 import { IdempotencyService } from './idempotency/idempotency.service';
 import { IdempotencyInterceptor } from './idempotency/idempotency.interceptor';
+import { CloudEventsProvider } from './events/cloudevents.provider';
+import { NatsJetStreamService } from './events/nats-jetstream.service';
 
 @Global()
 @Module({
@@ -14,6 +16,8 @@ import { IdempotencyInterceptor } from './idempotency/idempotency.interceptor';
     EtcdWatcherService,
     IdempotencyService,
     IdempotencyInterceptor,
+    CloudEventsProvider,
+    NatsJetStreamService,
   ],
   exports: [
     SystemMetricsService,
@@ -21,6 +25,8 @@ import { IdempotencyInterceptor } from './idempotency/idempotency.interceptor';
     EtcdWatcherService,
     IdempotencyService,
     IdempotencyInterceptor,
+    CloudEventsProvider,
+    NatsJetStreamService,
   ],
 })
 export class CommonModule {}
