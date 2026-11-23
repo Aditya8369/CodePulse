@@ -1,4 +1,4 @@
-import { monitorEventLoopDelay, IntervalHistogram } from 'node:perf_hooks';
+import { monitorEventLoopDelay, type IntervalHistogram } from 'node:perf_hooks';
 
 /**
  * Lock-Free Circular Ring Buffer adhering to the LMAX Disruptor Pattern
@@ -22,7 +22,7 @@ import { monitorEventLoopDelay, IntervalHistogram } from 'node:perf_hooks';
 
 export type EventPriority = 'CRITICAL' | 'HIGH' | 'LOW';
 
-export interface DisruptorEvent<T = any> {
+export interface DisruptorEvent<T = unknown> {
   sequence: number;
   type: string;
   payload: T;
@@ -53,7 +53,7 @@ const PRODUCER_INDEX_OFFSET = PADDING_INTS; // after 64-byte leading pad
 const CONSUMER_INDEX_OFFSET = PADDING_INTS + 1 + PADDING_INTS; // after middle 64-byte pad
 const TOTAL_SEQUENCE_BUFFER_INTS = CONSUMER_INDEX_OFFSET + 1 + PADDING_INTS; // with trailing 64-byte pad
 
-export class DisruptorRingBuffer<T = any> {
+export class DisruptorRingBuffer<T = unknown> {
   private readonly capacity: number;
   private readonly mask: number;
   private readonly lagThresholdMs: number;
@@ -93,7 +93,7 @@ export class DisruptorRingBuffer<T = any> {
       this.ring[i] = {
         sequence: -1,
         type: '',
-        payload: null as any,
+        payload: null as unknown as T,
         timestamp: 0,
         priority: 'HIGH',
       };
