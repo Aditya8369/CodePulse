@@ -17,6 +17,8 @@ import { DocEvaluatorService } from './doc-evaluator.service';
 import { VoiceCodeAssistantGateway } from './voice-code-assistant.gateway';
 import { TestGeneratorService } from './test-generator.service';
 import { PolyglotTranspilerService } from './transpiler/polyglot-transpiler.service';
+import { SemanticConflictResolverService } from '../git/semantic-conflict-resolver.service';
+import { GitService } from '../git/git.service';
 import { GithubModule } from '../github/github.module';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { RedisService } from '../../common/redis/redis.service';
@@ -42,6 +44,8 @@ import { RedisService } from '../../common/redis/redis.service';
     VoiceCodeAssistantGateway,
     TestGeneratorService,
     PolyglotTranspilerService,
+    SemanticConflictResolverService,
+    GitService,
     RedisService,
   ],
   exports: [
@@ -62,6 +66,8 @@ import { RedisService } from '../../common/redis/redis.service';
     VoiceCodeAssistantGateway,
     TestGeneratorService,
     PolyglotTranspilerService,
+    SemanticConflictResolverService,
+    GitService,
   ],
 })
 export class AiModule {}
