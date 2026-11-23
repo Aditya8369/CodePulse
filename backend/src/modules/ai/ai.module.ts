@@ -15,6 +15,7 @@ import { ComplexityAnalyzerService } from './complexity-analyzer.service';
 import { MultiAgentReviewerService } from './agents/pr-reviewer.service';
 import { DocEvaluatorService } from './doc-evaluator.service';
 import { VoiceCodeAssistantGateway } from './voice-code-assistant.gateway';
+import { TestGeneratorService } from './test-generator.service';
 import { GithubModule } from '../github/github.module';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { RedisService } from '../../common/redis/redis.service';
@@ -38,6 +39,7 @@ import { RedisService } from '../../common/redis/redis.service';
     MultiAgentReviewerService,
     DocEvaluatorService,
     VoiceCodeAssistantGateway,
+    TestGeneratorService,
     RedisService,
   ],
   exports: [
@@ -56,6 +58,7 @@ import { RedisService } from '../../common/redis/redis.service';
     MultiAgentReviewerService,
     DocEvaluatorService,
     VoiceCodeAssistantGateway,
+    TestGeneratorService,
   ],
 })
 export class AiModule {}

@@ -1608,4 +1608,17 @@ model FinopsSavingsLedger {
   @@index([provider, reapedAt])
   @@index([resourceId])
   @@map("finops_savings_ledger")
+model ChallengeSynthesizedTestSuite {
+  id                       String   @id @default(uuid())
+  challengeId              String
+  functionName             String
+  edgeCaseCount            Int
+  vitestSpecCode           String   @db.Text
+  verifiedAgainstReference Boolean  @default(false)
+  passedCount              Int      @default(0)
+  totalCount               Int      @default(0)
+  createdAt                DateTime @default(now())
+
+  @@index([challengeId, createdAt])
+  @@map("challenge_synthesized_test_suites")
 }
