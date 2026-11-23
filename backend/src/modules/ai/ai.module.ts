@@ -12,6 +12,7 @@ import { VerificationCoordinatorService } from './swarm/verification-coordinator
 import { VerificationSwarmService } from './verification-swarm.service';
 
 import { ComplexityAnalyzerService } from './complexity-analyzer.service';
+import { TestGeneratorService } from './test-generator.service';
 import { GithubModule } from '../github/github.module';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { RedisService } from '../../common/redis/redis.service';
@@ -32,6 +33,7 @@ import { RedisService } from '../../common/redis/redis.service';
     VerificationSwarmService,
 
     ComplexityAnalyzerService,
+    TestGeneratorService,
     RedisService,
   ],
   exports: [
@@ -47,6 +49,7 @@ import { RedisService } from '../../common/redis/redis.service';
     VerificationSwarmService,
 
     ComplexityAnalyzerService,
+    TestGeneratorService,
   ],
 })
 export class AiModule {}

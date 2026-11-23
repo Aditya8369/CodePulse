@@ -9,13 +9,17 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ChallengesService } from './challenges.service';
+import { TestGeneratorService } from '../ai/test-generator.service';
 import { CreateChallengeDto } from './dto/challenges.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('challenges')
 @Controller('challenges')
 export class ChallengesController {
-  constructor(private readonly challengesService: ChallengesService) {}
+  constructor(
+    private readonly challengesService: ChallengesService,
+    private readonly testGeneratorService: TestGeneratorService,
+  ) {}
 
   @Get('active')
   @ApiOperation({ summary: 'Get all active challenges' })
@@ -55,5 +59,19 @@ export class ChallengesController {
   async triggerDailyChallenges() {
     await this.challengesService.generateDailyChallenges();
     return { success: true, message: 'Daily challenges generated' };
+  }
+
+  @Post(':id/synthesize-tests')
+  @ApiOperation({
+    summary: 'Synthesize boundary condition Vitest suite for a coding challenge',
+  })
+  async synthesizeChallengeTests(
+    @Param('id') challengeId: string,
+    @Body() body: { sourceCode: string },
+  ) {
+    return this.testGeneratorService.synthesizeAndVerifyTestSuite({
+      challengeId,
+      sourceCode: body?.sourceCode ?? 'export function solve(nums: number[]): number { return nums.length; }',
+    });
   }
 }
