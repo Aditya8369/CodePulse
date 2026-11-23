@@ -24,6 +24,7 @@ import { ApiKeyService } from './api-key.service';
 import { ApiKeyGuard } from '../../common/guards/api-key.guard';
 import { BruteForceService } from './brute-force.service';
 import { BruteForceGuard } from './guards/brute-force.guard';
+import { SessionMeshService } from './session-mesh.service';
 
 
 
@@ -72,6 +73,7 @@ import { BruteForceGuard } from './guards/brute-force.guard';
     ApiKeyGuard,
     BruteForceService,
     BruteForceGuard,
+    SessionMeshService,
   ],
   exports: [
     AuthService,
@@ -87,6 +89,7 @@ import { BruteForceGuard } from './guards/brute-force.guard';
     ApiKeyGuard,
     BruteForceService,
     BruteForceGuard,
+    SessionMeshService,
   ],
 })
 export class AuthModule {}
