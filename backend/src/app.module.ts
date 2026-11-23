@@ -43,6 +43,7 @@ import { AudioModule } from './modules/audio/audio.module';
 import { AiModule } from './modules/ai/ai.module';
 import { TournamentsModule } from './modules/tournaments/tournaments.module';
 import { OpsModule } from './modules/ops/ops.module';
+import { GrpcModule } from './modules/grpc/grpc.module';
 
 import { LoggingModule } from './common/logging/logging.module';
 import { MentorshipModule } from './modules/mentorship/mentorship.module';
@@ -143,6 +144,7 @@ import { CommonModule } from './common/common.module';
     GraphqlGatewayModule,
     McpModule,
     WebhooksModule,
+    GrpcModule,
     CollabModule,
     LoggingModule,
     MentorshipModule,
