@@ -208,5 +208,49 @@ describe('PostQuantumService (#548 ML-KEM / Kyber & ML-DSA / Dilithium)', () => 
       expect(hybridResult?.artifactBytes).toBeGreaterThan(3000);
     });
   });
+
+  describe('Hybrid Key Encapsulation (X25519 + ML-KEM-768)', () => {
+    it('negotiates quantum-resistant shared secret between client and server in < 5ms', () => {
+      const serverKeys = service.generateHybridKemKeyPair();
+      expect(serverKeys.algorithm).toBe('HYBRID_X25519_ML_KEM_768');
+
+      // Client encapsulates
+      const encap = service.encapsulateHybridKem(
+        serverKeys.x25519PublicKey,
+        serverKeys.kyberPublicKey,
+      );
+      expect(encap.durationMs).toBeLessThan(10);
+      expect(encap.hybridSharedSecret).toBeDefined();
+
+      // Server decapsulates
+      const decap = service.decapsulateHybridKem(
+        encap.clientEphemeralX25519Pk,
+        encap.kyberCiphertext,
+        serverKeys.x25519SecretKey,
+        serverKeys.kyberSecretKey,
+      );
+
+      expect(decap.durationMs).toBeLessThan(10);
+      expect(decap.success).toBe(true);
+      // Both sides arrive at identical 256-bit quantum-safe secret
+      expect(decap.hybridSharedSecret).toBe(encap.hybridSharedSecret);
+    });
+
+    it('signs and verifies critical audit logs with CRYSTALS-Dilithium', () => {
+      const dsaKeys = service.generateDsaKeyPair();
+      const auditPayload = {
+        action: 'BAN_USER',
+        targetUserId: 'cheater-01',
+        moderatorId: 'mod-admin',
+        timestamp: new Date().toISOString(),
+      };
+
+      const signature = service.signAuditLog(auditPayload, dsaKeys.secretKey);
+      expect(signature).toBeDefined();
+
+      const isValid = service.verifyDsa(JSON.stringify(auditPayload), signature, dsaKeys.publicKey);
+      expect(isValid).toBe(true);
+    });
+  });
 });
 

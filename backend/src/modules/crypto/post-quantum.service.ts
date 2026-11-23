@@ -523,4 +523,145 @@ export class PostQuantumService {
       timestamp: new Date().toISOString(),
     };
   }
+
+  /**
+   * Generates Hybrid KEM Keypair combining classical X25519 and Post-Quantum ML-KEM-768
+   */
+  public generateHybridKemKeyPair(): {
+    x25519PublicKey: string;
+    x25519SecretKey: string;
+    kyberPublicKey: string;
+    kyberSecretKey: string;
+    algorithm: string;
+  } {
+    const x25519 = crypto.generateKeyPairSync('x25519', {
+      publicKeyEncoding: { type: 'spki', format: 'der' },
+      privateKeyEncoding: { type: 'pkcs8', format: 'der' },
+    });
+    const kyber = this.generateKemKeyPair();
+
+    return {
+      x25519PublicKey: x25519.publicKey.toString('base64'),
+      x25519SecretKey: x25519.privateKey.toString('base64'),
+      kyberPublicKey: kyber.publicKey,
+      kyberSecretKey: kyber.secretKey,
+      algorithm: 'HYBRID_X25519_ML_KEM_768',
+    };
+  }
+
+  /**
+   * Hybrid KEM Encapsulation combining X25519 ECDH and ML-KEM-768
+   */
+  public encapsulateHybridKem(
+    serverX25519PkBase64: string,
+    serverKyberPkBase64: string,
+  ): {
+    clientEphemeralX25519Pk: string;
+    kyberCiphertext: string;
+    hybridSharedSecret: string;
+    durationMs: number;
+  } {
+    const start = performance.now();
+
+    // 1. Client generates ephemeral X25519 keypair
+    const clientX25519 = crypto.generateKeyPairSync('x25519', {
+      publicKeyEncoding: { type: 'spki', format: 'der' },
+      privateKeyEncoding: { type: 'pkcs8', format: 'der' },
+    });
+
+    // 2. Perform classical X25519 ECDH
+    const serverPubKey = crypto.createPublicKey({
+      key: Buffer.from(serverX25519PkBase64, 'base64'),
+      format: 'der',
+      type: 'spki',
+    });
+    const clientPrivKey = crypto.createPrivateKey({
+      key: clientX25519.privateKey,
+      format: 'der',
+      type: 'pkcs8',
+    });
+    const classicalSecret = crypto.diffieHellman({
+      publicKey: serverPubKey,
+      privateKey: clientPrivKey,
+    });
+
+    // 3. Perform ML-KEM-768 encapsulation
+    const kemResult = this.encapsulate(serverKyberPkBase64);
+    const pqcSecret = Buffer.from(kemResult.sharedSecret, 'base64');
+
+    // 4. Combine secrets with SHA-256 KDF
+    const hybridSecret = crypto
+      .createHash('sha256')
+      .update(classicalSecret)
+      .update(pqcSecret)
+      .digest();
+
+    const durationMs = Number((performance.now() - start).toFixed(3));
+
+    return {
+      clientEphemeralX25519Pk: clientX25519.publicKey.toString('base64'),
+      kyberCiphertext: kemResult.ciphertext,
+      hybridSharedSecret: hybridSecret.toString('base64'),
+      durationMs,
+    };
+  }
+
+  /**
+   * Hybrid KEM Decapsulation: Server recovers both secrets and combines them
+   */
+  public decapsulateHybridKem(
+    clientEphemeralX25519PkBase64: string,
+    kyberCiphertextBase64: string,
+    serverX25519SkBase64: string,
+    serverKyberSkBase64: string,
+  ): {
+    hybridSharedSecret: string;
+    success: boolean;
+    durationMs: number;
+  } {
+    const start = performance.now();
+
+    // 1. Classical ECDH decapsulation
+    const clientPubKey = crypto.createPublicKey({
+      key: Buffer.from(clientEphemeralX25519PkBase64, 'base64'),
+      format: 'der',
+      type: 'spki',
+    });
+    const serverPrivKey = crypto.createPrivateKey({
+      key: Buffer.from(serverX25519SkBase64, 'base64'),
+      format: 'der',
+      type: 'pkcs8',
+    });
+    const classicalSecret = crypto.diffieHellman({
+      publicKey: clientPubKey,
+      privateKey: serverPrivKey,
+    });
+
+    // 2. ML-KEM-768 decapsulation
+    const kemResult = this.decapsulate(kyberCiphertextBase64, serverKyberSkBase64);
+    const pqcSecret = Buffer.from(kemResult.sharedSecret, 'base64');
+
+    // 3. Combined KDF
+    const hybridSecret = crypto
+      .createHash('sha256')
+      .update(classicalSecret)
+      .update(pqcSecret)
+      .digest();
+
+    const durationMs = Number((performance.now() - start).toFixed(3));
+
+    return {
+      hybridSharedSecret: hybridSecret.toString('base64'),
+      success: kemResult.success,
+      durationMs,
+    };
+  }
+
+  /**
+   * Signs critical audit logs with post-quantum CRYSTALS-Dilithium
+   */
+  public signAuditLog(logPayload: Record<string, unknown>, pqcSecretKeyBase64: string): string {
+    const canonical = JSON.stringify(logPayload);
+    return this.signDsa(canonical, pqcSecretKeyBase64);
+  }
 }
