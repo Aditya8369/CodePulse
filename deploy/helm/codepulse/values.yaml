@@ -1,0 +1,94 @@
+global:
+  environment: production
+  domain: codepulse.dev
+
+api:
+  replicaCount: 3
+  image:
+    repository: ghcr.io/code-with-abhi-i5/codepulse-backend
+    tag: v2.0.0
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 3001
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 2000m
+      memory: 2048Mi
+  env:
+    NODE_ENV: production
+    PORT: "3001"
+  hpa:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+  vpa:
+    enabled: true
+    updateMode: "Off" # "Off" for recommendations in staging, "Auto" for cluster autoscaling
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - api
+            topologyKey: topology.kubernetes.io/zone
+
+frontend:
+  replicaCount: 3
+  image:
+    repository: ghcr.io/code-with-abhi-i5/codepulse-frontend
+    tag: v2.0.0
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 3000
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 1024Mi
+  hpa:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: 64m
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/websocket-services: codepulse-api
+  hosts:
+    - host: codepulse.dev
+      paths:
+        - path: /api
+          pathType: Prefix
+          service: api
+        - path: /socket.io
+          pathType: Prefix
+          service: api
+        - path: /
+          pathType: Prefix
+          service: frontend
+  tls:
+    - secretName: codepulse-tls-cert
+      hosts:
+        - codepulse.dev

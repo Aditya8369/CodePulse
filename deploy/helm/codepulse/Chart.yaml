@@ -1,0 +1,16 @@
+apiVersion: v2
+name: codepulse
+description: Production High-Availability Kubernetes Helm Chart for CodePulse (API, Frontend, Workers, Redis) with HPA/VPA
+type: application
+version: 2.0.0
+appVersion: "2.0.0"
+keywords:
+  - codepulse
+  - esports
+  - monaco
+  - nextjs
+  - nestjs
+  - kubernetes
+maintainers:
+  - name: CodePulse Core Infrastructure Team
+    email: devops@codepulse.dev
