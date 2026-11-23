@@ -31,6 +31,8 @@ import { CrdtRelayGateway } from './crdt-relay.gateway';
 
 import { ShardedMatchmakingQueueService } from './matchmaking/sharded-queue.service';
 
+import { DistributedLeaderElectionService } from './consensus/leader-election.service';
+
 @Module({
   imports: [
     PrismaModule,
@@ -68,6 +70,8 @@ import { ShardedMatchmakingQueueService } from './matchmaking/sharded-queue.serv
     CrdtRelayGateway,
 
     ShardedMatchmakingQueueService,
+
+    DistributedLeaderElectionService,
   ],
   exports: [
     BattlesService,
@@ -90,6 +94,8 @@ import { ShardedMatchmakingQueueService } from './matchmaking/sharded-queue.serv
     CrdtRelayGateway,
 
     ShardedMatchmakingQueueService,
+
+    DistributedLeaderElectionService,
   ],
 })
 export class BattlesModule {}
