@@ -10,6 +10,7 @@ import { ScyllaKeystrokeService } from './scylla-keystroke.service';
 import { ScyllaDbTelemetryService } from './scylladb-telemetry.service';
 import { ComplexityService } from './complexity.service';
 import { GreenCarbonEstimatorService } from './green-carbon-estimator.service';
+import { MonteCarloVelocityService } from './monte-carlo-velocity.service';
 
 @Module({
   controllers: [
@@ -26,6 +27,7 @@ import { GreenCarbonEstimatorService } from './green-carbon-estimator.service';
     ScyllaDbTelemetryService,
     ComplexityService,
     GreenCarbonEstimatorService,
+    MonteCarloVelocityService,
   ],
   exports: [
     AnalyticsService,
@@ -34,6 +36,7 @@ import { GreenCarbonEstimatorService } from './green-carbon-estimator.service';
     ScyllaDbTelemetryService,
     ComplexityService,
     GreenCarbonEstimatorService,
+    MonteCarloVelocityService,
   ],
 })
 export class AnalyticsModule {}

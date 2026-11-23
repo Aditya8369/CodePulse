@@ -25,6 +25,11 @@ import type {
 import { ComplexityService } from './complexity.service';
 import { GreenCarbonEstimatorService } from './green-carbon-estimator.service';
 import {
+  MonteCarloVelocityService,
+  type HistoricalSprintDay,
+  type SprintTaskRiskItem,
+} from './monte-carlo-velocity.service';
+import {
   CodeAnalysisRequestDto,
   BatchFilesAnalysisRequestDto,
   CreateComplexitySnapshotRequestDto,
@@ -40,6 +45,7 @@ export class AnalyticsController {
     @Optional() private readonly scyllaTelemetry?: ScyllaDbTelemetryService,
     @Optional() private readonly complexityService?: ComplexityService,
     @Optional() private readonly greenCarbonEstimator?: GreenCarbonEstimatorService,
+    @Optional() private readonly monteCarloVelocity?: MonteCarloVelocityService,
   ) {}
 
   @Get('platform')
@@ -289,5 +295,25 @@ export class AnalyticsController {
   @ApiOperation({ summary: 'Get repository cumulative carbon footprint and Green Code badge summary' })
   getRepositoryCarbonSummary(@Param('repositoryId') repositoryId: string) {
     return this.greenCarbonEstimator?.getRepositoryCarbonSummary(repositoryId);
+  // Monte Carlo Sprint Velocity & Burndown Endpoints (#595)
+  // ==========================================
+
+  @Post('velocity/monte-carlo')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Run 10,000 Monte Carlo sprint burndown simulations for P50, P85, and P95 delivery forecasts',
+  })
+  runMonteCarloVelocityForecast(
+    @Body()
+    body: {
+      remainingTasks: number;
+      history: HistoricalSprintDay[];
+      iterations?: number;
+      startDateIso?: string;
+      targetDeadlineIso?: string;
+      backlogTasks?: SprintTaskRiskItem[];
+    },
+  ) {
+    return this.monteCarloVelocity?.runMonteCarloForecast(body);
   }
 }
