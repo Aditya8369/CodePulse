@@ -12,6 +12,9 @@ import { FeatureFlagService } from './features/feature-flag.service';
 import { LoadShedderService } from './resilience/load-shedder.service';
 import { DistributedDeadlockDetectorService } from './concurrency/deadlock-detector.service';
 
+import { CloudEventsProvider } from './events/cloudevents.provider';
+import { NatsJetStreamService } from './events/nats-jetstream.service';
+
 @Global()
 @Module({
   providers: [
@@ -26,6 +29,9 @@ import { DistributedDeadlockDetectorService } from './concurrency/deadlock-detec
     FeatureFlagService,
     LoadShedderService,
     DistributedDeadlockDetectorService,
+
+    CloudEventsProvider,
+    NatsJetStreamService,
   ],
   exports: [
     SystemMetricsService,
@@ -39,6 +45,9 @@ import { DistributedDeadlockDetectorService } from './concurrency/deadlock-detec
     FeatureFlagService,
     LoadShedderService,
     DistributedDeadlockDetectorService,
+
+    CloudEventsProvider,
+    NatsJetStreamService,
   ],
 })
 export class CommonModule {}
