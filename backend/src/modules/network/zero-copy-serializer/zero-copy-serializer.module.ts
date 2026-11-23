@@ -1,6 +1,6 @@
 /**
  * @file zero-copy-serializer.module.ts
- * @description NestJS module configuring [NET-SERIALIZER-092]: Zero-Copy FlatBuffers / Cap'n Proto Serialization Engine for Real-Time Esports Packets.
+ * @description NestJS module configuring [NET-SERIALIZER-092]: Zero-Copy FlatBuffers / Cap\'n Proto Serialization Engine for Real-Time Esports Packets.
  * Registers core domain providers, REST controllers, and dependency injections.
  */
 

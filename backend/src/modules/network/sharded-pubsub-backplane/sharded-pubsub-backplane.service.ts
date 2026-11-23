@@ -432,8 +432,8 @@ export class ShardedPubSubBackplaneService implements OnModuleInit, OnModuleDest
       action,
       resourceId,
       timestamp: Date.now(),
-      oldState,
-      newState,
+      oldState: oldState as any,
+      newState: newState as any,
       details,
     });
     if (this.auditLog.length > 10000) {

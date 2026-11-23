@@ -1,6 +1,6 @@
 /**
  * @file zero-copy-serializer.service.ts
- * @description Production service orchestrator for [NET-SERIALIZER-092]: Zero-Copy FlatBuffers / Cap'n Proto Serialization Engine for Real-Time Esports Packets.
+ * @description Production service orchestrator for [NET-SERIALIZER-092]: Zero-Copy FlatBuffers / Cap\'n Proto Serialization Engine for Real-Time Esports Packets.
  * Adheres to robust concurrency guarantees, observability hooks, and deterministic execution.
  */
 
@@ -432,8 +432,8 @@ export class ZeroCopySerializerService implements OnModuleInit, OnModuleDestroy 
       action,
       resourceId,
       timestamp: Date.now(),
-      oldState,
-      newState,
+      oldState: oldState as any,
+      newState: newState as any,
       details,
     });
     if (this.auditLog.length > 10000) {
