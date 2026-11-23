@@ -5,6 +5,7 @@ import { ArchiveStreamService } from './archive-stream.service';
 import { ZeroCopyStreamService } from './zero-copy-stream.service';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { StorageModule } from '../storage/storage.module';
+import { DocEvaluatorService } from '../ai/doc-evaluator.service';
 
 @Module({
   imports: [PrismaModule, StorageModule],
@@ -13,11 +14,13 @@ import { StorageModule } from '../storage/storage.module';
     RepositoriesService,
     ArchiveStreamService,
     ZeroCopyStreamService,
+    DocEvaluatorService,
   ],
   exports: [
     RepositoriesService,
     ArchiveStreamService,
     ZeroCopyStreamService,
+    DocEvaluatorService,
   ],
 })
 export class RepositoriesModule {}
