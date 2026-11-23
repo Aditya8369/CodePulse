@@ -1,12 +1,26 @@
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
   AudioCasterPlayer,
   IncomingAudioCommentaryChunk,
 } from "./audio-caster-player";
 
 describe("AudioCasterPlayer (Live AI Shoutcaster Component)", () => {
+  beforeEach(() => {
+    // Mock HTMLCanvasElement.prototype.getContext
+    HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue({
+      clearRect: vi.fn(),
+      createLinearGradient: vi.fn().mockReturnValue({
+        addColorStop: vi.fn(),
+      }),
+      beginPath: vi.fn(),
+      roundRect: vi.fn(),
+      rect: vi.fn(),
+      fill: vi.fn(),
+    });
+  });
+
   it("toggles between Energetic Hype Caster and Calm Technical Analyst styles", () => {
     const onStyleChange = vi.fn();
     render(
@@ -23,6 +37,13 @@ describe("AudioCasterPlayer (Live AI Shoutcaster Component)", () => {
     fireEvent.click(analystBtn);
 
     expect(onStyleChange).toHaveBeenCalledWith("TECHNICAL_ANALYST");
+  });
+
+  it("renders live waveform visualizer canvas container", () => {
+    render(<AudioCasterPlayer battleId="battle-77" />);
+
+    expect(screen.getByTestId("waveform-visualizer-container")).toBeInTheDocument();
+    expect(screen.getByTestId("waveform-visualizer-canvas")).toBeInTheDocument();
   });
 
   it("buffers incoming WebSocket TTS chunks and renders emotion badge & live transcript", () => {
