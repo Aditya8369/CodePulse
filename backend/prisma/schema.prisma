@@ -1540,3 +1540,21 @@ model TournamentMatch {
   @@index([tournamentId, bracketType])
   @@map("tournament_matches")
 }
+
+
+model AiReviewAudit {
+  id                  String   @id @default(uuid())
+  prNumber            Int
+  authorLogin         String
+  consensusDecision   String   // APPROVED, CHANGES_REQUESTED, SKIPPED
+  securityFindingCount Int     @default(0)
+  performanceFindingCount Int  @default(0)
+  cleanCodeFindingCount Int  @default(0)
+  suggestionCount     Int      @default(0)
+  contributorFeedback String?  @db.Text
+  latencyMs           Int      @default(0)
+  createdAt           DateTime @default(now())
+
+  @@index([prNumber, createdAt])
+  @@map("ai_review_audits")
+}
