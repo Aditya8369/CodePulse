@@ -7,10 +7,12 @@ import {
   HttpCode,
   HttpStatus,
   Logger,
+  Optional,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import * as crypto from 'crypto';
 import { GithubWebhookService } from './github.webhook.service';
+import { DoraMetricsService } from '../analytics/dora-metrics.service';
 
 @ApiTags('github-webhooks')
 @Controller('api/v1/github/webhooks')
@@ -19,7 +21,10 @@ export class GithubWebhookController {
   private readonly webhookSecret =
     process.env.GITHUB_WEBHOOK_SECRET || 'codepulse-webhook-secret';
 
-  constructor(private readonly webhookService: GithubWebhookService) {}
+  constructor(
+    private readonly webhookService: GithubWebhookService,
+    @Optional() private readonly doraMetrics?: DoraMetricsService,
+  ) {}
 
   private verifySignature(payload: string, signature: string): boolean {
     if (!signature) return false;
@@ -62,7 +67,13 @@ export class GithubWebhookController {
     this.logger.log(`Received GitHub webhook event: ${event} (Delivery: ${deliveryId})`);
 
     switch (event) {
+      case 'deployment_status': {
+        const doraResult = this.doraMetrics?.ingestGithubWebhookEvent('deployment_status', body);
+        return { status: 'processed', event: 'deployment_status', dora: doraResult };
+      }
+
       case 'push': {
+        this.doraMetrics?.ingestGithubWebhookEvent('push', body);
         const result = await this.webhookService.processPushEvent(body);
         return { status: 'processed', event: 'push', ...result };
       }
@@ -78,6 +89,7 @@ export class GithubWebhookController {
       }
 
       case 'release': {
+        this.doraMetrics?.ingestGithubWebhookEvent('release', body);
         const result = await this.webhookService.processReleaseEvent(body);
         return { status: 'processed', event: 'release', ...result };
       }

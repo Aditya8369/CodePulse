@@ -9,6 +9,7 @@ import { RepositoryAuthorshipController } from './repository-authorship.controll
 import { ScyllaKeystrokeService } from './scylla-keystroke.service';
 import { ScyllaDbTelemetryService } from './scylladb-telemetry.service';
 import { ComplexityService } from './complexity.service';
+import { DoraMetricsService } from './dora-metrics.service';
 
 @Module({
   controllers: [
@@ -24,6 +25,7 @@ import { ComplexityService } from './complexity.service';
     ScyllaKeystrokeService,
     ScyllaDbTelemetryService,
     ComplexityService,
+    DoraMetricsService,
   ],
   exports: [
     AnalyticsService,
@@ -31,6 +33,7 @@ import { ComplexityService } from './complexity.service';
     ScyllaKeystrokeService,
     ScyllaDbTelemetryService,
     ComplexityService,
+    DoraMetricsService,
   ],
 })
 export class AnalyticsModule {}
