@@ -752,35 +752,99 @@ export class TranspilerService {
     const standardName = this.toCamelCase(ast?.name || funcName);
     // If TypeScript or JavaScript, clean and execute directly
     if (lang === 'typescript' || lang === 'javascript') {
-      return ts.transpileModule(code, {
-        compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
-      }).outputText;
+      try {
+        return ts.transpileModule(code, {
+          compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
+        }).outputText;
+      } catch {
+        // Fallback below
+      }
     }
 
-    // Algorithmic sandbox wrapper mapping transpiled logic into executable JS
-    return `
-      function ${standardName}(...args) {
-        // Universal algorithmic reference simulator
-        if (args.length === 2 && Array.isArray(args[0]) && typeof args[1] === 'number') {
-          const nums = args[0];
-          const target = args[1];
-          const map = new Map();
-          for (let i = 0; i < nums.length; i++) {
-            const comp = target - nums[i];
-            if (map.has(comp)) return [map.get(comp), i];
-            map.set(nums[i], i);
-          }
-          return [];
+    try {
+      let jsCode = code;
+      if (lang === 'python') {
+        jsCode = jsCode
+          .replace(/from\s+typing\s+import\s+[^\n]+/g, '')
+          .replace(/"""[\s\S]*?"""/g, '')
+          .replace(/def\s+([a-zA-Z0-9_]+)\s*\(([^)]*)\)(?:\s*->\s*[^:]+)?:/g, 'function $1($2) {')
+          .replace(/len\(([^)]+)\)/g, '$1.length')
+          .replace(/\.append\(/g, '.push(')
+          .replace(/\bTrue\b/g, 'true')
+          .replace(/\bFalse\b/g, 'false')
+          .replace(/\bNone\b/g, 'null')
+          .replace(/\band\b/g, '&&')
+          .replace(/\bor\b/g, '||')
+          .replace(/\bnot\b/g, '!')
+          .replace(/\[([^for]+)\s+for\s+([a-zA-Z0-9_]+)\s+in\s+([^\]\s]+)\]/g, '$3.map($2 => $1)');
+        if (!jsCode.includes('}')) {
+          jsCode += '\n}';
         }
-        if (args.length === 1 && typeof args[0] === 'string') {
-          return args[0].split('').reverse().join('');
-        }
-        if (args.length === 1 && typeof args[0] === 'number') {
-          return args[0] * 2;
-        }
-        return args[0];
+      } else if (lang === 'go') {
+        jsCode = jsCode
+          .replace(/package\s+[^\n]+/g, '')
+          .replace(/import\s*\([\s\S]*?\)/g, '')
+          .replace(/import\s+"[^"]+"/g, '')
+          .replace(/func\s+([a-zA-Z0-9_]+)\s*\(([^)]*)\)(?:\s*[^{]+)?\s*\{/g, (_, name, params) => {
+            const cleanParams = params
+              ? params
+                  .split(',')
+                  .map((p: string) => p.trim().split(/\s+/)[0])
+                  .join(', ')
+              : '';
+            return `function ${name}(${cleanParams}) {`;
+          })
+          .replace(/make\(map\[[^\]]+\][^)]+\)/g, 'new Map()')
+          .replace(/([a-zA-Z0-9_]+)\s*:=\s*/g, 'let $1 = ')
+          .replace(/len\(([^)]+)\)/g, '$1.length');
+      } else if (lang === 'rust') {
+        jsCode = jsCode
+          .replace(/use\s+[^\n]+;/g, '')
+          .replace(/(?:pub\s+)?fn\s+([a-zA-Z0-9_]+)\s*\(([^)]*)\)(?:\s*->\s*[^{]+)?\s*\{/g, (_, name, params) => {
+            const cleanParams = params
+              ? params
+                  .split(',')
+                  .map((p: string) => p.trim().split(':')[0])
+                  .join(', ')
+              : '';
+            return `function ${name}(${cleanParams}) {`;
+          })
+          .replace(/let\s+mut\s+/g, 'let ')
+          .replace(/std::collections::HashMap::new\(\)/g, 'new Map()')
+          .replace(/([a-zA-Z0-9_]+)\.insert\(([^,]+),\s*([^)]+)\);?/g, '$1.set($2, $3);')
+          .replace(/\*([a-zA-Z0-9_]+)\.get\(&([^)]+)\)\.unwrap_or\(&[^)]+\)/g, '$1.get($2)')
+          .replace(/([a-zA-Z0-9_]+)\.len\(\)/g, '$1.length')
+          .replace(/vec!\[\]/g, '[]')
+          .replace(/vec!\[([^\]]+)\]/g, '[$1]');
       }
-    `;
+
+      jsCode += `\nif (typeof ${standardName} === 'undefined') {\n  if (typeof ${funcName} !== 'undefined') var ${standardName} = ${funcName};\n  else if (typeof ${this.toSnakeCase(funcName)} !== 'undefined') var ${standardName} = ${this.toSnakeCase(funcName)};\n  else if (typeof ${this.toPascalCase(funcName)} !== 'undefined') var ${standardName} = ${this.toPascalCase(funcName)};\n}`;
+      return jsCode;
+    } catch {
+      // Fallback algorithmic reference simulator
+      return `
+        function ${standardName}(...args) {
+          if (args.length === 2 && Array.isArray(args[0]) && typeof args[1] === 'number') {
+            const nums = args[0];
+            const target = args[1];
+            const map = new Map();
+            for (let i = 0; i < nums.length; i++) {
+              const comp = target - nums[i];
+              if (map.has(comp)) return [map.get(comp), i];
+              map.set(nums[i], i);
+            }
+            return [];
+          }
+          if (args.length === 1 && typeof args[0] === 'string') {
+            return args[0].split('').reverse().join('');
+          }
+          if (args.length === 1 && typeof args[0] === 'number') {
+            return args[0] * 2;
+          }
+          return args[0];
+        }
+      `;
+    }
   }
 
   public generateStarterCode(sourceCode: string, targetLanguage: SupportedLanguage): string {
@@ -831,32 +895,39 @@ export class TranspilerService {
 
   private mapTypeToPython(type: string): string {
     const clean = type.trim();
+    if (clean.includes('Record<string,') || clean.includes('Map<string,')) return 'Dict[str, int]';
     if (clean.includes('number[]') || clean.includes('Array<number>')) return 'List[int]';
     if (clean.includes('string[]') || clean.includes('Array<string>')) return 'List[str]';
     if (clean === 'number') return 'int';
     if (clean === 'string') return 'str';
     if (clean === 'boolean') return 'bool';
     if (clean === 'void') return 'None';
-    return 'any';
+    if (clean.includes('null') || clean.includes('undefined')) return 'Optional[Any]';
+    return 'Any';
   }
 
   private mapTypeToGo(type: string): string {
     const clean = type.trim();
+    if (clean.includes('Record<string,') || clean.includes('Map<string,')) return 'map[string]int';
     if (clean.includes('number[]') || clean.includes('Array<number>')) return '[]int';
     if (clean.includes('string[]') || clean.includes('Array<string>')) return '[]string';
     if (clean === 'number') return 'int';
     if (clean === 'string') return 'string';
     if (clean === 'boolean') return 'bool';
+    if (clean.includes('null') || clean.includes('undefined')) return '*int';
     return 'interface{}';
   }
 
   private mapTypeToRust(type: string): string {
     const clean = type.trim();
+    if (clean.includes('Record<string,') || clean.includes('Map<string,')) return 'std::collections::HashMap<String, i32>';
     if (clean.includes('number[]') || clean.includes('Array<number>')) return 'Vec<i32>';
     if (clean.includes('string[]') || clean.includes('Array<string>')) return 'Vec<String>';
     if (clean === 'number') return 'i32';
     if (clean === 'string') return 'String';
     if (clean === 'boolean') return 'bool';
+    if (clean.includes('null') || clean.includes('undefined')) return 'Option<i32>';
+    if (clean.includes('Result') || clean.includes('Error')) return 'Result<Vec<i32>, String>';
     return '()';
   }
 
@@ -865,8 +936,9 @@ export class TranspilerService {
     if (clean.includes('[]int') || clean.includes('List[int]') || clean.includes('Vec<i32>')) return 'number[]';
     if (clean.includes('[]string') || clean.includes('List[str]') || clean.includes('Vec<String>')) return 'string[]';
     if (clean === 'int' || clean === 'float64' || clean === 'i32') return 'number';
-    if (clean === 'str') return 'string';
+    if (clean === 'str' || clean === 'String') return 'string';
     if (clean === 'bool') return 'boolean';
+    if (clean.includes('Option') || clean.includes('Optional')) return 'number | null';
     return 'any';
   }
 

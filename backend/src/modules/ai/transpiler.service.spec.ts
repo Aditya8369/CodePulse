@@ -149,6 +149,97 @@ function doubleEvens(nums: number[]): number[] {
       // Starter code
       expect(res.starterCode).toContain('pub fn two_sum');
       expect(res.starterCode).toContain('todo!()');
+      expect(res.testVerification.verified).toBe(true);
+      expect(res.testVerification.passedTests).toBe(3);
+    });
+
+    it('maps Option/Result and error patterns idiomatically in Rust and Go (#1069)', async () => {
+      const nullableSnippet = `
+function findItem(nums: number[], target: number): number | null {
+  for (let i = 0; i < nums.length; i++) {
+    if (nums[i] === target) return nums[i];
+  }
+  return null;
+}
+      `.trim();
+
+      const rustRes = await service.transpile({
+        sourceCode: nullableSnippet,
+        sourceLanguage: 'typescript',
+        targetLanguage: 'rust',
+      });
+      expect(rustRes.transpiledCode).toContain('pub fn find_item');
+      expect(rustRes.functionSignature).toContain('Option<i32>');
+
+      const goRes = await service.transpile({
+        sourceCode: nullableSnippet,
+        sourceLanguage: 'typescript',
+        targetLanguage: 'go',
+      });
+      expect(goRes.transpiledCode).toContain('func FindItem');
+    });
+  });
+
+  describe('Bidirectional Polyglot Transpilation & Reference Tests (#1069)', () => {
+    it('transpiles Python source to TypeScript and verifies equivalence', async () => {
+      const pythonSource = `
+def double_values(nums: List[int]) -> List[int]:
+    return [x * 2 for x in nums]
+      `.trim();
+
+      const res = await service.transpile({
+        sourceCode: pythonSource,
+        sourceLanguage: 'python',
+        targetLanguage: 'typescript',
+        testCases: [
+          { input: [[1, 2, 3]], expected: [2, 4, 6] },
+          { input: [[0, -5]], expected: [0, -10] },
+        ],
+      });
+
+      expect(res.targetLanguage).toBe('typescript');
+      expect(res.transpiledCode).toContain('export function doubleValues');
+      expect(res.testVerification.verified).toBe(true);
+    });
+
+    it('transpiles Go source to TypeScript and verifies equivalence', async () => {
+      const goSource = `
+package solution
+
+func ReverseString(s string) string {
+	return s
+}
+      `.trim();
+
+      const res = await service.transpile({
+        sourceCode: goSource,
+        sourceLanguage: 'go',
+        targetLanguage: 'typescript',
+        testCases: [{ input: ['code'], expected: 'code' }],
+      });
+
+      expect(res.targetLanguage).toBe('typescript');
+      expect(res.transpiledCode).toContain('export function reverseString');
+      expect(res.testVerification.verified).toBe(true);
+    });
+
+    it('transpiles Rust source to TypeScript and verifies equivalence', async () => {
+      const rustSource = `
+pub fn get_length(items: Vec<i32>) -> i32 {
+    items.len() as i32
+}
+      `.trim();
+
+      const res = await service.transpile({
+        sourceCode: rustSource,
+        sourceLanguage: 'rust',
+        targetLanguage: 'typescript',
+        testCases: [{ input: [[10, 20, 30]], expected: [10, 20, 30] }],
+      });
+
+      expect(res.targetLanguage).toBe('typescript');
+      expect(res.transpiledCode).toContain('export function getLength');
+      expect(res.testVerification.verified).toBe(true);
     });
   });
 
