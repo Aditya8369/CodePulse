@@ -35,6 +35,12 @@ import {
   PrArchitecturalCheckDto,
 } from './dto/arch-rules.dto';
 import {
+  FlowStateService,
+  type KeystrokeTimingEvent,
+  type CompileErrorEvent,
+  type FatigueCommitObservation,
+} from './flow-state.service';
+import {
   CodeAnalysisRequestDto,
   BatchFilesAnalysisRequestDto,
   CreateComplexitySnapshotRequestDto,
@@ -52,6 +58,7 @@ export class AnalyticsController {
     @Optional() private readonly greenCarbonEstimator?: GreenCarbonEstimatorService,
     @Optional() private readonly monteCarloVelocity?: MonteCarloVelocityService,
     @Optional() private readonly architecturalDrift?: ArchitecturalDriftService,
+    @Optional() private readonly flowStateService?: FlowStateService,
   ) {}
 
   @Get('platform')
@@ -345,5 +352,43 @@ export class AnalyticsController {
       dto.headFiles,
       dto.rules,
     );
+  // Developer Flow State & Cognitive Fatigue Endpoints (#589)
+  // ==========================================
+
+  @Post('flow-state/analyze')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Analyze keystroke fluidity, compile error loops, and cognitive fatigue index (<10ms)',
+  })
+  async analyzeDeveloperFlowState(
+    @Body()
+    body: {
+      userId?: string;
+      repositoryId?: string;
+      keystrokes: KeystrokeTimingEvent[];
+      compileErrors?: CompileErrorEvent[];
+      continuousSessionMinutes?: number;
+      persistSnapshot?: boolean;
+    },
+  ) {
+    if (!this.flowStateService) return null;
+    const analysis = this.flowStateService.analyzeTelemetryBatch(body);
+    if (body.persistSnapshot && body.userId) {
+      await this.flowStateService.persistRollingSnapshot({
+        userId: body.userId,
+        repositoryId: body.repositoryId,
+        analysis,
+      });
+    }
+    return analysis;
+  }
+
+  @Post('flow-state/correlate-bugs')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Correlate cognitive fatigue levels with historical bug/revert insertion rates',
+  })
+  correlateFatigueBugs(@Body() body: { observations: FatigueCommitObservation[] }) {
+    return this.flowStateService?.correlateFatigueWithBugRate(body.observations ?? []);
   }
 }

@@ -15,6 +15,7 @@ import { SkillMatrixService } from './skill-matrix.service';
 import { ArchitecturalDriftService } from './architectural-drift.service';
 import { DoraMetricsService } from './dora-metrics.service';
 import { OwnershipHeatmapService } from './ownership-heatmap.service';
+import { FlowStateService } from './flow-state.service';
 
 @Module({
   controllers: [
@@ -36,6 +37,7 @@ import { OwnershipHeatmapService } from './ownership-heatmap.service';
     ArchitecturalDriftService,
     DoraMetricsService,
     OwnershipHeatmapService,
+    FlowStateService,
   ],
   exports: [
     AnalyticsService,
@@ -49,6 +51,7 @@ import { OwnershipHeatmapService } from './ownership-heatmap.service';
     ArchitecturalDriftService,
     DoraMetricsService,
     OwnershipHeatmapService,
+    FlowStateService,
   ],
 })
 export class AnalyticsModule {}

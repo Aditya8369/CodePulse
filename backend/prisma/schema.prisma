@@ -1577,4 +1577,20 @@ model AiReviewAudit {
 
   @@index([prNumber, createdAt])
   @@map("ai_review_audits")
+model DeveloperFatigueSnapshot {
+  id                      String   @id @default(uuid())
+  userHash                String
+  repositoryId            String?
+  windowMinutes           Int      @default(30)
+  rollingFlowScore        Float
+  rollingFatigueIndex     Float
+  backspaceRatio          Float
+  compileLoopCount        Int      @default(0)
+  bugInsertionCorrelation Float?
+  nudgeTriggered          Boolean  @default(false)
+  createdAt               DateTime @default(now())
+
+  @@index([userHash, createdAt])
+  @@index([repositoryId])
+  @@map("developer_fatigue_snapshots")
 }
