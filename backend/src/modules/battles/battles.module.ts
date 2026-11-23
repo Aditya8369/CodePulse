@@ -44,6 +44,8 @@ import { WebRtcSignalingGateway } from './webrtc-signaling.gateway';
 
 import { FuzzingEvaluatorService } from './fuzzing-evaluator.service';
 
+import { BattleDisputeService } from './dispute.service';
+
 @Module({
   imports: [
     PrismaModule,
@@ -94,6 +96,8 @@ import { FuzzingEvaluatorService } from './fuzzing-evaluator.service';
     WebRtcSignalingGateway,
 
     FuzzingEvaluatorService,
+
+    BattleDisputeService,
   ],
   exports: [
     BattlesService,
@@ -129,6 +133,8 @@ import { FuzzingEvaluatorService } from './fuzzing-evaluator.service';
     WebRtcSignalingGateway,
 
     FuzzingEvaluatorService,
+
+    BattleDisputeService,
   ],
 })
 export class BattlesModule {}
