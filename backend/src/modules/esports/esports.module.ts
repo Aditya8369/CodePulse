@@ -7,6 +7,7 @@ import { AiShoutcasterService } from './ai-shoutcaster.service';
 import { PredictionMarketService } from './prediction-market.service';
 import { DisputeService } from './dispute.service';
 import { DisputeController } from './dispute.controller';
+import { BroadcastControllerService } from './broadcast-controller.service';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { AnalyticsModule } from '../analytics/analytics.module';
 
@@ -20,6 +21,7 @@ import { AnalyticsModule } from '../analytics/analytics.module';
     AiShoutcasterService,
     PredictionMarketService,
     DisputeService,
+    BroadcastControllerService,
   ],
   exports: [
     VideoHighlightService,
@@ -27,6 +29,7 @@ import { AnalyticsModule } from '../analytics/analytics.module';
     AiShoutcasterService,
     PredictionMarketService,
     DisputeService,
+    BroadcastControllerService,
   ],
 })
 export class EsportsModule {}
