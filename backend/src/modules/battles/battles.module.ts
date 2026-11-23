@@ -29,6 +29,8 @@ import { RaftStateService } from './consensus/raft-state.service';
 import { WalLogService } from './consensus/wal-log.service';
 import { CrdtRelayGateway } from './crdt-relay.gateway';
 
+import { ShardedMatchmakingQueueService } from './matchmaking/sharded-queue.service';
+
 @Module({
   imports: [
     PrismaModule,
@@ -64,6 +66,8 @@ import { CrdtRelayGateway } from './crdt-relay.gateway';
     RaftStateService,
     WalLogService,
     CrdtRelayGateway,
+
+    ShardedMatchmakingQueueService,
   ],
   exports: [
     BattlesService,
@@ -84,6 +88,8 @@ import { CrdtRelayGateway } from './crdt-relay.gateway';
     RaftStateService,
     WalLogService,
     CrdtRelayGateway,
+
+    ShardedMatchmakingQueueService,
   ],
 })
 export class BattlesModule {}
