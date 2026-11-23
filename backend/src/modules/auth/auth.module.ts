@@ -10,6 +10,8 @@ import { TokenBlacklistService } from './token-blacklist.service';
 import { AttestationValidatorService } from './attestation-validator.service';
 import { PasskeyService } from './passkey.service';
 import { PasskeyController } from './passkey.controller';
+import { WebAuthnService } from './webauthn.service';
+import { WebAuthnController } from './webauthn.controller';
 import { SamlSsoService } from './saml-sso.service';
 import { Fido2AttestationService } from './fido2-attestation.service';
 import { TwoFactorService } from './two-factor.service';
@@ -54,6 +56,7 @@ import { BruteForceGuard } from './guards/brute-force.guard';
   controllers: [
     AuthController,
     PasskeyController,
+    WebAuthnController,
     KeysController,
     ApiKeyController,
   ],
@@ -72,6 +75,7 @@ import { BruteForceGuard } from './guards/brute-force.guard';
     ApiKeyGuard,
     BruteForceService,
     BruteForceGuard,
+    WebAuthnService,
   ],
   exports: [
     AuthService,
@@ -87,6 +91,7 @@ import { BruteForceGuard } from './guards/brute-force.guard';
     ApiKeyGuard,
     BruteForceService,
     BruteForceGuard,
+    WebAuthnService,
   ],
 })
 export class AuthModule {}
