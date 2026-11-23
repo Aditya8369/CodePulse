@@ -6,5 +6,9 @@ import { ActiveActiveReplicatorService } from './active-active-replicator.servic
 @Module({
   providers: [ChaosRunnerService, EtcdConfigService, ActiveActiveReplicatorService],
   exports: [ChaosRunnerService, EtcdConfigService, ActiveActiveReplicatorService],
+
+import { SpotBidderService } from './spot-bidder.service';
+  providers: [SpotBidderService, ChaosRunnerService, EtcdConfigService],
+  exports: [SpotBidderService, ChaosRunnerService, EtcdConfigService],
 })
 export class OpsModule {}
