@@ -92,8 +92,122 @@ export class BattlesGateway
   private disconnectTimers: Map<string, NodeJS.Timeout> = new Map();
   private socketRoles: Map<string, { role: 'HOST' | 'PLAYER' | 'SPECTATOR'; roomCode?: string; battleId?: string }> = new Map();
 
+  // Zero-Downtime Socket Rebalancing & Graceful Connection Drainage (#1053)
+  private _isDraining = false;
+  private drainPollInterval: NodeJS.Timeout | null = null;
+  private drainTimeoutTimer: NodeJS.Timeout | null = null;
+  private sigtermListener?: () => void;
+
   public isSocketSpectator(socketId: string): boolean {
     return this.socketRoles.get(socketId)?.role === 'SPECTATOR';
+  }
+
+  public isDraining(): boolean {
+    return this._isDraining;
+  }
+
+  public getActiveMatchCount(): number {
+    let count = 0;
+    for (const room of this.rooms.values()) {
+      if (Object.keys(room.players).length > 0) {
+        count++;
+      }
+    }
+    return count;
+  }
+
+  public getDrainStatus() {
+    return {
+      isDraining: this._isDraining,
+      activeMatchCount: this.getActiveMatchCount(),
+      totalRooms: this.rooms.size,
+      totalSockets: this.socketRoles.size,
+    };
+  }
+
+  public async startDrainage(gracePeriodMs = 120000): Promise<void> {
+    if (this._isDraining) return;
+    this._isDraining = true;
+    this.logger.warn(
+      `Zero-downtime socket drainage initiated. Active matches: ${this.getActiveMatchCount()}. Grace period: ${gracePeriodMs}ms`,
+    );
+
+    // 1. Notify idle sockets & spectators to rebalance immediately to active pods
+    this.socketRoles.forEach((roleInfo, socketId) => {
+      if (roleInfo.role === 'SPECTATOR' || !roleInfo.battleId) {
+        if (this.server?.to) {
+          this.server.to(socketId).emit('socket:rebalance', {
+            reason: 'rolling_restart',
+            message: 'Pod is undergoing rolling deployment; please migrate to an active pod.',
+            gracePeriodMs,
+          });
+        }
+      }
+    });
+
+    // 2. Notify active battle rooms that a rolling restart is scheduled but will allow match completion
+    for (const battleId of this.rooms.keys()) {
+      if (this.server?.to) {
+        this.server.to(`battle:${battleId}`).emit('battle:drain_warning', {
+          gracePeriodMs,
+          message: 'Rolling update in progress; current battle will conclude normally.',
+        });
+      }
+    }
+
+    // 3. Wait for all active matches to conclude or grace period timeout
+    return new Promise<void>((resolve) => {
+      const startTime = Date.now();
+
+      this.drainPollInterval = setInterval(() => {
+        const activeMatches = this.getActiveMatchCount();
+        const elapsed = Date.now() - startTime;
+
+        if (activeMatches === 0 || elapsed >= gracePeriodMs) {
+          if (this.drainPollInterval) {
+            clearInterval(this.drainPollInterval);
+            this.drainPollInterval = null;
+          }
+          if (this.drainTimeoutTimer) {
+            clearTimeout(this.drainTimeoutTimer);
+            this.drainTimeoutTimer = null;
+          }
+
+          this.logger.log(
+            `Socket drainage completed. Active matches: ${activeMatches}. Elapsed: ${elapsed}ms. Closing server sockets.`,
+          );
+
+          if (this.server?.disconnectSockets) {
+            this.server.disconnectSockets(true);
+          }
+          resolve();
+        }
+      }, 500);
+
+      this.drainTimeoutTimer = setTimeout(() => {
+        if (this.drainPollInterval) {
+          clearInterval(this.drainPollInterval);
+          this.drainPollInterval = null;
+        }
+        this.logger.warn(`Drainage grace period (${gracePeriodMs}ms) expired. Forcing shutdown.`);
+        if (this.server?.disconnectSockets) {
+          this.server.disconnectSockets(true);
+        }
+        resolve();
+      }, gracePeriodMs);
+    });
+  }
+
+  public cancelDrainage(): void {
+    if (this.drainPollInterval) {
+      clearInterval(this.drainPollInterval);
+      this.drainPollInterval = null;
+    }
+    if (this.drainTimeoutTimer) {
+      clearTimeout(this.drainTimeoutTimer);
+      this.drainTimeoutTimer = null;
+    }
+    this._isDraining = false;
   }
 
   afterInit() {
@@ -104,10 +218,24 @@ export class BattlesGateway
         this.server.to(`spectator:${snapshot.battleId}`).emit('hype:tick', snapshot);
       });
     }
+
+    // Hook into SIGTERM for Kubernetes rolling updates
+    this.sigtermListener = () => {
+      this.logger.warn('SIGTERM received: initiating zero-downtime socket drainage');
+      void this.startDrainage();
+    };
+    if (typeof process !== 'undefined' && process.on) {
+      process.on('SIGTERM', this.sigtermListener);
+    }
+
     this.logger.log('BattlesGateway initialized with LMAX Disruptor lock-free ring buffer');
   }
 
   onModuleDestroy() {
+    if (this.sigtermListener && typeof process !== 'undefined' && process.off) {
+      process.off('SIGTERM', this.sigtermListener);
+    }
+    this.cancelDrainage();
     if (this.drainInterval) {
       clearInterval(this.drainInterval);
       this.drainInterval = null;
@@ -239,6 +367,15 @@ export class BattlesGateway
   }
 
   handleConnection(client: Socket) {
+    if (this._isDraining) {
+      this.logger.warn(`Rejecting connection ${client.id}: pod is draining for rolling update`);
+      client.emit('socket:rebalance', {
+        reason: 'pod_draining',
+        message: 'Pod is undergoing rolling deployment; please connect to an active pod.',
+      });
+      client.disconnect(true);
+      return;
+    }
     this.metrics.socketConnected(client.id);
     this.logger.log(`Client connected to battle socket: ${client.id}`);
   }
