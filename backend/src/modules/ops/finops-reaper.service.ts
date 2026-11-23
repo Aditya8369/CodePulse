@@ -36,7 +36,7 @@ export class FinOpsReaperService {
   private readonly COST_PER_IDLE_RUNNER_POD = 45.00; // 2 vCPU + 4GB RAM runner ~ $45/mo
 
   constructor(
-    @Optional() private readonly ledger?: SavingsLedgerService
+    @Optional() private ledger: SavingsLedgerService
   ) {
     if (!this.ledger) {
       this.ledger = new SavingsLedgerService();

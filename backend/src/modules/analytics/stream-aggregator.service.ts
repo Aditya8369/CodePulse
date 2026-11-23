@@ -30,7 +30,7 @@ export class StreamAggregatorService {
   private readonly CATEGORY_INCIDENT = 'incidents';
 
   constructor(
-    @Optional() private readonly windowService?: TumblingWindowService
+    @Optional() private windowService: TumblingWindowService
   ) {
     if (!this.windowService) {
       this.windowService = new TumblingWindowService();

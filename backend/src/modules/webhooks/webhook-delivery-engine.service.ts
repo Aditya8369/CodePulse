@@ -60,7 +60,7 @@ export class WebhookDeliveryEngineService {
   private totalSuspended = 0;
 
   constructor(
-    @Optional() private readonly circuitBreaker?: EndpointCircuitBreakerService
+    @Optional() private circuitBreaker: EndpointCircuitBreakerService
   ) {
     if (!this.circuitBreaker) {
       this.circuitBreaker = new EndpointCircuitBreakerService();
