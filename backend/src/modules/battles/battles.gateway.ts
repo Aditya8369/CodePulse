@@ -381,6 +381,28 @@ export class BattlesGateway
     }
   }
 
+  @SubscribeMessage('rollback_frame_sync')
+  handleRollbackFrameSync(
+    @ConnectedSocket() client: Socket,
+    @MessageBody()
+    data: {
+      battleId: string;
+      userId: string;
+      frame: number;
+      input: { type: string; char?: string; position: number };
+      checksum: number;
+    },
+  ) {
+    client.to(`battle:${data.battleId}`).emit('opponent_rollback_frame', {
+      battleId: data.battleId,
+      userId: data.userId,
+      frame: data.frame,
+      input: data.input,
+      checksum: data.checksum,
+      serverTimestamp: Date.now(),
+    });
+  }
+
   @SubscribeMessage('player_join')
   handlePlayerJoin(
     @MessageBody() data: { battleId: string; userId: string; username: string },
