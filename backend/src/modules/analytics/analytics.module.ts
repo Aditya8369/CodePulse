@@ -12,6 +12,7 @@ import { ComplexityService } from './complexity.service';
 import { GreenCarbonEstimatorService } from './green-carbon-estimator.service';
 import { MonteCarloVelocityService } from './monte-carlo-velocity.service';
 import { SkillMatrixService } from './skill-matrix.service';
+import { ArchitecturalDriftService } from './architectural-drift.service';
 
 @Module({
   controllers: [
@@ -30,6 +31,7 @@ import { SkillMatrixService } from './skill-matrix.service';
     GreenCarbonEstimatorService,
     MonteCarloVelocityService,
     SkillMatrixService,
+    ArchitecturalDriftService,
   ],
   exports: [
     AnalyticsService,
@@ -40,6 +42,7 @@ import { SkillMatrixService } from './skill-matrix.service';
     GreenCarbonEstimatorService,
     MonteCarloVelocityService,
     SkillMatrixService,
+    ArchitecturalDriftService,
   ],
 })
 export class AnalyticsModule {}
