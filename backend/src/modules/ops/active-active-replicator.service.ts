@@ -1,7 +1,14 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
 import * as crypto from 'crypto';
+import {
+  CloudRegionId,
+  JournalEntry,
+  ReplicationBatch,
+} from './active-active-replicator.types';
+import { LwwRegister, LwwState } from './lww-register';
+import { SyncJournalService } from './sync-journal.service';
 
-export type CloudRegion = 'AWS_US_EAST' | 'GCP_EU_CENTRAL';
+export type CloudRegion = 'AWS_US_EAST' | 'GCP_EU_CENTRAL' | 'AZURE_AP_SOUTH';
 
 export interface ReplicatedRecord<T = unknown> {
   id: string; // UUIDv7
@@ -26,15 +33,24 @@ export class ActiveActiveReplicatorService {
 
   private readonly localRegion: CloudRegion;
   private readonly localState = new Map<string, ReplicatedRecord>();
+  private readonly lwwRegisters = new Map<string, LwwRegister<unknown>>();
   private readonly vectorClock: Record<string, number> = {
     AWS_US_EAST: 0,
     GCP_EU_CENTRAL: 0,
+    AZURE_AP_SOUTH: 0,
   };
   private readonly lagHistory: ReplicationLagMetric[] = [];
   private currentReplicationLagMs = 0;
 
-  constructor(@Optional() localRegion?: CloudRegion) {
+  constructor(
+    @Optional() localRegion?: CloudRegion,
+    @Optional() private readonly journal?: SyncJournalService,
+  ) {
     this.localRegion = localRegion ?? (process.env.CLOUD_REGION as CloudRegion) ?? 'AWS_US_EAST';
+  }
+
+  public getLocalRegion(): CloudRegion {
+    return this.localRegion;
   }
 
   /**
@@ -60,6 +76,7 @@ export class ActiveActiveReplicatorService {
 
   /**
    * Applies a local state update, incrementing vector clock and creating UUIDv7 record.
+   * Also journals change in SyncJournalService if enabled.
    */
   public updateLocal<T>(key: string, value: T, timestampMs?: number): ReplicatedRecord<T> {
     const ts = timestampMs ?? Date.now();
@@ -77,6 +94,21 @@ export class ActiveActiveReplicatorService {
     };
 
     this.localState.set(key, record as ReplicatedRecord);
+
+    // Update LWW CRDT register
+    let reg = this.lwwRegisters.get(key) as LwwRegister<T> | undefined;
+    if (!reg) {
+      reg = new LwwRegister<T>(value, this.localRegion, ts, record.version);
+      this.lwwRegisters.set(key, reg as LwwRegister<unknown>);
+    } else {
+      reg.set(value, ts);
+    }
+
+    // Append to logical replication journal
+    if (this.journal) {
+      this.journal.append(key, currentVersion === 0 ? 'INSERT' : 'UPDATE', value, record.id, this.vectorClock, ts);
+    }
+
     return record;
   }
 
@@ -106,18 +138,68 @@ export class ActiveActiveReplicatorService {
     if (!existing) {
       this.localState.set(incoming.key, incoming);
       this.mergeVectorClock(incoming.vectorClock);
+
+      const reg = new LwwRegister(incoming.value, incoming.region, incoming.timestamp, incoming.version);
+      this.lwwRegisters.set(incoming.key, reg);
+      this.journal?.recordReplicationIngested(1);
+
       return { accepted: true, appliedRecord: incoming };
     }
 
-    // Conflict Resolution: Last-Write-Wins (LWW) with NTP timestamp
+    // Conflict Resolution: Last-Write-Wins (LWW) with monotonic tie-breaker
     const winning = this.resolveConflict(existing, incoming);
     this.localState.set(incoming.key, winning);
     this.mergeVectorClock(incoming.vectorClock);
+
+    let reg = this.lwwRegisters.get(incoming.key);
+    if (!reg) {
+      reg = new LwwRegister(winning.value, winning.region, winning.timestamp, winning.version);
+      this.lwwRegisters.set(incoming.key, reg);
+    } else {
+      const remoteState: LwwState<unknown> = {
+        value: incoming.value,
+        timestamp: incoming.timestamp,
+        authorId: incoming.region,
+        sequence: incoming.version,
+      };
+      reg.merge(remoteState);
+    }
+
+    this.journal?.recordConflictResolved();
+    this.journal?.recordReplicationIngested(1);
 
     return {
       accepted: winning.id === incoming.id,
       appliedRecord: winning,
     };
+  }
+
+  /**
+   * Applies an entire batch of replicated journal entries from a peer cloud region.
+   */
+  public replicateBatch(batch: ReplicationBatch): { ingested: number; conflicts: number } {
+    let ingested = 0;
+    let conflicts = 0;
+
+    for (const entry of batch.entries) {
+      const rec: ReplicatedRecord = {
+        id: entry.id,
+        key: entry.key,
+        value: entry.payload,
+        version: entry.logicalClock,
+        timestamp: entry.timestampMs,
+        region: entry.sourceRegion,
+        vectorClock: entry.vectorClock,
+      };
+
+      const res = this.replicateIncoming(rec);
+      ingested++;
+      if (!res.accepted) {
+        conflicts++;
+      }
+    }
+
+    return { ingested, conflicts };
   }
 
   /**
@@ -161,6 +243,10 @@ export class ActiveActiveReplicatorService {
 
   public getRecord(key: string): ReplicatedRecord | undefined {
     return this.localState.get(key);
+  }
+
+  public getLwwRegister<T>(key: string): LwwRegister<T> | undefined {
+    return this.lwwRegisters.get(key) as LwwRegister<T> | undefined;
   }
 
   public getReplicationLagMs(): number {
