@@ -35,6 +35,9 @@ import { DistributedLeaderElectionService } from './consensus/leader-election.se
 
 import { DistributedDisruptorRelayService } from './distributed-disruptor-relay.service';
 
+import { BattlesFirecrackerPoolService } from './firecracker-pool.service';
+import { CodeSandboxService } from './code-sandbox.service';
+
 @Module({
   imports: [
     PrismaModule,
@@ -76,6 +79,9 @@ import { DistributedDisruptorRelayService } from './distributed-disruptor-relay.
     DistributedLeaderElectionService,
 
     DistributedDisruptorRelayService,
+
+    BattlesFirecrackerPoolService,
+    CodeSandboxService,
   ],
   exports: [
     BattlesService,
@@ -102,6 +108,9 @@ import { DistributedDisruptorRelayService } from './distributed-disruptor-relay.
     DistributedLeaderElectionService,
 
     DistributedDisruptorRelayService,
+
+    BattlesFirecrackerPoolService,
+    CodeSandboxService,
   ],
 })
 export class BattlesModule {}
