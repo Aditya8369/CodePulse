@@ -59,6 +59,7 @@ import { SystemMetricsService } from './common/services/system-metrics.service';
 import { LoadShedderMiddleware } from './common/middleware/load-shedder.middleware';
 import { CsrfMiddleware } from './common/middleware/csrf.middleware';
 import { CommonModule } from './common/common.module';
+import { VaultModule } from './common/vault/vault.module';
 
 @Module({
   imports: [
@@ -140,6 +141,7 @@ import { CommonModule } from './common/common.module';
     IdentityModule,
     GuardsModule,
     CommonModule,
+    VaultModule,
     GraphqlGatewayModule,
     McpModule,
     WebhooksModule,
