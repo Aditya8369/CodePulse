@@ -25,4 +25,16 @@ describe("WebSocketStatusIndicator - Ping Latency & Signal Bars", () => {
     expect(signalBars).toBeInTheDocument();
     expect(signalBars.children.length).toBe(4);
   });
+
+  it("renders correct title and label for excellent latency", () => {
+    render(<WebSocketStatusIndicator simulatedPing={20} />);
+    const signalBars = screen.getByTestId("signal-bars");
+    expect(signalBars).toHaveAttribute("title", "Signal quality: Excellent (20ms)");
+  });
+
+  it("renders correct title and label for high ping latency", () => {
+    render(<WebSocketStatusIndicator simulatedPing={195} />);
+    const signalBars = screen.getByTestId("signal-bars");
+    expect(signalBars).toHaveAttribute("title", "Signal quality: Poor (195ms)");
+  });
 });
