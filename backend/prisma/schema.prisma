@@ -1540,3 +1540,17 @@ model TournamentMatch {
   @@index([tournamentId, bracketType])
   @@map("tournament_matches")
 }
+
+
+model GitConflictResolution {
+  id               String   @id @default(uuid())
+  filePath         String
+  confidenceScore  Float
+  resolvedByAi     Boolean
+  fellBackToManual Boolean   @default(false)
+  resolvedContent  String   @db.Text
+  createdAt        DateTime @default(now())
+
+  @@index([filePath, createdAt])
+  @@map("git_conflict_resolutions")
+}
