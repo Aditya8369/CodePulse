@@ -13,6 +13,7 @@ import { GreenCarbonEstimatorService } from './green-carbon-estimator.service';
 import { MonteCarloVelocityService } from './monte-carlo-velocity.service';
 import { SkillMatrixService } from './skill-matrix.service';
 import { ArchitecturalDriftService } from './architectural-drift.service';
+import { DoraMetricsService } from './dora-metrics.service';
 
 @Module({
   controllers: [
@@ -32,6 +33,7 @@ import { ArchitecturalDriftService } from './architectural-drift.service';
     MonteCarloVelocityService,
     SkillMatrixService,
     ArchitecturalDriftService,
+    DoraMetricsService,
   ],
   exports: [
     AnalyticsService,
@@ -43,6 +45,7 @@ import { ArchitecturalDriftService } from './architectural-drift.service';
     MonteCarloVelocityService,
     SkillMatrixService,
     ArchitecturalDriftService,
+    DoraMetricsService,
   ],
 })
 export class AnalyticsModule {}
