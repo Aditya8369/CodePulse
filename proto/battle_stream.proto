@@ -27,4 +27,62 @@ message SpectatorReactionFrame {
   string emoji = 3;
   uint32 count = 4;
   uint64 timestamp = 5;
+
+package codepulse.battlestream.v1;
+option go_package = "codepulse/battlestream/v1;battlestreamv1";
+option java_package = "com.codepulse.battlestream.v1";
+service BattleStreamService {
+  // Bi-directional stream: Runner pushes stdout/stderr logs and metrics, server streams control signals & test inputs
+  rpc StreamExecution(stream RunnerStreamMessage) returns (stream ServerControlMessage);
+  // Server-streaming: client watches real-time battle logs
+  rpc SubscribeBattleLogs(SubscribeBattleLogsRequest) returns (stream ExecutionLogChunk);
+  // Unary heartbeat
+  rpc Heartbeat(RunnerHeartbeat) returns (HeartbeatResponse);
+message RunnerStreamMessage {
+  string runner_id = 2;
+  int64 sequence = 3;
+  int64 timestamp_ms = 4;
+  oneof payload {
+    ExecutionLogChunk log_chunk = 5;
+    ProfilingFrame metrics_frame = 6;
+    TestCaseResult test_result = 7;
+  }
+message ServerControlMessage {
+  enum Action {
+    ACTION_UNSPECIFIED = 0;
+    ACTION_START = 1;
+    ACTION_PAUSE = 2;
+    ACTION_RESUME = 3;
+    ACTION_TERMINATE = 4;
+    ACTION_INJECT_TESTCASE = 5;
+  Action action = 1;
+  string battle_id = 2;
+  string payload = 3;
+message ExecutionLogChunk {
+  enum StreamType {
+    STDOUT = 0;
+    STDERR = 1;
+    SYSTEM = 2;
+  StreamType stream_type = 2;
+  bytes chunk_data = 3;
+  int64 line_number = 4;
+message ProfilingFrame {
+  double cpu_usage_percent = 2;
+  int64 memory_rss_bytes = 3;
+  int64 memory_heap_bytes = 4;
+  int64 timestamp_ms = 5;
+message TestCaseResult {
+  int32 test_case_index = 2;
+  bool passed = 3;
+  int64 execution_time_ns = 4;
+  string error_message = 5;
+message SubscribeBattleLogsRequest {
+  int64 from_sequence = 2;
+message RunnerHeartbeat {
+  string runner_id = 1;
+  string status = 2;
+  int32 active_jobs = 3;
+message HeartbeatResponse {
+  bool acknowledged = 1;
+  int64 server_time_ms = 2;
 }

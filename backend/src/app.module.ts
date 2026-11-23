@@ -43,6 +43,7 @@ import { AudioModule } from './modules/audio/audio.module';
 import { AiModule } from './modules/ai/ai.module';
 import { TournamentsModule } from './modules/tournaments/tournaments.module';
 import { OpsModule } from './modules/ops/ops.module';
+import { GrpcModule } from './modules/grpc/grpc.module';
 
 import { RealtimeModule } from './modules/realtime/realtime.module';
 
@@ -152,6 +153,7 @@ import { VaultModule } from './common/vault/vault.module';
     GraphqlGatewayModule,
     McpModule,
     WebhooksModule,
+    GrpcModule,
     CollabModule,
     LoggingModule,
     MentorshipModule,
