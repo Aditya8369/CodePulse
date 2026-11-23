@@ -32,6 +32,7 @@ import { RoomService } from './room.service';
 import { EvaluatorService } from './evaluator.service';
 import { RaftStateService } from './consensus/raft-state.service';
 import { WalLogService } from './consensus/wal-log.service';
+import { TeamMatchmakingService } from './team-matchmaking.service';
 
 @Module({
   imports: [
@@ -74,6 +75,7 @@ import { WalLogService } from './consensus/wal-log.service';
     EvaluatorService,
     RaftStateService,
     WalLogService,
+    TeamMatchmakingService,
   ],
   exports: [
     BattlesService,
@@ -94,6 +96,7 @@ import { WalLogService } from './consensus/wal-log.service';
     EvaluatorService,
     RaftStateService,
     WalLogService,
+    TeamMatchmakingService,
   ],
 })
 export class BattlesModule {}
