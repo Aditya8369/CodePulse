@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { BattlesController } from './battles.controller';
+import { JitterBufferController } from './network/jitter-buffer.controller';
+import { JitterBufferService } from './network/jitter-buffer.service';
 import { BattlesService } from './battles.service';
 import { BattlesGateway } from './battles.gateway';
 import { SeasonResetService } from './season-reset.service';
@@ -64,9 +66,10 @@ import { TrueSkill2Service } from './trueskill2.service';
     AiModule,
     TournamentsModule,
   ],
-  controllers: [BattlesController],
+  controllers: [BattlesController, JitterBufferController],
   providers: [
     BattlesService,
+    JitterBufferService,
     BattlesGateway,
     SeasonResetService,
     RatingDecayService,
@@ -109,6 +112,7 @@ import { TrueSkill2Service } from './trueskill2.service';
   ],
   exports: [
     BattlesService,
+    JitterBufferService,
     BattlesGateway,
     ReplayStreamService,
     WatermarkService,
