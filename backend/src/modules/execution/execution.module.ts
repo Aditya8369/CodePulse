@@ -4,16 +4,18 @@ import { WasmRuntimeService } from './wasm-runtime.service';
 import { WasmRunnerService } from './wasm-runner.service';
 import { JailerService } from './jailer.service';
 import { ExecutionController } from './execution.controller';
+import { SandboxIpcController } from './sandbox-ipc.controller';
 import { LlvmJitService } from './llvm-jit.service';
+import { ZeroCopyIpcService } from '../../common/concurrency/zero-copy-ipc.service';
 
 @Module({
-  controllers: [ExecutionController],
+  controllers: [ExecutionController, SandboxIpcController],
   providers: [
     SandboxIsolationService,
     WasmRuntimeService,
     WasmRunnerService,
     JailerService,
-
+    ZeroCopyIpcService,
     LlvmJitService,
   ],
   exports: [
@@ -21,7 +23,7 @@ import { LlvmJitService } from './llvm-jit.service';
     WasmRuntimeService,
     WasmRunnerService,
     JailerService,
-
+    ZeroCopyIpcService,
     LlvmJitService,
   ],
 })
