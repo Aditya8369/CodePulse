@@ -44,6 +44,8 @@ import { AiModule } from './modules/ai/ai.module';
 import { TournamentsModule } from './modules/tournaments/tournaments.module';
 import { OpsModule } from './modules/ops/ops.module';
 
+import { RealtimeModule } from './modules/realtime/realtime.module';
+
 import { LoggingModule } from './common/logging/logging.module';
 import { MentorshipModule } from './modules/mentorship/mentorship.module';
 import { GamificationModule } from './modules/gamification/gamification.module';
@@ -153,6 +155,8 @@ import { VaultModule } from './common/vault/vault.module';
     AiModule,
     TournamentsModule,
     OpsModule,
+
+    RealtimeModule,
   ],
   controllers: [AppController],
   providers: [
