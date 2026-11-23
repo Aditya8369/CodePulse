@@ -76,5 +76,37 @@ describe('ReplayStreamService', () => {
     expect(timeline.totalEvents).toBe(0);
     expect(timeline.frames).toEqual([]);
   });
+
+  describe('Remotion Video Highlight Generator (#1091)', () => {
+    it('renders a 30-second 1080p MP4 highlight reel in under 15 seconds', async () => {
+      const battleId = 'clutch-battle-101';
+      const result = await service.renderDecisiveHighlightClip(battleId, {
+        durationSeconds: 30,
+        format: 'HORIZONTAL',
+      });
+
+      expect(result.battleId).toBe(battleId);
+      expect(result.durationSeconds).toBe(30);
+      expect(result.resolution).toBe('1920x1080');
+      expect(result.renderTimeMs).toBeLessThan(15000); // Renders in under 15 seconds SLA
+      expect(result.codec).toBe('h264');
+      expect(result.videoUrl).toContain('.mp4');
+      expect(result.socialPlatformsReady).toContain('twitter');
+      expect(result.socialPlatformsReady).toContain('linkedin');
+    });
+
+    it('supports VERTICAL (1080x1920) format for TikTok / Reels / Shorts', async () => {
+      const battleId = 'reels-battle-202';
+      const result = await service.renderDecisiveHighlightClip(battleId, {
+        durationSeconds: 30,
+        format: 'VERTICAL',
+      });
+
+      expect(result.resolution).toBe('1080x1920');
+      expect(result.renderTimeMs).toBeLessThan(15000);
+      expect(result.socialPlatformsReady).toContain('tiktok');
+      expect(result.socialPlatformsReady).toContain('youtube_shorts');
+    });
+  });
 });
 
