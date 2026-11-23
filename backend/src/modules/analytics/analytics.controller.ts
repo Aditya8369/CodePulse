@@ -24,6 +24,11 @@ import type {
 } from './scylladb-telemetry.service';
 import { ComplexityService } from './complexity.service';
 import {
+  MonteCarloVelocityService,
+  type HistoricalSprintDay,
+  type SprintTaskRiskItem,
+} from './monte-carlo-velocity.service';
+import {
   CodeAnalysisRequestDto,
   BatchFilesAnalysisRequestDto,
   CreateComplexitySnapshotRequestDto,
@@ -38,6 +43,7 @@ export class AnalyticsController {
     private readonly analyticsService: AnalyticsService,
     @Optional() private readonly scyllaTelemetry?: ScyllaDbTelemetryService,
     @Optional() private readonly complexityService?: ComplexityService,
+    @Optional() private readonly monteCarloVelocity?: MonteCarloVelocityService,
   ) {}
 
   @Get('platform')
@@ -241,5 +247,27 @@ export class AnalyticsController {
     }
     return this.complexityService.getHotspots(repositoryId);
   }
-}
 
+  // ==========================================
+  // Monte Carlo Sprint Velocity & Burndown Endpoints (#595)
+  // ==========================================
+
+  @Post('velocity/monte-carlo')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Run 10,000 Monte Carlo sprint burndown simulations for P50, P85, and P95 delivery forecasts',
+  })
+  runMonteCarloVelocityForecast(
+    @Body()
+    body: {
+      remainingTasks: number;
+      history: HistoricalSprintDay[];
+      iterations?: number;
+      startDateIso?: string;
+      targetDeadlineIso?: string;
+      backlogTasks?: SprintTaskRiskItem[];
+    },
+  ) {
+    return this.monteCarloVelocity?.runMonteCarloForecast(body);
+  }
+}
