@@ -1,4 +1,15 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
+import {
+  VerificationCoordinatorService,
+  VerificationRequest,
+  SwarmVerificationReport,
+  InvariantProofResult,
+  SecurityMemoryAuditResult,
+  PerformanceComplexityResult,
+  FuzzingSynthesisResult,
+} from './swarm/verification-coordinator.service';
+
+export * from './swarm/verification-coordinator.service';
 
 export interface VerificationAnalysisRequest {
   code: string;
@@ -17,54 +28,32 @@ export interface VerificationAnalysisResult {
 @Injectable()
 export class VerificationSwarmService {
   private readonly logger = new Logger(VerificationSwarmService.name);
+  private readonly coordinator: VerificationCoordinatorService;
+
+  constructor(@Optional() coordinator?: VerificationCoordinatorService) {
+    this.coordinator = coordinator || new VerificationCoordinatorService();
+  }
 
   /**
    * Coordinates 3 specialized sub-agents: Invariant Prover, Adversarial Fuzzer, and Complexity Explainer
    */
   public async analyzeCode(request: VerificationAnalysisRequest): Promise<VerificationAnalysisResult> {
-    const { code, language } = request;
-    this.logger.log(`Swarm analyzing ${language} snippet (${code.length} chars)`);
-
-    // 1. Invariant Prover (detect loops, arithmetic bounds)
-    const hasLoop = code.includes('for') || code.includes('while');
-    const hasRecursion = code.includes('function') && code.includes('(');
-
-    let bigORuntime = 'O(1)';
-    let bigOMemory = 'O(1)';
-
-    if (hasLoop && code.includes('nested')) {
-      bigORuntime = 'O(n^2)';
-    } else if (hasLoop) {
-      bigORuntime = 'O(n)';
-    } else if (hasRecursion) {
-      bigORuntime = 'O(2^n)';
-      bigOMemory = 'O(n)';
-    }
-
-    const invariants = [
-      'Loop variant strictly monotonically decreases towards termination boundary',
-      'Non-negative index bounds checked: 0 <= i < array.length',
-      'Integer overflow invariant satisfied for 64-bit bounds',
-    ];
-
-    const synthesizedEdgeCases = [
-      { input: '[] (Empty array)', reason: 'Boundary condition check for empty input collections' },
-      { input: '[-2147483648, 2147483647]', reason: '32-bit signed integer underflow/overflow check' },
-      { input: 'Array of size 10^5 with identical elements', reason: 'Worst-case asymptotic quicksort pivot degradation' },
-    ];
-
-    const remediationHints = [
-      'Consider memoizing recursive branch calls to reduce runtime from exponential to linear O(n).',
-      'Preallocate capacity for array slices to avoid dynamic reallocation overhead.',
-    ];
+    const report = await this.coordinator.coordinateVerification({
+      code: request.code,
+      language: request.language,
+    });
 
     return {
-      bigORuntime,
-      bigOMemory,
-      invariantStatus: 'PROVEN',
-      invariants,
-      synthesizedEdgeCases,
-      remediationHints,
+      bigORuntime: report.performance.bigORuntime,
+      bigOMemory: report.performance.bigOMemory,
+      invariantStatus: report.invariantProof.status,
+      invariants: report.invariantProof.invariants,
+      synthesizedEdgeCases: report.fuzzingSynthesis.synthesizedEdgeCases,
+      remediationHints: report.remediationPlan,
     };
+  }
+
+  public async coordinateVerification(request: VerificationRequest): Promise<SwarmVerificationReport> {
+    return this.coordinator.coordinateVerification(request);
   }
 }
