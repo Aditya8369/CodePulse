@@ -37,6 +37,7 @@ describe("BackToTop Component", () => {
     const button = screen.getByRole("button", { name: /back to top/i });
     expect(button).toBeInTheDocument();
     expect(button).toHaveAttribute("aria-label", "Back to top");
+    expect(screen.getByTestId("back-to-top-button")).toBe(button);
   });
 
   it("should disappear when scrolling back up below the threshold", async () => {
