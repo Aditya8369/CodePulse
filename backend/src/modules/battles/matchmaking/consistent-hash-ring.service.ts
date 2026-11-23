@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import * as crypto from 'node:crypto';
 
 export interface VirtualNode {
@@ -24,8 +24,8 @@ export class ConsistentHashRingService {
   private readonly ring: VirtualNode[] = [];
   private readonly nodes = new Set<string>();
 
-  constructor(virtualNodes = ConsistentHashRingService.DEFAULT_VIRTUAL_NODES) {
-    this.virtualNodesPerServer = virtualNodes;
+  constructor(@Optional() virtualNodes?: number) {
+    this.virtualNodesPerServer = virtualNodes ?? ConsistentHashRingService.DEFAULT_VIRTUAL_NODES;
   }
 
   /**

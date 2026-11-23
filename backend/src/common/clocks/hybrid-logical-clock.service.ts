@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 
 export interface HlcTimestamp {
   /** Physical time in milliseconds (highest observed) */
@@ -24,9 +24,12 @@ export class HybridLogicalClockService {
   private readonly nodeId: string;
   private readonly maxDriftMs: number;
 
-  constructor(nodeId = 'node-1', maxDriftMs = 250) {
-    this.nodeId = nodeId;
-    this.maxDriftMs = maxDriftMs;
+  constructor(
+    @Optional() nodeId?: string,
+    @Optional() maxDriftMs?: number,
+  ) {
+    this.nodeId = nodeId ?? 'node-1';
+    this.maxDriftMs = maxDriftMs ?? 250;
     this.l = Date.now();
     this.c = 0;
   }

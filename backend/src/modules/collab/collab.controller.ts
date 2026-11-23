@@ -1,13 +1,13 @@
 import { Controller, Post, Get, Body, Param, Query } from '@nestjs/common';
 import { VectorClockService } from './vector-clock.service';
-import {
+import type {
   VectorClock,
   ConflictResolutionStrategy,
   ThreeWayMergeResult,
   ReplicaCausalityReport,
 } from './vector-clock.types';
 
-export interface ReconcileRequestDto {
+export class ReconcileRequestDto {
   baseText: string;
   localText: string;
   remoteText: string;
@@ -17,7 +17,7 @@ export interface ReconcileRequestDto {
   strategy?: ConflictResolutionStrategy;
 }
 
-export interface CausalityReportRequestDto {
+export class CausalityReportRequestDto {
   replicaClocks: Record<string, VectorClock>;
 }
 
