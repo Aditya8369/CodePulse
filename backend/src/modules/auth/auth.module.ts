@@ -32,6 +32,7 @@ import { OAuthPkceService } from './oauth-pkce.service';
 import { TokenRotationService } from './token-rotation.service';
 
 import { SessionMeshService } from './session-mesh.service';
+import { SessionService } from './session.service';
 
 
 
@@ -89,6 +90,7 @@ import { SessionMeshService } from './session-mesh.service';
     TokenRotationService,
 
     SessionMeshService,
+    SessionService,
   ],
   exports: [
     AuthService,
@@ -112,6 +114,7 @@ import { SessionMeshService } from './session-mesh.service';
     TokenRotationService,
 
     SessionMeshService,
+    SessionService,
   ],
 })
 export class AuthModule {}

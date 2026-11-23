@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { motion } from "motion/react";
 import { toast } from "sonner";
 import {
@@ -26,6 +27,8 @@ import {
   Sliders,
   Database,
   Sparkles,
+  ShieldCheck,
+  ExternalLink,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { applyColorVisionTheme, COLOR_VISION_THEMES, type ColorVisionTheme } from "@/lib/colorblind-themes";
@@ -889,6 +892,20 @@ export default function SettingsPage() {
                     <Smartphone className="w-4 h-4 text-muted-foreground" />
                     <span>Two-Factor Authentication</span>
                   </button>
+                  <Link
+                    href="/settings/sessions"
+                    data-testid="manage-sessions-link"
+                    className="flex items-center justify-between w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-sm hover:bg-white/10 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                      <span>Active Device Sessions Management</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                      <span>View All Devices</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </span>
+                  </Link>
                 </div>
               </div>
 

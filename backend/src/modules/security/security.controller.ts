@@ -6,7 +6,11 @@ import {
   HttpStatus,
   Param,
   Post,
+  Query,
+  Res,
+  Optional,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { ApiOperation, ApiResponse, ApiTags, ApiParam, ApiBody } from '@nestjs/swagger';
 import { TyposquatScannerService } from './typosquat-scanner.service';
 import {
@@ -33,6 +37,7 @@ export class SecurityController {
   constructor(
     private readonly typosquatScannerService: TyposquatScannerService,
     private readonly mpcVaultService: MpcVaultService,
+    @Optional() private readonly securityMttrService?: SecurityMttrService,
   ) {}
 
   @Post('scan-dependencies')
