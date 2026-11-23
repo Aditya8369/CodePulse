@@ -26,6 +26,13 @@ import {
   type PolyglotTranspileRequest,
 } from './transpiler/polyglot-transpiler.service';
 import { RequestHintDto, HintResponseDto } from './dto/code-hint.dto';
+import { ReproSynthesizerService } from './repro-synthesizer.service';
+import {
+  SynthesizeReproRequestDto,
+  SynthesizedReproResponseDto,
+  TrackReproExecutionDto,
+  ReproStatsDto,
+} from './dto/repro-synthesizer.dto';
 import {
   TranspileRequestDto,
   TranspileResponseDto,
@@ -55,6 +62,7 @@ export class AiController {
     private readonly personaBattleService: PersonaBattleService,
     private readonly codeHintService: CodeHintService,
     private readonly polyglotTranspiler?: PolyglotTranspilerService,
+    private readonly reproSynthesizer: ReproSynthesizerService,
   ) {}
 
   @Post('transpile')
@@ -224,3 +232,62 @@ export class AiController {
     return this.polyglotTranspiler.transpileAndVerify(dto);
   }
 }
+  // ==========================================
+  // Bug Reproduction Script Synthesizer (#369)
+  // ==========================================
+
+  @Post('repro/synthesize')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Synthesize automated bug reproduction script from GitHub issue (#369)',
+    description:
+      'Extracts reproduction steps, expected/actual behaviors, and environment metadata from issue text to generate a standalone reproduction script (Node.js/Python/Bash) in a containerized Docker runner.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Synthesized reproduction script with syntax validation and Docker runner command',
+    type: SynthesizedReproResponseDto,
+  })
+  async synthesizeReproduction(
+    @Body() dto: SynthesizeReproRequestDto,
+  ): Promise<SynthesizedReproResponseDto> {
+    if (!dto.issueBody) {
+      throw new BadRequestException('issueBody is required to synthesize a reproduction script');
+    }
+    return this.reproSynthesizer.synthesizeReproductionScript(dto);
+  }
+
+  @Get('repro/stats')
+  @ApiOperation({
+    summary: 'Retrieve reproduction synthesis success rates and analytics (#369)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Aggregated reproduction statistics, syntax validity rates, and language breakdown',
+    type: ReproStatsDto,
+  })
+  async getReproStats(): Promise<ReproStatsDto> {
+    return this.reproSynthesizer.getReproStats();
+  }
+
+  @Post('repro/:id/track')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Track reproduction execution outcome (success/failure) for analytics (#369)',
+  })
+  @ApiParam({ name: 'id', description: 'Reproduction run ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Updated reproduction record with execution outcome',
+    type: SynthesizedReproResponseDto,
+  })
+  async trackReproExecution(
+    @Param('id') id: string,
+    @Body() dto: TrackReproExecutionDto,
+  ): Promise<SynthesizedReproResponseDto> {
+    return this.reproSynthesizer.trackExecutionResult(id, dto);
+  }
+}
+
+
+

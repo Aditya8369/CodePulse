@@ -97,6 +97,11 @@ export class GithubWebhookController {
         return { status: 'processed', event: 'release', ...result };
       }
 
+      case 'issues': {
+        const result = await this.webhookService.processIssuesEvent(body);
+        return { status: 'processed', event: 'issues', ...result };
+      }
+
       case 'ping':
         return { status: 'pong', zen: body?.zen };
 
