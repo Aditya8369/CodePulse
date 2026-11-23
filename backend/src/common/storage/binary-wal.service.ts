@@ -8,9 +8,11 @@ import {
 import * as fs from 'fs';
 import * as path from 'path';
 import {
-  SnapshotMetadata,
   WAL_HEADER_SIZE_BYTES,
   WAL_MAGIC_BYTES,
+} from './binary-wal.types';
+import type {
+  SnapshotMetadata,
   WalConfig,
   WalMetrics,
   WalRecord,

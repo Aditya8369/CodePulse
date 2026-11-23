@@ -6,7 +6,7 @@ import {
   Optional,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import {
+import type {
   BullyElectionConfig,
   BullyMessage,
   BullyNode,

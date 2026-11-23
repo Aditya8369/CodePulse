@@ -8,7 +8,7 @@ import {
   Post,
 } from '@nestjs/common';
 import { ActiveActiveReplicatorService } from './active-active-replicator.service';
-import {
+import type {
   CloudRegionId,
   MultiCloudSyncMetrics,
   ReplicationBatch,

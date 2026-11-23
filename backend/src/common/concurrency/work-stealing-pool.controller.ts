@@ -7,7 +7,7 @@ import {
   Post,
 } from '@nestjs/common';
 import { WorkStealingPoolService } from './work-stealing-pool.service';
-import {
+import type {
   TestCasePayload,
   TestCaseResult,
   WorkStealingPoolMetrics,

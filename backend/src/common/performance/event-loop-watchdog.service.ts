@@ -5,7 +5,7 @@ import {
   OnModuleInit,
   Optional,
 } from '@nestjs/common';
-import {
+import type {
   EventLoopLagStatus,
   EventLoopWatchdogConfig,
 } from './event-loop.types';

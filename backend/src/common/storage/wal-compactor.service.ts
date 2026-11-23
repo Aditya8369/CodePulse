@@ -6,7 +6,7 @@ import {
 import * as fs from 'fs';
 import * as path from 'path';
 import { BinaryWalService } from './binary-wal.service';
-import { SnapshotMetadata, WalConfig } from './binary-wal.types';
+import type { SnapshotMetadata, WalConfig } from './binary-wal.types';
 
 @Injectable()
 export class WalCompactorService {

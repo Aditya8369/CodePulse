@@ -6,7 +6,7 @@ import {
   Post,
 } from '@nestjs/common';
 import { BinaryWalService } from './binary-wal.service';
-import { WalMetrics, WalRecoveryReport } from './binary-wal.types';
+import type { WalMetrics, WalRecoveryReport } from './binary-wal.types';
 
 @Controller('storage/wal')
 export class BinaryWalController {

@@ -6,7 +6,7 @@ import {
   HttpStatus,
   Post,
 } from '@nestjs/common';
-import {
+import type {
   ClusterPartitionStatus,
   NodeFenceState,
   NodeHeartbeatPayload,

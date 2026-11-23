@@ -7,7 +7,7 @@ import {
   Post,
 } from '@nestjs/common';
 import { EventLoopWatchdogService } from './event-loop-watchdog.service';
-import {
+import type {
   EventLoopLagStatus,
   TaskSharderMetrics,
 } from './event-loop.types';

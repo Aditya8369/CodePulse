@@ -8,7 +8,7 @@ import {
   Post,
 } from '@nestjs/common';
 import { ZeroCopyIpcService } from '../../common/concurrency/zero-copy-ipc.service';
-import {
+import type {
   ChannelAllocationOptions,
   SandboxStreamType,
   ZeroCopyIpcMetrics,

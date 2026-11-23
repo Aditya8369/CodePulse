@@ -6,7 +6,7 @@ import {
   Optional,
 } from '@nestjs/common';
 import { NodeRegistryService } from './node-registry.service';
-import {
+import type {
   GossipUpdate,
   SwimClusterMetrics,
   SwimConfig,

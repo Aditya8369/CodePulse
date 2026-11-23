@@ -8,11 +8,16 @@ import { PrismaModule } from '../../prisma/prisma.module';
 
 @Module({
   imports: [PrismaModule],
-  controllers: [TournamentController],
-  providers: [TournamentService, DistributedTransactionCoordinator],
-  exports: [TournamentService, DistributedTransactionCoordinator],
   controllers: [TournamentController, LeaderElectionController],
-  providers: [TournamentService, LeaderElectionService],
-  exports: [TournamentService, LeaderElectionService],
+  providers: [
+    TournamentService,
+    DistributedTransactionCoordinator,
+    LeaderElectionService,
+  ],
+  exports: [
+    TournamentService,
+    DistributedTransactionCoordinator,
+    LeaderElectionService,
+  ],
 })
 export class TournamentsModule {}

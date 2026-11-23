@@ -5,7 +5,7 @@ import {
   Optional,
 } from '@nestjs/common';
 import { ABORT, ChaseLevDeque, DequeResult, EMPTY } from './chase-lev-deque';
-import {
+import type {
   TestCasePayload,
   TestCaseResult,
   WorkerMetrics,

@@ -33,11 +33,13 @@ import { ClocksModule } from './clocks/clocks.module';
 @Global()
 @Module({
   imports: [ClocksModule],
-  controllers: [NodeFenceController],
-  controllers: [SwimGossipController],
-  controllers: [BinaryWalController],
-  controllers: [EventLoopWatchdogController],
-  controllers: [WorkStealingPoolController],
+  controllers: [
+    NodeFenceController,
+    SwimGossipController,
+    BinaryWalController,
+    EventLoopWatchdogController,
+    WorkStealingPoolController,
+  ],
   providers: [
     SystemMetricsService,
     LoadShedderMiddleware,

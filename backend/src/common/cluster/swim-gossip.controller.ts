@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { NodeRegistryService } from './node-registry.service';
 import { SwimGossipService } from './swim-gossip.service';
-import { SwimClusterMetrics, SwimMember } from './swim-gossip.types';
+import type { SwimClusterMetrics, SwimMember } from './swim-gossip.types';
 
 @Controller('cluster/swim')
 export class SwimGossipController {

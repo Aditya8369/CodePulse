@@ -7,7 +7,7 @@ import {
   Post,
 } from '@nestjs/common';
 import { LeaderElectionService } from './leader-election.service';
-import {
+import type {
   LeaderElectionMetrics,
   TournamentMasterStatus,
 } from './leader-election.types';
