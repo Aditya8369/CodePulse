@@ -28,12 +28,12 @@ export class EventTracingPropagatorService {
   private totalExtracted = 0;
   private totalSynthetic = 0;
 
+  private readonly injector: TraceInjectorService;
+
   constructor(
-    @Optional() private injector: TraceInjectorService
+    @Optional() injector?: TraceInjectorService
   ) {
-    if (!this.injector) {
-      this.injector = new TraceInjectorService();
-    }
+    this.injector = injector || new TraceInjectorService();
   }
 
   /**

@@ -71,12 +71,12 @@ export class NotificationBatchDispatcherService {
   private totalBatchDurationSum = 0;
   private batchExecutionCount = 0;
 
+  private readonly compiler: TemplateCompilerService;
+
   constructor(
-    @Optional() private compiler: TemplateCompilerService
+    @Optional() compiler?: TemplateCompilerService
   ) {
-    if (!this.compiler) {
-      this.compiler = new TemplateCompilerService();
-    }
+    this.compiler = compiler || new TemplateCompilerService();
   }
 
   /**

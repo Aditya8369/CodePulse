@@ -58,6 +58,7 @@ import { LspModule } from './modules/lsp/lsp.module';
 import { LoggingModule } from './common/logging/logging.module';
 import { MentorshipModule } from './modules/mentorship/mentorship.module';
 import { GamificationModule } from './modules/gamification/gamification.module';
+import { MessagingModule } from './modules/messaging/messaging.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import { BullModule } from '@nestjs/bullmq';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -174,6 +175,7 @@ import { VaultModule } from './common/vault/vault.module';
 
 
     LspModule,
+    MessagingModule,
   ],
   controllers: [AppController],
   providers: [

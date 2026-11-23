@@ -10,6 +10,12 @@ import { CompensationRunnerService } from './compensation-runner.service';
 import { SagaOrchestratorService } from './saga-orchestrator.service';
 import { ProtobufCompatibilityService } from './protobuf-compatibility.service';
 import { SchemaRegistryService } from './schema-registry.service';
+import { OutboxPublisherService } from './outbox-publisher.service';
+import { RetryJitterService } from './retry-jitter.service';
+import { LogCompactorService } from './log-compactor.service';
+import { TombstoneCleanerService } from './tombstone-cleaner.service';
+import { CachePreloaderService } from './cache-preloader.service';
+import { CacheWarmingSubscriberService } from './cache-warming-subscriber.service';
 
 @Module({
   providers: [
@@ -24,6 +30,12 @@ import { SchemaRegistryService } from './schema-registry.service';
     SagaOrchestratorService,
     ProtobufCompatibilityService,
     SchemaRegistryService,
+    OutboxPublisherService,
+    RetryJitterService,
+    LogCompactorService,
+    TombstoneCleanerService,
+    CachePreloaderService,
+    CacheWarmingSubscriberService,
   ],
   exports: [
     EventStoreService,
@@ -36,6 +48,12 @@ import { SchemaRegistryService } from './schema-registry.service';
     SagaOrchestratorService,
     ProtobufCompatibilityService,
     SchemaRegistryService,
+    OutboxPublisherService,
+    RetryJitterService,
+    LogCompactorService,
+    TombstoneCleanerService,
+    CachePreloaderService,
+    CacheWarmingSubscriberService,
   ],
 })
 export class EventsModule {}

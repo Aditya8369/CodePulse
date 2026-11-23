@@ -29,12 +29,12 @@ export class StreamAggregatorService {
   private readonly CATEGORY_DEPLOY = 'deployments';
   private readonly CATEGORY_INCIDENT = 'incidents';
 
+  private readonly windowService: TumblingWindowService;
+
   constructor(
-    @Optional() private windowService: TumblingWindowService
+    @Optional() windowService?: TumblingWindowService
   ) {
-    if (!this.windowService) {
-      this.windowService = new TumblingWindowService();
-    }
+    this.windowService = windowService || new TumblingWindowService();
   }
 
   /**

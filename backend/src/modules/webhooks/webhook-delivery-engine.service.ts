@@ -59,12 +59,12 @@ export class WebhookDeliveryEngineService {
   private totalRetried = 0;
   private totalSuspended = 0;
 
+  private readonly circuitBreaker: EndpointCircuitBreakerService;
+
   constructor(
-    @Optional() private circuitBreaker: EndpointCircuitBreakerService
+    @Optional() circuitBreaker?: EndpointCircuitBreakerService
   ) {
-    if (!this.circuitBreaker) {
-      this.circuitBreaker = new EndpointCircuitBreakerService();
-    }
+    this.circuitBreaker = circuitBreaker || new EndpointCircuitBreakerService();
   }
 
   public registerHttpHandler(handler: HttpPostHandler): void {
