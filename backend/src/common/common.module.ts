@@ -18,6 +18,8 @@ import { BinaryWalController } from './storage/binary-wal.controller';
 import { EventLoopWatchdogService } from './performance/event-loop-watchdog.service';
 import { TaskSharderService } from './performance/task-sharder.service';
 import { EventLoopWatchdogController } from './performance/event-loop-watchdog.controller';
+import { WorkStealingPoolService } from './concurrency/work-stealing-pool.service';
+import { WorkStealingPoolController } from './concurrency/work-stealing-pool.controller';
 import { ReplicaRouter } from './db/replica-router';
 import { FeatureFlagService } from './features/feature-flag.service';
 import { LoadShedderService } from './resilience/load-shedder.service';
@@ -35,6 +37,7 @@ import { ClocksModule } from './clocks/clocks.module';
   controllers: [SwimGossipController],
   controllers: [BinaryWalController],
   controllers: [EventLoopWatchdogController],
+  controllers: [WorkStealingPoolController],
   providers: [
     SystemMetricsService,
     LoadShedderMiddleware,
@@ -49,6 +52,7 @@ import { ClocksModule } from './clocks/clocks.module';
     WalCompactorService,
     EventLoopWatchdogService,
     TaskSharderService,
+    WorkStealingPoolService,
     ZeroCopyStreamService,
     ReplicaRouter,
     FeatureFlagService,
@@ -73,6 +77,7 @@ import { ClocksModule } from './clocks/clocks.module';
     WalCompactorService,
     EventLoopWatchdogService,
     TaskSharderService,
+    WorkStealingPoolService,
     ZeroCopyStreamService,
     ReplicaRouter,
     FeatureFlagService,
