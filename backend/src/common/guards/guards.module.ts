@@ -12,6 +12,8 @@ import { OpaService } from '../../modules/sec/opa.service';
 import { AdaptiveThrottlerGuard } from './adaptive-throttler.guard';
 import { IpReputationService } from './ip-reputation.service';
 
+import { AuthGuard } from './auth.guard';
+
 @Global()
 @Module({
   providers: [
@@ -27,6 +29,8 @@ import { IpReputationService } from './ip-reputation.service';
 
     AdaptiveThrottlerGuard,
     IpReputationService,
+
+    AuthGuard,
   ],
   exports: [
     RedisService,
@@ -41,6 +45,8 @@ import { IpReputationService } from './ip-reputation.service';
 
     AdaptiveThrottlerGuard,
     IpReputationService,
+
+    AuthGuard,
   ],
 })
 export class GuardsModule {}

@@ -31,6 +31,8 @@ import { GdprShredderService } from './gdpr-shredder.service';
 import { OAuthPkceService } from './oauth-pkce.service';
 import { TokenRotationService } from './token-rotation.service';
 
+import { SessionMeshService } from './session-mesh.service';
+
 
 
 @Module({
@@ -85,6 +87,8 @@ import { TokenRotationService } from './token-rotation.service';
 
     OAuthPkceService,
     TokenRotationService,
+
+    SessionMeshService,
   ],
   exports: [
     AuthService,
@@ -106,6 +110,8 @@ import { TokenRotationService } from './token-rotation.service';
 
     OAuthPkceService,
     TokenRotationService,
+
+    SessionMeshService,
   ],
 })
 export class AuthModule {}
