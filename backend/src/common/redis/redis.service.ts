@@ -977,4 +977,63 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     this.memoryStrings.clear();
     this.memoryHashes.clear();
   }
+
+  /**
+   * Acquires an atomic Redis distributed lock with TTL fencing token to prevent
+   * distributed lock starvation during high-concurrency match & tournament updates.
+   */
+  async acquireDistributedLock(
+    lockKey: string,
+    ownerToken: string,
+    ttlMs = 3000,
+  ): Promise<boolean> {
+    const fullKey = `lock:${lockKey}`;
+    if (this.client && this.isConnected) {
+      try {
+        const res = await (this.client as any).set(fullKey, ownerToken, 'PX', ttlMs, 'NX');
+        return res === 'OK';
+      } catch (err: any) {
+        this.logger.debug(`Redis lock acquire failed, using in-memory lock: ${err.message}`);
+      }
+    }
+
+    const existing = this.memoryStrings.get(fullKey);
+    if (existing && (!existing.expiresAt || Date.now() < existing.expiresAt)) {
+      return false;
+    }
+    this.memoryStrings.set(fullKey, {
+      value: ownerToken,
+      expiresAt: Date.now() + ttlMs,
+    });
+    return true;
+  }
+
+  /**
+   * Releases a distributed lock only if the caller owns the active fencing token.
+   */
+  async releaseDistributedLock(lockKey: string, ownerToken: string): Promise<boolean> {
+    const fullKey = `lock:${lockKey}`;
+    if (this.client && this.isConnected) {
+      try {
+        const lua = `
+          if redis.call("get", KEYS[1]) == ARGV[1] then
+            return redis.call("del", KEYS[1])
+          else
+            return 0
+          end
+        `;
+        const deleted = await this.client.eval(lua, 1, fullKey, ownerToken);
+        return Number(deleted) === 1;
+      } catch (err: any) {
+        this.logger.debug(`Redis lock release failed, using in-memory lock: ${err.message}`);
+      }
+    }
+
+    const existing = this.memoryStrings.get(fullKey);
+    if (existing && existing.value === ownerToken) {
+      this.memoryStrings.delete(fullKey);
+      return true;
+    }
+    return false;
+  }
 }
