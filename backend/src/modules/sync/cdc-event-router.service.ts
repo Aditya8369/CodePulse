@@ -43,8 +43,8 @@ export class CdcEventRouterService implements OnModuleInit, OnModuleDestroy {
 
   onModuleInit(): void {
     this.logger.log('Initializing CdcEventRouterService & attaching to WAL stream...');
-    this.unsubscribeListener = this.walListener.subscribe((change) => {
-      return this.routeWalChange(change);
+    this.unsubscribeListener = this.walListener.subscribe(async (change) => {
+      await this.routeWalChange(change);
     });
   }
 
