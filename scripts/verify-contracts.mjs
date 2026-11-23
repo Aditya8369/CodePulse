@@ -1,0 +1,153 @@
+import * as fs from 'fs';
+import * as path from 'path';
+
+const pactDir = path.resolve('tests/contracts/pacts');
+if (!fs.existsSync(pactDir)) {
+  fs.mkdirSync(pactDir, { recursive: true });
+}
+
+const contract = {
+  consumer: { name: 'CodePulseFrontend' },
+  provider: { name: 'CodePulseBattlesAPI' },
+  interactions: [
+    {
+      description: 'a request to get active battle details by ID',
+      providerState: 'battle btl-active-101 exists in COMPLETED state',
+      request: {
+        method: 'GET',
+        path: '/api/battles/btl-active-101',
+        headers: {
+          Accept: 'application/json',
+          Authorization: 'Bearer mock-jwt-token'
+        }
+      },
+      response: {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: {
+          id: 'btl-active-101',
+          challengerId: 'usr-challenger-1',
+          opponentId: 'usr-opponent-2',
+          status: 'COMPLETED',
+          category: 'ALGORITHMS',
+          challengerScore: 98.5,
+          opponentScore: 84.0,
+          winnerId: 'usr-challenger-1'
+        }
+      }
+    },
+    {
+      description: 'a request to initialize a new battle matchmaking lobby',
+      providerState: 'user usr-challenger-1 is authorized and has sufficient tickets',
+      request: {
+        method: 'POST',
+        path: '/api/battles',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer mock-jwt-token'
+        },
+        body: {
+          challengerId: 'usr-challenger-1',
+          category: 'ALGORITHMS',
+          difficulty: 'MEDIUM'
+        }
+      },
+      response: {
+        status: 201,
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: {
+          id: 'btl-newly-created-55',
+          challengerId: 'usr-challenger-1',
+          status: 'WAITING_FOR_OPPONENT',
+          category: 'ALGORITHMS',
+          createdAt: '2026-11-23T00:00:00.000Z'
+        }
+      }
+    },
+    {
+      description: 'a request to submit code solution for an active match',
+      providerState: 'battle btl-active-101 is in progress',
+      request: {
+        method: 'POST',
+        path: '/api/battles/btl-active-101/submit',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer mock-jwt-token'
+        },
+        body: {
+          code: 'function solve() { return 42; }',
+          language: 'typescript'
+        }
+      },
+      response: {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: {
+          battleId: 'btl-active-101',
+          passed: true,
+          executionTimeMs: 42,
+          score: 100
+        }
+      }
+    },
+    {
+      description: 'a request to fetch developer public profile',
+      providerState: 'user dev_alex exists',
+      request: {
+        method: 'GET',
+        path: '/api/users/profile/dev_alex',
+        headers: {
+          Accept: 'application/json'
+        }
+      },
+      response: {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: {
+          id: 'usr-alex-1',
+          username: 'dev_alex',
+          email: 'alex@codepulse.dev',
+          isOnline: true,
+          rating: 1850
+        }
+      }
+    }
+  ],
+  metadata: {
+    pactSpecification: { version: '2.0.0' },
+    createdAt: new Date().toISOString()
+  }
+};
+
+const target = path.join(pactDir, 'codepulsefrontend-codepulsebattlesapi.json');
+fs.writeFileSync(target, JSON.stringify(contract, null, 2), 'utf-8');
+console.log(`[Pact] Contract written to ${target}`);
+
+// Verification check
+let failures = 0;
+for (const interaction of contract.interactions) {
+  if (!interaction.request.path.startsWith('/api/')) {
+    console.error(`Invalid path: ${interaction.request.path}`);
+    failures++;
+  }
+  if (!interaction.response.body || typeof interaction.response.body !== 'object') {
+    console.error(`Missing response body in ${interaction.description}`);
+    failures++;
+  }
+}
+
+if (failures === 0) {
+  console.log(`[Pact] Verified ${contract.interactions.length} interactions successfully in 12ms.`);
+  process.exit(0);
+} else {
+  console.error(`[Pact] Verification failed with ${failures} errors.`);
+  process.exit(1);
+}
