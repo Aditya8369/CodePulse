@@ -18,6 +18,7 @@ import { OwnershipHeatmapService } from './ownership-heatmap.service';
 import { FlowStateService } from './flow-state.service';
 import { TumblingWindowService } from './tumbling-window.service';
 import { StreamAggregatorService } from './stream-aggregator.service';
+import { DebtForecasterService } from './debt-forecaster.service';
 
 @Module({
   controllers: [
@@ -42,6 +43,7 @@ import { StreamAggregatorService } from './stream-aggregator.service';
     FlowStateService,
     TumblingWindowService,
     StreamAggregatorService,
+    DebtForecasterService,
   ],
   exports: [
     AnalyticsService,
@@ -58,6 +60,7 @@ import { StreamAggregatorService } from './stream-aggregator.service';
     FlowStateService,
     TumblingWindowService,
     StreamAggregatorService,
+    DebtForecasterService,
   ],
 })
 export class AnalyticsModule {}
