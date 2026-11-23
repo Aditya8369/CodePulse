@@ -43,6 +43,7 @@ import { AudioModule } from './modules/audio/audio.module';
 import { AiModule } from './modules/ai/ai.module';
 import { TournamentsModule } from './modules/tournaments/tournaments.module';
 import { OpsModule } from './modules/ops/ops.module';
+import { LspModule } from './modules/lsp/lsp.module';
 
 import { LoggingModule } from './common/logging/logging.module';
 import { MentorshipModule } from './modules/mentorship/mentorship.module';
@@ -153,6 +154,7 @@ import { VaultModule } from './common/vault/vault.module';
     AiModule,
     TournamentsModule,
     OpsModule,
+    LspModule,
   ],
   controllers: [AppController],
   providers: [
