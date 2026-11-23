@@ -51,6 +51,8 @@ import { SreModule } from './modules/sre/sre.module';
 
 
 
+import { LspModule } from './modules/lsp/lsp.module';
+
 import { LoggingModule } from './common/logging/logging.module';
 import { MentorshipModule } from './modules/mentorship/mentorship.module';
 import { GamificationModule } from './modules/gamification/gamification.module';
@@ -166,6 +168,8 @@ import { VaultModule } from './common/vault/vault.module';
     RealtimeModule,
 
 
+
+    LspModule,
   ],
   controllers: [AppController],
   providers: [
