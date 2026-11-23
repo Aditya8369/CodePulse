@@ -28,6 +28,9 @@ import { BruteForceService } from './brute-force.service';
 import { BruteForceGuard } from './guards/brute-force.guard';
 import { GdprShredderService } from './gdpr-shredder.service';
 
+import { OAuthPkceService } from './oauth-pkce.service';
+import { TokenRotationService } from './token-rotation.service';
+
 
 
 @Module({
@@ -79,6 +82,9 @@ import { GdprShredderService } from './gdpr-shredder.service';
     GdprShredderService,
 
     WebAuthnService,
+
+    OAuthPkceService,
+    TokenRotationService,
   ],
   exports: [
     AuthService,
@@ -97,6 +103,9 @@ import { GdprShredderService } from './gdpr-shredder.service';
     GdprShredderService,
 
     WebAuthnService,
+
+    OAuthPkceService,
+    TokenRotationService,
   ],
 })
 export class AuthModule {}
