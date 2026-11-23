@@ -354,4 +354,20 @@ export class ChallengesService {
       expiredUserChallengesCount: expiredUserChallenges.count,
     };
   }
+
+  async transpileChallengeSolution(
+    sourceCode: string,
+    sourceLanguage: 'typescript' | 'python' | 'go' | 'rust' | 'cpp',
+    targetLanguage: 'typescript' | 'python' | 'go' | 'rust' | 'cpp',
+    polyglotTranspiler?: { transpileAndVerify: (req: any) => Promise<any> },
+  ) {
+    if (!polyglotTranspiler) {
+      return { sourceLanguage, targetLanguage, transpiledCode: sourceCode };
+    }
+    return polyglotTranspiler.transpileAndVerify({
+      sourceCode,
+      sourceLanguage,
+      targetLanguage,
+    });
+  }
 }
