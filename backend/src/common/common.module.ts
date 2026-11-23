@@ -7,6 +7,9 @@ import { EtcdWatcherService } from '../config/etcd-watcher.service';
 import { IdempotencyService } from './idempotency/idempotency.service';
 import { IdempotencyInterceptor } from './idempotency/idempotency.interceptor';
 import { QuorumWitnessService } from './cluster/quorum-witness.service';
+import { NodeRegistryService } from './cluster/node-registry.service';
+import { SwimGossipService } from './cluster/swim-gossip.service';
+import { SwimGossipController } from './cluster/swim-gossip.controller';
 import { ReplicaRouter } from './db/replica-router';
 import { FeatureFlagService } from './features/feature-flag.service';
 import { LoadShedderService } from './resilience/load-shedder.service';
@@ -18,6 +21,7 @@ import { TDigestService } from './math/t-digest.service';
 
 @Global()
 @Module({
+  controllers: [SwimGossipController],
   providers: [
     SystemMetricsService,
     LoadShedderMiddleware,
@@ -25,6 +29,8 @@ import { TDigestService } from './math/t-digest.service';
     IdempotencyService,
     IdempotencyInterceptor,
     QuorumWitnessService,
+    NodeRegistryService,
+    SwimGossipService,
     ZeroCopyStreamService,
     ReplicaRouter,
     FeatureFlagService,
@@ -42,6 +48,8 @@ import { TDigestService } from './math/t-digest.service';
     IdempotencyService,
     IdempotencyInterceptor,
     QuorumWitnessService,
+    NodeRegistryService,
+    SwimGossipService,
     ZeroCopyStreamService,
     ReplicaRouter,
     FeatureFlagService,
