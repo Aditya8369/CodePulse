@@ -1578,3 +1578,28 @@ model AiReviewAudit {
   @@index([prNumber, createdAt])
   @@map("ai_review_audits")
 }
+
+model IssueRepro {
+  id                String   @id @default(uuid())
+  issueNumber       Int
+  repository        String
+  issueTitle        String?
+  targetLanguage    String   // 'nodejs', 'python', 'bash', 'curl'
+  scriptContent     String   @db.Text
+  dockerfileContent String?  @db.Text
+  stepsExtracted    Int      @default(0)
+  syntaxValid       Boolean  @default(true)
+  syntaxErrors      String?  @db.Text
+  executionSuccess  Boolean? // null = unexecuted, true = reproduced, false = failed
+  executionOutput   String?  @db.Text
+  errorLogs         String?  @db.Text
+  confidenceScore   Float    @default(0.85)
+  commentPosted     Boolean  @default(false)
+  commentUrl        String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([repository, issueNumber])
+  @@index([createdAt])
+  @@map("issue_repros")
+}

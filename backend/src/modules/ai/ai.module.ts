@@ -13,6 +13,7 @@ import { VerificationSwarmService } from './verification-swarm.service';
 
 import { ComplexityAnalyzerService } from './complexity-analyzer.service';
 import { MultiAgentReviewerService } from './agents/pr-reviewer.service';
+import { ReproSynthesizerService } from './repro-synthesizer.service';
 import { GithubModule } from '../github/github.module';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { RedisService } from '../../common/redis/redis.service';
@@ -34,6 +35,7 @@ import { RedisService } from '../../common/redis/redis.service';
 
     ComplexityAnalyzerService,
     MultiAgentReviewerService,
+    ReproSynthesizerService,
     RedisService,
   ],
   exports: [
@@ -50,6 +52,7 @@ import { RedisService } from '../../common/redis/redis.service';
 
     ComplexityAnalyzerService,
     MultiAgentReviewerService,
+    ReproSynthesizerService,
   ],
 })
 export class AiModule {}

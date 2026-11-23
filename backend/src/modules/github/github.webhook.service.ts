@@ -1,6 +1,7 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ChangelogGeneratorService } from '../ai/changelog-generator.service';
+import { ReproSynthesizerService } from '../ai/repro-synthesizer.service';
 
 export interface WebhookPushPayload {
   commits?: Array<{ id: string; message: string; author?: { username?: string; email?: string } }>;
@@ -49,6 +50,7 @@ export class GithubWebhookService {
   constructor(
     private readonly prisma: PrismaService,
     @Optional() private readonly changelogGenerator?: ChangelogGeneratorService,
+    @Optional() private readonly reproSynthesizer?: ReproSynthesizerService,
   ) {}
 
   isDeliveryProcessed(deliveryId: string): boolean {
@@ -262,6 +264,33 @@ export class GithubWebhookService {
       changelog: changelogMarkdown,
       awardedXp: 0,
     };
+  }
+
+  async processIssuesEvent(payload: any) {
+    const action = payload?.action;
+    const issueNumber = payload?.issue?.number;
+    this.logger.log(`Processing GitHub issue event: ${action} for issue #${issueNumber}`);
+
+    if (this.reproSynthesizer) {
+      try {
+        const repro = await this.reproSynthesizer.synthesizeFromWebhookIssue(payload);
+        if (repro) {
+          return {
+            action,
+            issueNumber,
+            reproSynthesized: true,
+            reproId: repro.id,
+            targetLanguage: repro.targetLanguage,
+            syntaxValid: repro.syntaxValid,
+            commentPosted: repro.commentPosted,
+          };
+        }
+      } catch (err: any) {
+        this.logger.warn(`Could not synthesize bug reproduction for issue #${issueNumber}: ${err?.message}`);
+      }
+    }
+
+    return { action, issueNumber, reproSynthesized: false };
   }
 }
 
