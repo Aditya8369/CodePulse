@@ -237,9 +237,25 @@ export class PrismaService
     if (this.tenantSharding) {
       return this.tenantSharding.executeCrossShard2PC(participantOrgOrShardIds, txPlan);
     }
-    const shards = new Map<string, PrismaClient>([['default', this]]);
-    const result = await txPlan(shards, `tx-local-${Date.now()}`);
-    return { txId: 'tx-local', result, status: 'COMMITTED' };
+  /**
+   * Rebalance / migrate tenant shard dynamically with zero downtime
+   */
+  async rebalanceTenantShard(
+    tenantId: string,
+    targetShardId: string,
+    syncCallback?: (source: PrismaClient, target: PrismaClient) => Promise<number>,
+  ) {
+    if (this.tenantSharding) {
+      return this.tenantSharding.migrateTenant(tenantId, targetShardId, syncCallback);
+    }
+    return {
+      orgId: tenantId,
+      sourceShardId: 'default',
+      targetShardId,
+      recordsMigrated: 0,
+      durationMs: 0,
+      status: 'COMPLETED' as const,
+    };
   }
 
   /**
