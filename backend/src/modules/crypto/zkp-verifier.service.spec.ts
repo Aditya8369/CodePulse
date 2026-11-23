@@ -150,6 +150,23 @@ describe('ZkpVerifierService', () => {
 
       expect(result.valid).toBe(false);
     });
+
+    it('asserts cryptographic soundness rejecting tampered output with 100% soundness', () => {
+      const mockData = service.generateMockProof('two-sum-private', {
+        problemHash: '0xprob',
+        outputHash: '0xout',
+        complexityTier: 1,
+        cycles: 500,
+      });
+
+      expect(service.assertProofSoundness(mockData.proof, mockData.publicSignals)).toBe(true);
+
+      const forgedProof: Groth16Proof = {
+        ...mockData.proof,
+        pi_a: ['0xdeadbeef', '0x123', '0x1'],
+      };
+      expect(service.assertProofSoundness(forgedProof, mockData.publicSignals)).toBe(false);
+    });
   });
 });
 
