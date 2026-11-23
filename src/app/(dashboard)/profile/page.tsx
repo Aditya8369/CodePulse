@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { motion } from "motion/react";
 import { StaggerContainer, StaggerItem } from "@/components/animations/page-transition";
 import { AnimatedCounter, AnimatedProgress } from "@/components/animations/animated-counter";
@@ -13,7 +14,7 @@ import { useCurrentUser } from "@/hooks/api/use-auth";
 import { GithubIcon } from "@/components/icons/github";
 import {
   MapPin, Building, Globe, Calendar, Star, GitFork, GitCommit,
-  GitPullRequest, Eye, Flame, Code, ExternalLink, Crown, QrCode, Shield, Share2,
+  GitPullRequest, Eye, Flame, Code, ExternalLink, Crown, QrCode, Shield, Share2, FileText,
 } from "lucide-react";
 import { ProfileQrModal } from "@/components/modals/profile-qr-modal";
 import { ProfileBadgeModal } from "@/components/modals/profile-badge-modal";
@@ -175,6 +176,14 @@ export default function ProfilePage() {
                 <Shield className="w-3.5 h-3.5 text-primary" />
                 Get Badge
               </button>
+              <Link
+                href="/profile/resume"
+                data-testid="build-resume-btn"
+                className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-400 text-xs font-medium transition-all"
+              >
+                <FileText className="w-3.5 h-3.5 text-indigo-400" />
+                Build Resume
+              </Link>
             </div>
 
             {/* Followers/Following */}
