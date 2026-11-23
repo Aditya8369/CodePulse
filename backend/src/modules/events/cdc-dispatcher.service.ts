@@ -71,16 +71,19 @@ export class CdcDispatcherService implements OnModuleInit, OnModuleDestroy {
     if (this.redis?.getClient) {
       try {
         const client = this.redis.getClient();
-        streamId = await client.xadd(
-          CdcDispatcherService.REDIS_STREAM_KEY,
-          '*',
-          'table',
-          mutation.table,
-          'operation',
-          mutation.operation,
-          'payload',
-          JSON.stringify(mutation),
-        );
+        if (client) {
+          const res = await client.xadd(
+            CdcDispatcherService.REDIS_STREAM_KEY,
+            '*',
+            'table',
+            mutation.table,
+            'operation',
+            mutation.operation,
+            'payload',
+            JSON.stringify(mutation),
+          );
+          if (res) streamId = res;
+        }
       } catch (err) {
         this.logger.warn(`Failed to XADD CDC mutation to Redis stream: ${err}`);
       }
@@ -146,7 +149,7 @@ export class CdcDispatcherService implements OnModuleInit, OnModuleDestroy {
     if (this.redis?.getClient) {
       try {
         const client = this.redis.getClient();
-        void client.del(key);
+        if (client) void client.del(key);
       } catch {
         // Ignore
       }

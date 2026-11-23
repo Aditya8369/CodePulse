@@ -1,81 +1,85 @@
-import { Module, forwardRef } from '@nestjs/common';
-import { BattlesGateway } from './battles.gateway';
-import { BattlesService } from './battles.service';
+import { Module } from '@nestjs/common';
 import { BattlesController } from './battles.controller';
-import { PrismaModule } from '../../prisma/prisma.module';
-import { AuthModule } from '../auth/auth.module';
-import { CodeSandboxService } from './code-sandbox.service';
-import { RedisModule } from '../../redis/redis.module';
-import { BattleMetricsService } from './battle-metrics.service';
-import { BattlePersistenceQueue } from './battle-persistence.queue';
-import { BattleSnapshotQueue } from './battle-snapshot.queue';
-import { BattleReplayService } from './battle-replay.service';
-import { BattleSabotageService } from './battle-sabotage.service';
-import { BattleSabotageController } from './battle-sabotage.controller';
-import { BattleMatchmakingService } from './battle-matchmaking.service';
-import { BattleTournamentService } from './battle-tournament.service';
-import { TournamentEngineService } from './tournament-engine.service';
-import { AntiSmurfService } from './anti-smurf.service';
-import { WatermarkService } from './watermark.service';
+import { BattlesService } from './battles.service';
+import { BattlesGateway } from './battles.gateway';
+import { SeasonResetService } from './season-reset.service';
+import { BullModule } from '@nestjs/bullmq';
+import { RatingDecayService } from './rating-decay.service';
+import { RatingDecayWorker } from './rating-decay.worker';
+import { RatingDecayScheduler } from './rating-decay.scheduler';
+import { BattlesLifecycleScheduler } from './battles-lifecycle.scheduler';
+import { BattlesLifecycleWorker } from './battles-lifecycle.worker';
+import { MetricsModule } from '../metrics/metrics.module';
+import { XpModule } from '../xp/xp.module';
+import { AnalyticsModule } from '../analytics/analytics.module';
 import { ReplayStreamService } from './replay-stream.service';
+import { CryptoModule } from '../crypto/crypto.module';
+import { WatermarkService } from './watermark.service';
+import { HypeMeterService } from './hype-meter.service';
+import { HypeStormGateway } from './hype-storm.gateway';
+import { RedisService } from '../../common/redis/redis.service';
+import { TournamentEngineService } from './tournament-engine.service';
+import { EsportsModule } from '../esports/esports.module';
+import { AiModule } from '../ai/ai.module';
+import { TournamentsModule } from '../tournaments/tournaments.module';
 import { RaidBossService } from './raid-boss.service';
-import { BattleStatsService } from './battle-stats.service';
-import { MatchmakingQueueService } from './matchmaking-queue.service';
+import { AntiSmurfService } from './anti-smurf.service';
+import { AntiCheatBiometricsService } from './anti-cheat-biometrics.service';
+import { SabotageEngineService } from './sabotage-engine.service';
 import { EdgeRelayService } from './edge-relay.service';
 import { PlagiarismService } from './plagiarism.service';
 import { RoomService } from './room.service';
 import { EvaluatorService } from './evaluator.service';
 import { RaftStateService } from './consensus/raft-state.service';
 import { WalLogService } from './consensus/wal-log.service';
+
 import { CrdtRelayGateway } from './crdt-relay.gateway';
-
 import { ShardedMatchmakingQueueService } from './matchmaking/sharded-queue.service';
-
 import { DistributedLeaderElectionService } from './consensus/leader-election.service';
-
 import { DistributedDisruptorRelayService } from './distributed-disruptor-relay.service';
-
 import { BattlesFirecrackerPoolService } from './firecracker-pool.service';
 import { CodeSandboxService } from './code-sandbox.service';
-
 import { ProtobufStreamService } from './protobuf-stream.service';
-
 import { WebRtcSignalingGateway } from './webrtc-signaling.gateway';
-
 import { FuzzingEvaluatorService } from './fuzzing-evaluator.service';
-
 import { BattleDisputeService } from './dispute.service';
-
 import { MutationTestingService } from './mutation-testing.service';
 
 @Module({
   imports: [
-    PrismaModule,
-    forwardRef(() => AuthModule),
-    RedisModule,
+    BullModule.registerQueue(
+      { name: 'rating-decay' },
+      { name: 'battles-lifecycle' },
+      { name: 'tournament-engine' },
+    ),
+    MetricsModule,
+    XpModule,
+    AnalyticsModule,
+    CryptoModule,
+    EsportsModule,
+    AiModule,
+    TournamentsModule,
   ],
-  controllers: [
-    BattlesController,
-    BattleSabotageController,
-  ],
+  controllers: [BattlesController],
   providers: [
-    BattlesGateway,
     BattlesService,
-    CodeSandboxService,
-    BattleMetricsService,
-    BattlePersistenceQueue,
-    BattleSnapshotQueue,
-    BattleReplayService,
-    BattleSabotageService,
-    BattleMatchmakingService,
-    BattleTournamentService,
-    TournamentEngineService,
-    AntiSmurfService,
-    WatermarkService,
+    BattlesGateway,
+    SeasonResetService,
+    RatingDecayService,
+    RatingDecayWorker,
+    RatingDecayScheduler,
+    BattlesLifecycleScheduler,
+    BattlesLifecycleWorker,
     ReplayStreamService,
+    WatermarkService,
+    HypeMeterService,
+    HypeStormGateway,
+    RedisService,
+    TournamentEngineService,
     RaidBossService,
-    BattleStatsService,
-    MatchmakingQueueService,
+    AntiSmurfService,
+    AntiCheatBiometricsService,
+    SabotageEngineService,
     EdgeRelayService,
     PlagiarismService,
     RoomService,
@@ -83,38 +87,30 @@ import { MutationTestingService } from './mutation-testing.service';
     RaftStateService,
     WalLogService,
     CrdtRelayGateway,
-
     ShardedMatchmakingQueueService,
-
     DistributedLeaderElectionService,
-
     DistributedDisruptorRelayService,
-
     BattlesFirecrackerPoolService,
     CodeSandboxService,
-
     ProtobufStreamService,
-
     WebRtcSignalingGateway,
-
     FuzzingEvaluatorService,
-
     BattleDisputeService,
-
     MutationTestingService,
   ],
   exports: [
     BattlesService,
     BattlesGateway,
-    BattleMatchmakingService,
-    BattleTournamentService,
-    TournamentEngineService,
-    AntiSmurfService,
-    WatermarkService,
     ReplayStreamService,
+    WatermarkService,
+    HypeMeterService,
+    HypeStormGateway,
+    RedisService,
+    TournamentEngineService,
+    SabotageEngineService,
     RaidBossService,
-    BattleStatsService,
-    MatchmakingQueueService,
+    AntiSmurfService,
+    AntiCheatBiometricsService,
     EdgeRelayService,
     PlagiarismService,
     RoomService,
@@ -122,24 +118,15 @@ import { MutationTestingService } from './mutation-testing.service';
     RaftStateService,
     WalLogService,
     CrdtRelayGateway,
-
     ShardedMatchmakingQueueService,
-
     DistributedLeaderElectionService,
-
     DistributedDisruptorRelayService,
-
     BattlesFirecrackerPoolService,
     CodeSandboxService,
-
     ProtobufStreamService,
-
     WebRtcSignalingGateway,
-
     FuzzingEvaluatorService,
-
     BattleDisputeService,
-
     MutationTestingService,
   ],
 })

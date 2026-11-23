@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 
 /**
  * Cache line padding: 64 bytes (16 x 32-bit integers)
@@ -44,7 +44,7 @@ export class ZeroCopyStreamService {
   private totalPublished = 0;
   private totalConsumed = 0;
 
-  constructor(config?: ZeroCopyStreamConfig) {
+  constructor(@Optional() config?: ZeroCopyStreamConfig) {
     const rawSlots = config?.slotCount ?? 65536;
     this.slotCount = this.nextPowerOfTwo(rawSlots);
     this.mask = this.slotCount - 1;

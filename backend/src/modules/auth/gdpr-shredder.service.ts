@@ -87,19 +87,17 @@ export class GdprShredderService {
             username: ghostHandle,
             email: shreddedEmail,
             bio: null,
-            avatarUrl: null,
+            avatar: null,
             githubId: null,
-            githubUsername: null,
             location: null,
             company: null,
-            websiteUrl: null,
-            twitterUsername: null,
+            website: null,
           },
         });
 
         // Nullify audit logs
         const auditUpdate = await this.prisma.auditLog.updateMany({
-          where: { userId },
+          where: { actorId: userId },
           data: {
             ipAddress: '0.0.0.0',
             userAgent: 'ANONYMIZED_GDPR_ARTICLE_17',

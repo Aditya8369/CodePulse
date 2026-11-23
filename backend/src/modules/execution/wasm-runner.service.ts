@@ -121,7 +121,7 @@ export class WasmRunnerService {
     const startExec = performance.now();
 
     try {
-      const module = await WebAssembly.compile(bytecode);
+      const module = await WebAssembly.compile(bytecode as any);
       const instance = await WebAssembly.instantiate(module, importObject);
 
       const exportedFn = instance.exports[exportName] as ((...a: number[]) => number) | undefined;

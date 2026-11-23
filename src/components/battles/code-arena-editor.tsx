@@ -162,7 +162,7 @@ export const CodeArenaEditor: React.FC<CodeArenaEditorProps> = ({
     // Attempt real backend execution API first if supported
     let usedBackendApi = false;
     try {
-      if (typeof window !== 'undefined' && window.fetch) {
+      if (typeof window !== 'undefined' && typeof window.fetch === 'function') {
         const response = await fetch(executionApiUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

@@ -200,7 +200,7 @@ export class VerificationCoordinatorService {
     }
 
     // 4. Memory allocation proportional to unbounded numeric parameters
-    if (/new\s+Array\(([a-zA-Z0-9_]+)\)/.test(code) && !/if\s*\(\s*\1\s*>\s*\d+/.test(code)) {
+    if (/new\s+Array\(([a-zA-Z0-9_]+)\)/.test(code) && !/if\s*\(\s*[a-zA-Z0-9_]+\s*>\s*\d+/.test(code)) {
       unboundedAllocations.push('Direct dynamic allocation of large buffer from untrusted numeric parameter');
       if (riskLevel === 'LOW') riskLevel = 'MEDIUM';
     }

@@ -52,21 +52,21 @@ export interface WebAuthnAuthenticationOptions {
   }>;
 }
 
-export interface VerifyRegistrationDto {
-  userId: string;
-  credentialId: string;
-  publicKey: string;
-  clientDataJSON: string;
+export class VerifyRegistrationDto {
+  userId!: string;
+  credentialId!: string;
+  publicKey!: string;
+  clientDataJSON!: string;
   name?: string;
   transports?: string[];
 }
 
-export interface VerifyAuthenticationDto {
-  userId: string;
-  credentialId: string;
-  signature: string;
-  clientDataJSON: string;
-  counter: number;
+export class VerifyAuthenticationDto {
+  userId!: string;
+  credentialId!: string;
+  signature!: string;
+  clientDataJSON!: string;
+  counter!: number;
 }
 
 @Injectable()

@@ -190,7 +190,7 @@ export class BattleDisputeService {
             if (tx.battle) {
               await tx.battle.update({
                 where: { id: dispute.battleId },
-                data: { winnerId: dispute.filerId, status: 'DISPUTE_OVERTURNED' },
+                data: { winnerId: dispute.filerId, status: 'CANCELLED' as any },
               });
             }
           });
