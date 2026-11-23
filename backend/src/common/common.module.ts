@@ -9,6 +9,9 @@ import { IdempotencyInterceptor } from './idempotency/idempotency.interceptor';
 import { QuorumWitnessService } from './cluster/quorum-witness.service';
 import { SplitBrainDetectorService } from './cluster/split-brain-detector.service';
 import { NodeFenceController } from './cluster/node-fence.controller';
+import { NodeRegistryService } from './cluster/node-registry.service';
+import { SwimGossipService } from './cluster/swim-gossip.service';
+import { SwimGossipController } from './cluster/swim-gossip.controller';
 import { ReplicaRouter } from './db/replica-router';
 import { FeatureFlagService } from './features/feature-flag.service';
 import { LoadShedderService } from './resilience/load-shedder.service';
@@ -23,6 +26,7 @@ import { ClocksModule } from './clocks/clocks.module';
 @Module({
   imports: [ClocksModule],
   controllers: [NodeFenceController],
+  controllers: [SwimGossipController],
   providers: [
     SystemMetricsService,
     LoadShedderMiddleware,
@@ -31,6 +35,8 @@ import { ClocksModule } from './clocks/clocks.module';
     IdempotencyInterceptor,
     QuorumWitnessService,
     SplitBrainDetectorService,
+    NodeRegistryService,
+    SwimGossipService,
     ZeroCopyStreamService,
     ReplicaRouter,
     FeatureFlagService,
@@ -49,6 +55,8 @@ import { ClocksModule } from './clocks/clocks.module';
     IdempotencyInterceptor,
     QuorumWitnessService,
     SplitBrainDetectorService,
+    NodeRegistryService,
+    SwimGossipService,
     ZeroCopyStreamService,
     ReplicaRouter,
     FeatureFlagService,
