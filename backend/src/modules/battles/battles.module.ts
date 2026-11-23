@@ -38,6 +38,8 @@ import { DistributedDisruptorRelayService } from './distributed-disruptor-relay.
 import { BattlesFirecrackerPoolService } from './firecracker-pool.service';
 import { CodeSandboxService } from './code-sandbox.service';
 
+import { ProtobufStreamService } from './protobuf-stream.service';
+
 @Module({
   imports: [
     PrismaModule,
@@ -82,6 +84,8 @@ import { CodeSandboxService } from './code-sandbox.service';
 
     BattlesFirecrackerPoolService,
     CodeSandboxService,
+
+    ProtobufStreamService,
   ],
   exports: [
     BattlesService,
@@ -111,6 +115,8 @@ import { CodeSandboxService } from './code-sandbox.service';
 
     BattlesFirecrackerPoolService,
     CodeSandboxService,
+
+    ProtobufStreamService,
   ],
 })
 export class BattlesModule {}
