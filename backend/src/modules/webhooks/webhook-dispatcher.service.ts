@@ -317,6 +317,26 @@ export class WebhookDispatcherService {
   }
 
   /**
+   * Move failed delivery explicitly to Dead Letter Queue
+   */
+  public async moveToDeadLetterQueue(deliveryId: string, errorReason: string) {
+    if (!this.prisma?.webhookDeliveryLog) return;
+    try {
+      await this.prisma.webhookDeliveryLog.update({
+        where: { id: deliveryId },
+        data: {
+          status: 'DEAD_LETTER',
+          isDeadLetter: true,
+          dlqReason: errorReason,
+          error: errorReason,
+        },
+      });
+    } catch {
+      // non-blocking
+    }
+  }
+
+  /**
    * Get Dead-Letter Queue (DLQ) entries
    */
   public async getDeadLetterQueue(userId?: string) {
