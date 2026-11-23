@@ -385,5 +385,4 @@ describe('Challenges Lifecycle State Machine & Concurrency Engine (#502)', () =>
       );
     });
   });
-  });
 });

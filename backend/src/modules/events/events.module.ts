@@ -6,6 +6,10 @@ import { CdcDispatcherService } from './cdc-dispatcher.service';
 import { RedisService } from '../../common/redis/redis.service';
 import { StickyAssignorService } from './sticky-assignor.service';
 import { PartitionRebalanceManagerService } from './partition-rebalance-manager.service';
+import { CompensationRunnerService } from './compensation-runner.service';
+import { SagaOrchestratorService } from './saga-orchestrator.service';
+import { ProtobufCompatibilityService } from './protobuf-compatibility.service';
+import { SchemaRegistryService } from './schema-registry.service';
 
 @Module({
   providers: [
@@ -16,6 +20,10 @@ import { PartitionRebalanceManagerService } from './partition-rebalance-manager.
     RedisService,
     StickyAssignorService,
     PartitionRebalanceManagerService,
+    CompensationRunnerService,
+    SagaOrchestratorService,
+    ProtobufCompatibilityService,
+    SchemaRegistryService,
   ],
   exports: [
     EventStoreService,
@@ -24,6 +32,10 @@ import { PartitionRebalanceManagerService } from './partition-rebalance-manager.
     CdcDispatcherService,
     StickyAssignorService,
     PartitionRebalanceManagerService,
+    CompensationRunnerService,
+    SagaOrchestratorService,
+    ProtobufCompatibilityService,
+    SchemaRegistryService,
   ],
 })
 export class EventsModule {}
