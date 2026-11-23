@@ -12,6 +12,9 @@ import { NodeFenceController } from './cluster/node-fence.controller';
 import { NodeRegistryService } from './cluster/node-registry.service';
 import { SwimGossipService } from './cluster/swim-gossip.service';
 import { SwimGossipController } from './cluster/swim-gossip.controller';
+import { BinaryWalService } from './storage/binary-wal.service';
+import { WalCompactorService } from './storage/wal-compactor.service';
+import { BinaryWalController } from './storage/binary-wal.controller';
 import { ReplicaRouter } from './db/replica-router';
 import { FeatureFlagService } from './features/feature-flag.service';
 import { LoadShedderService } from './resilience/load-shedder.service';
@@ -27,6 +30,7 @@ import { ClocksModule } from './clocks/clocks.module';
   imports: [ClocksModule],
   controllers: [NodeFenceController],
   controllers: [SwimGossipController],
+  controllers: [BinaryWalController],
   providers: [
     SystemMetricsService,
     LoadShedderMiddleware,
@@ -37,6 +41,8 @@ import { ClocksModule } from './clocks/clocks.module';
     SplitBrainDetectorService,
     NodeRegistryService,
     SwimGossipService,
+    BinaryWalService,
+    WalCompactorService,
     ZeroCopyStreamService,
     ReplicaRouter,
     FeatureFlagService,
@@ -57,6 +63,8 @@ import { ClocksModule } from './clocks/clocks.module';
     SplitBrainDetectorService,
     NodeRegistryService,
     SwimGossipService,
+    BinaryWalService,
+    WalCompactorService,
     ZeroCopyStreamService,
     ReplicaRouter,
     FeatureFlagService,
