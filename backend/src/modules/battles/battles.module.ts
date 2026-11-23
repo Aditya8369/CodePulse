@@ -46,6 +46,8 @@ import { FuzzingEvaluatorService } from './fuzzing-evaluator.service';
 
 import { BattleDisputeService } from './dispute.service';
 
+import { MutationTestingService } from './mutation-testing.service';
+
 @Module({
   imports: [
     PrismaModule,
@@ -98,6 +100,8 @@ import { BattleDisputeService } from './dispute.service';
     FuzzingEvaluatorService,
 
     BattleDisputeService,
+
+    MutationTestingService,
   ],
   exports: [
     BattlesService,
@@ -135,6 +139,8 @@ import { BattleDisputeService } from './dispute.service';
     FuzzingEvaluatorService,
 
     BattleDisputeService,
+
+    MutationTestingService,
   ],
 })
 export class BattlesModule {}
