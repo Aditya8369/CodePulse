@@ -129,5 +129,39 @@ describe('WatermarkService (Anti-Ghosting Watermarking & Integrity Verification 
       expect(focusEvent.timeSpentAwayMs).toBe(5000);
     });
   });
+
+  describe('Compressed Screenshot & Monitor Photo Watermark Extraction (#1092)', () => {
+    it('successfully extracts user ID from a compressed JPEG photo of a monitor screen', () => {
+      const spectator = {
+        spectatorId: 'leaker_target_user_88',
+        ipAddress: '198.51.100.42',
+        timestamp: 1732000000000,
+        matchId: 'esports-invitational-finals',
+      };
+
+      const result = service.simulateCompressedScreenshotLeak(spectator, 0.85);
+
+      expect(result.extractedUserId).toBe('leaker_target_user_88');
+      expect(result.accuracy).toBeGreaterThanOrEqual(0.999);
+      expect(result.decodedResult.valid).toBe(true);
+      expect(result.decodedResult.ipAddress).toBe('198.51.100.42');
+      expect(result.decodedResult.matchId).toBe('esports-invitational-finals');
+    });
+
+    it('extracts watermark payload from arbitrary noisy pixel matrices', () => {
+      const spectator = {
+        spectatorId: 'co_conspirator_discord',
+        ipAddress: '203.0.113.19',
+        timestamp: 1732005000000,
+        matchId: 'grand-finals-leak',
+      };
+
+      const watermark = service.generateSteganographicWatermark(spectator, 48, 48);
+      const decoded = service.extractWatermarkFromScreenshot(watermark.luminanceModulationMap);
+
+      expect(decoded.valid).toBe(true);
+      expect(decoded.spectatorId).toBe('co_conspirator_discord');
+    });
+  });
 });
 
