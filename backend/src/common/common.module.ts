@@ -41,5 +41,9 @@ import { ReplicaRouter } from './db/replica-router';
 import { FeatureFlagService } from './features/feature-flag.service';
   providers: [SystemMetricsService, LoadShedderMiddleware, EtcdWatcherService, FeatureFlagService],
   exports: [SystemMetricsService, LoadShedderMiddleware, EtcdWatcherService, FeatureFlagService],
+
+import { LoadShedderService } from './resilience/load-shedder.service';
+  providers: [SystemMetricsService, LoadShedderMiddleware, EtcdWatcherService, LoadShedderService],
+  exports: [SystemMetricsService, LoadShedderMiddleware, EtcdWatcherService, LoadShedderService],
 })
 export class CommonModule {}
