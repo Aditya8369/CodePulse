@@ -1540,3 +1540,21 @@ model TournamentMatch {
   @@index([tournamentId, bracketType])
   @@map("tournament_matches")
 }
+
+
+model FinopsSavingsLedger {
+  id                String   @id @default(uuid())
+  provider          String   // AWS, GCP, RENDER
+  resourceId        String
+  resourceType      String   // RUNNER_POD, UNATTACHED_VOLUME, STAGING_ENV
+  actionTaken       String   // TERMINATED, DETACHED_VOLUME, SCALED_TO_ZERO
+  environmentTag    String   @default("staging")
+  dailySavingsUsd   Float
+  monthlySavingsUsd Float
+  annualSavingsUsd  Float
+  reapedAt          DateTime @default(now())
+
+  @@index([provider, reapedAt])
+  @@index([resourceId])
+  @@map("finops_savings_ledger")
+}
