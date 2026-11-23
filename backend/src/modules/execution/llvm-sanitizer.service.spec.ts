@@ -8,8 +8,7 @@ describe('LlvmSanitizerService', () => {
   });
 
   it('should detect AddressSanitizer heap-buffer-overflow', () => {
-    const err = '==123==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x602000000014
-main.cpp:14:5: runtime error: load of address';
+    const err = '==123==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x602000000014\nmain.cpp:14:5: runtime error: load of address';
     const report = sanitizer.inspectCompilerOutput(err);
 
     expect(report.hasMemoryCorruption).toBe(true);
