@@ -24,21 +24,21 @@ export interface TestCaseResultDto {
   errorMessage?: string;
 }
 
-export interface RunnerStreamMessageDto {
-  battleId: string;
-  runnerId: string;
-  sequence: number;
-  timestampMs: number;
+export class RunnerStreamMessageDto {
+  battleId!: string;
+  runnerId!: string;
+  sequence!: number;
+  timestampMs!: number;
   logChunk?: ExecutionLogChunkDto;
   metricsFrame?: ProfilingFrameDto;
   testResult?: TestCaseResultDto;
 }
 
-export interface ServerControlMessageDto {
-  action: 'START' | 'PAUSE' | 'RESUME' | 'TERMINATE' | 'INJECT_TESTCASE';
-  battleId: string;
+export class ServerControlMessageDto {
+  action!: 'START' | 'PAUSE' | 'RESUME' | 'TERMINATE' | 'INJECT_TESTCASE';
+  battleId!: string;
   payload?: string;
-  timestampMs: number;
+  timestampMs!: number;
 }
 
 export interface BenchmarkResult {

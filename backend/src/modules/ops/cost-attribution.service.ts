@@ -99,7 +99,7 @@ export class CostAttributionService {
       memoryCostUsd: Number(memCost.toFixed(8)),
       networkCostUsd: Number(egressCost.toFixed(8)),
       totalCostUsd: Number(total.toFixed(8)),
-      totalCostMicroCents,
+      totalCostMicroCents: totalMicroCents,
       durationSeconds: Number(durationSec.toFixed(2)),
       pricingTier: params.isSpotInstance ? 'SPOT' : 'ON_DEMAND',
     };

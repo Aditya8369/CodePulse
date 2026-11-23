@@ -237,6 +237,9 @@ export class PrismaService
     if (this.tenantSharding) {
       return this.tenantSharding.executeCrossShard2PC(participantOrgOrShardIds, txPlan);
     }
+    const result = await txPlan(new Map([['default', this]]), `tx-local-${Date.now()}`);
+    return { txId: `tx-local-${Date.now()}`, result, status: 'COMMITTED' };
+  }
   /**
    * Rebalance / migrate tenant shard dynamically with zero downtime
    */

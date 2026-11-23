@@ -73,7 +73,7 @@ export class DataArchiverService {
       const rows = await this.prisma.battle.findMany({
         where: {
           startedAt: { lt: cutoffDate },
-          status: { in: ['COMPLETED', 'FORFEITED', 'ABORTED'] },
+          status: { in: ['COMPLETED', 'FORFEITED', 'CANCELLED'] },
         },
         take: batchSize,
         orderBy: { startedAt: 'asc' },

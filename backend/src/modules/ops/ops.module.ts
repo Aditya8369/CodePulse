@@ -4,12 +4,9 @@ import { EtcdConfigService } from './etcd-config.service';
 import { ActiveActiveReplicatorService } from './active-active-replicator.service';
 import { SpotBidderService } from './spot-bidder.service';
 import { FailoverGatewayService } from './failover-gateway.service';
-
 import { DataArchiverService } from './data-archiver.service';
 import { ShardRebalancerService } from './shard-rebalancer.service';
-
 import { IndexAdvisorService } from './index-advisor.service';
-
 import { CostAttributionService } from './cost-attribution.service';
 
 @Module({
@@ -19,12 +16,9 @@ import { CostAttributionService } from './cost-attribution.service';
     ActiveActiveReplicatorService,
     SpotBidderService,
     FailoverGatewayService,
-
     DataArchiverService,
     ShardRebalancerService,
-
     IndexAdvisorService,
-
     CostAttributionService,
   ],
   exports: [
@@ -33,17 +27,10 @@ import { CostAttributionService } from './cost-attribution.service';
     ActiveActiveReplicatorService,
     SpotBidderService,
     FailoverGatewayService,
-  ],
-
-import { DataArchiverService } from './data-archiver.service';
-  providers: [ChaosRunnerService, EtcdConfigService, ActiveActiveReplicatorService, DataArchiverService],
-  exports: [ChaosRunnerService, EtcdConfigService, ActiveActiveReplicatorService, DataArchiverService],
-
     DataArchiverService,
     ShardRebalancerService,
-
     IndexAdvisorService,
-
     CostAttributionService,
+  ],
 })
 export class OpsModule {}
