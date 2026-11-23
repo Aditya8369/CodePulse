@@ -36,6 +36,7 @@ import { TeamMatchmakingService } from './team-matchmaking.service';
 
 import { CrdtRelayGateway } from './crdt-relay.gateway';
 import { ShardedMatchmakingQueueService } from './matchmaking/sharded-queue.service';
+import { ConsistentHashRingService } from './matchmaking/consistent-hash-ring.service';
 import { DistributedLeaderElectionService } from './consensus/leader-election.service';
 import { DistributedDisruptorRelayService } from './distributed-disruptor-relay.service';
 import { BattlesFirecrackerPoolService } from './firecracker-pool.service';
@@ -91,6 +92,7 @@ import { TrueSkill2Service } from './trueskill2.service';
     WalLogService,
     CrdtRelayGateway,
     ShardedMatchmakingQueueService,
+    ConsistentHashRingService,
     DistributedLeaderElectionService,
     DistributedDisruptorRelayService,
     BattlesFirecrackerPoolService,
@@ -126,6 +128,7 @@ import { TrueSkill2Service } from './trueskill2.service';
     WalLogService,
     CrdtRelayGateway,
     ShardedMatchmakingQueueService,
+    ConsistentHashRingService,
     DistributedLeaderElectionService,
     DistributedDisruptorRelayService,
     BattlesFirecrackerPoolService,
