@@ -8,6 +8,8 @@ import { FailoverGatewayService } from './failover-gateway.service';
 import { DataArchiverService } from './data-archiver.service';
 import { ShardRebalancerService } from './shard-rebalancer.service';
 
+import { IndexAdvisorService } from './index-advisor.service';
+
 @Module({
   providers: [
     ChaosRunnerService,
@@ -18,6 +20,8 @@ import { ShardRebalancerService } from './shard-rebalancer.service';
 
     DataArchiverService,
     ShardRebalancerService,
+
+    IndexAdvisorService,
   ],
   exports: [
     ChaosRunnerService,
@@ -33,5 +37,7 @@ import { DataArchiverService } from './data-archiver.service';
 
     DataArchiverService,
     ShardRebalancerService,
+
+    IndexAdvisorService,
 })
 export class OpsModule {}
