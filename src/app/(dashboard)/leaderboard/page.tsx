@@ -127,7 +127,7 @@ export default function LeaderboardPage() {
   const [activeTab, setActiveTab] = useState<LeaderboardCategory>("global");
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [selectedUser, setSelectedUser] = useState<string | null>(null);
+  const [selectedUser, setSelectedUser] = useState<any | null>(null);
   
   // Infinite Scroll Hook
   const { ref, inView } = useInView();
