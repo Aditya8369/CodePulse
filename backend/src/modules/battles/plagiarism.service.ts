@@ -53,74 +53,152 @@ export class PlagiarismService {
     'not', 'and', 'or', 'global', 'nonlocal', 'assert', 'raise', 'print',
   ]);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(@Optional() private readonly prisma?: PrismaService) {}
 
   /**
    * AST Normalization & Tokenization:
    * Strips comments, whitespace, and formatting.
-   * Normalizes variable identifiers, string literals, and numbers into generic canonical tokens.
+   * Splits and canonicalizes function declarations so that reordered helper functions
+   * and renamed variables produce identical structural canonical token streams.
    */
   public normalizeAndTokenize(sourceCode: string, language = 'typescript'): string[] {
     if (!sourceCode || typeof sourceCode !== 'string') {
       return [];
     }
 
-    // 1. Remove comments and docstrings
-    let cleaned = sourceCode;
+    const blocks = this.splitIntoFunctionBlocks(sourceCode, language);
+    const normalizedBlocks = blocks.map((b) => this.normalizeAndTokenizeBlock(b));
 
-    // Python multiline docstrings
+    // When multiple function blocks exist, sort them canonical lexicographically
+    // to achieve function-reordering invariance (Acceptance Criteria #1068).
+    if (normalizedBlocks.length > 1) {
+      normalizedBlocks.sort((a, b) => a.join(' ').localeCompare(b.join(' ')));
+    }
+
+    return normalizedBlocks.flat();
+  }
+
+  /**
+   * Partitions source code into structural top-level blocks / function declarations.
+   */
+  private splitIntoFunctionBlocks(code: string, language = 'typescript'): string[] {
+    // 1. Remove comments and docstrings
+    let cleaned = code;
     cleaned = cleaned.replace(/"""[\s\S]*?"""/g, '');
     cleaned = cleaned.replace(/'''[\s\S]*?'''/g, '');
-
-    // C/JS/TS multiline comments
     cleaned = cleaned.replace(/\/\*[\s\S]*?\*\//g, '');
-
-    // Single line comments (// or #)
     cleaned = cleaned.replace(/\/\/.*$/gm, '');
     cleaned = cleaned.replace(/#.*$/gm, '');
 
-    // 2. Lexical Tokenization using RegExp matching identifiers, keywords, literals, and operators
-    const tokenRegex =
-      /([a-zA-Z_$][a-zA-Z0-9_$]*)|("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`)|(\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)|(===|!==|==|!=|<=|>=|=>|->|\+\+|--|\+=|-=|\*=|\/=|&&|\|\||<<|>>|[+\-*\/%&|^~!=<>?:.,;()[\]{}])/g;
+    if (language === 'python') {
+      const lines = cleaned.split('\n');
+      const blocks: string[] = [];
+      let currentBlock: string[] = [];
 
-    const rawTokens: string[] = [];
-    let match: RegExpExecArray | null;
+      for (const line of lines) {
+        if (/^\s*def\s+/.test(line)) {
+          if (currentBlock.length > 0) {
+            blocks.push(currentBlock.join('\n'));
+            currentBlock = [];
+          }
+        }
+        currentBlock.push(line);
+      }
+      if (currentBlock.length > 0) {
+        blocks.push(currentBlock.join('\n'));
+      }
+      return blocks.length > 1 ? blocks : [cleaned];
+    }
 
-    while ((match = tokenRegex.exec(cleaned)) !== null) {
-      const [, identifier, stringLit, numberLit, operator] = match;
+    // JS/TS/C-style: Extract top-level function or class declarations by tracking brace depth
+    const blocks: string[] = [];
+    let depth = 0;
+    let blockStart = 0;
+    let inBlock = false;
 
-      if (identifier) {
-        rawTokens.push(identifier);
-      } else if (stringLit) {
-        rawTokens.push('__STR__');
-      } else if (numberLit) {
-        rawTokens.push('__NUM__');
-      } else if (operator) {
-        rawTokens.push(operator);
+    for (let i = 0; i < cleaned.length; i++) {
+      const ch = cleaned[i];
+      if (ch === '{') {
+        if (depth === 0) {
+          const prefix = cleaned.slice(blockStart, i);
+          if (/(?:function\b|=>\s*$|class\b)/.test(prefix)) {
+            inBlock = true;
+          }
+        }
+        depth++;
+      } else if (ch === '}') {
+        depth--;
+        if (depth === 0 && inBlock) {
+          blocks.push(cleaned.slice(blockStart, i + 1).trim());
+          blockStart = i + 1;
+          inBlock = false;
+        }
       }
     }
 
-    // 3. Structural Identifier Renaming Normalization
-    // Variables/functions are assigned canonical sequential IDs (ID_0, ID_1, ...)
-    // based on first appearance order to ensure variable-renaming invariance.
+    if (blockStart < cleaned.length) {
+      const trailing = cleaned.slice(blockStart).trim();
+      if (trailing.length > 0) {
+        if (blocks.length > 0) blocks.push(trailing);
+        else blocks.push(cleaned);
+      }
+    }
+
+    return blocks.length > 1 ? blocks : [cleaned];
+  }
+
+  /**
+   * Tokenizes and normalizes an individual function or structural block.
+   * Maps local identifiers sequentially starting from ID_0 per block, and
+   * canonicalizes function declaration names to FN_DECL.
+   */
+  private normalizeAndTokenizeBlock(blockStr: string): string[] {
+    const tokenRegex =
+      /([a-zA-Z_$][a-zA-Z0-9_$]*)|("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`)|(\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)|(===|!==|==|!=|<=|>=|=>|->|\+\+|--|\+=|-=|\*=|\/=|&&|\|\||<<|>>|[+\-*\/%&|^~!=<>?:.,;()[\]{}])/g;
+
+    const rawTokens: Array<{ text: string; type: 'IDENTIFIER' | 'LITERAL' | 'OPERATOR' }> = [];
+    let match: RegExpExecArray | null;
+
+    while ((match = tokenRegex.exec(blockStr)) !== null) {
+      const [, identifier, stringLit, numberLit, operator] = match;
+
+      if (identifier) {
+        rawTokens.push({ text: identifier, type: 'IDENTIFIER' });
+      } else if (stringLit) {
+        rawTokens.push({ text: '__STR__', type: 'LITERAL' });
+      } else if (numberLit) {
+        rawTokens.push({ text: '__NUM__', type: 'LITERAL' });
+      } else if (operator) {
+        rawTokens.push({ text: operator, type: 'OPERATOR' });
+      }
+    }
+
     const identifierMap = new Map<string, string>();
     let idCounter = 0;
+    const normalizedTokens: string[] = [];
 
-    const normalizedTokens: string[] = rawTokens.map((tok) => {
-      if (this.KEYWORDS.has(tok)) {
-        return tok;
+    for (let i = 0; i < rawTokens.length; i++) {
+      const tok = rawTokens[i];
+      if (tok.type !== 'IDENTIFIER') {
+        normalizedTokens.push(tok.text);
+        continue;
       }
-      if (tok === '__STR__' || tok === '__NUM__') {
-        return tok;
+      if (this.KEYWORDS.has(tok.text)) {
+        normalizedTokens.push(tok.text);
+        continue;
       }
-      if (/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(tok)) {
-        if (!identifierMap.has(tok)) {
-          identifierMap.set(tok, `ID_${idCounter++}`);
-        }
-        return identifierMap.get(tok)!;
+
+      const prev = i > 0 ? rawTokens[i - 1].text : null;
+      if (prev === 'function' || prev === 'def') {
+        normalizedTokens.push('FN_DECL');
+        continue;
       }
-      return tok;
-    });
+
+      if (!identifierMap.has(tok.text)) {
+        identifierMap.set(tok.text, `ID_${idCounter++}`);
+      }
+      normalizedTokens.push(identifierMap.get(tok.text)!);
+    }
 
     return normalizedTokens;
   }
@@ -165,14 +243,12 @@ export class PlagiarismService {
 
     for (let i = 0; i <= hashes.length - w; i++) {
       let minHash = hashes[i];
-      let minPos = i;
 
       for (let j = 1; j < w; j++) {
         const cur = hashes[i + j];
         // Break ties by choosing the rightmost minimum
         if (cur <= minHash) {
           minHash = cur;
-          minPos = i + j;
         }
       }
 
@@ -495,4 +571,3 @@ export class PlagiarismService {
     return hash >>> 0;
   }
 }
-

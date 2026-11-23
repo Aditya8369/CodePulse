@@ -156,6 +156,45 @@ describe('PlagiarismService', () => {
       expect(sim.similarityScore).toBeGreaterThanOrEqual(85.0);
     });
 
+    it('should identify copied solutions even after renaming all variables and reordering functions (#1068)', () => {
+      const original = `
+        function gcd(a, b) {
+          while (b !== 0) {
+            let t = b;
+            b = a % b;
+            a = t;
+          }
+          return a;
+        }
+
+        function lcm(x, y) {
+          return (x * y) / gcd(x, y);
+        }
+      `;
+
+      const copiedAndReordered = `
+        // Reordered helper functions, renamed parameters and variables
+        function lcmSolution(valOne, valTwo) {
+          return (valOne * valTwo) / helperGcd(valOne, valTwo);
+        }
+
+        function helperGcd(firstNum, secondNum) {
+          while (secondNum !== 0) {
+            let tempVar = secondNum;
+            secondNum = firstNum % secondNum;
+            firstNum = tempVar;
+          }
+          return firstNum;
+        }
+      `;
+
+      const tokensA = service.normalizeAndTokenize(original);
+      const tokensB = service.normalizeAndTokenize(copiedAndReordered);
+      const sim = service.calculateSimilarity(tokensA, tokensB);
+
+      expect(sim.similarityScore).toBeGreaterThanOrEqual(85.0);
+    });
+
     it('should return low similarity for genuinely different algorithms', () => {
       const quickSort = `
         function quickSort(arr) {
