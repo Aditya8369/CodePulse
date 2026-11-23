@@ -42,11 +42,12 @@ export class LatencyInjectorService {
    * Evaluates packet loss probability simulating network dropped frames.
    */
   public shouldDropPacket(): boolean {
-    if (!this.currentRule.enabled || this.currentRule.packetLossPercent <= 0) {
+    const loss = this.currentRule.packetLossPercent ?? 0;
+    if (!this.currentRule.enabled || loss <= 0) {
       return false;
     }
     const roll = Math.random() * 100;
-    return roll < this.currentRule.packetLossPercent;
+    return roll < loss;
   }
 
   /**
@@ -57,8 +58,9 @@ export class LatencyInjectorService {
       return 0;
     }
 
-    const jitterOffset = this.currentRule.jitterMs > 0
-      ? (Math.random() * 2 - 1) * this.currentRule.jitterMs
+    const jitter = this.currentRule.jitterMs ?? 0;
+    const jitterOffset = jitter > 0
+      ? (Math.random() * 2 - 1) * jitter
       : 0;
 
     const actualDelay = Math.max(0, Math.floor(this.currentRule.delayMs + jitterOffset));

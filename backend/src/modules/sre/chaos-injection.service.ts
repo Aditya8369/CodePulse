@@ -50,7 +50,7 @@ export class ChaosInjectionService {
   private totalInterruptions = 0;
 
   constructor(
-    @Optional() private readonly latencyInjector?: LatencyInjectorService
+    @Optional() private latencyInjector: LatencyInjectorService
   ) {
     if (!this.latencyInjector) {
       this.latencyInjector = new LatencyInjectorService();
