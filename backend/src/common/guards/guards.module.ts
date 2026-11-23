@@ -9,6 +9,9 @@ import { CsrfGuard } from './csrf.guard';
 import { RbacGuard } from './rbac.guard';
 import { OpaService } from '../../modules/sec/opa.service';
 
+import { AdaptiveThrottlerGuard } from './adaptive-throttler.guard';
+import { IpReputationService } from './ip-reputation.service';
+
 @Global()
 @Module({
   providers: [
@@ -21,6 +24,9 @@ import { OpaService } from '../../modules/sec/opa.service';
     CsrfGuard,
     RbacGuard,
     OpaService,
+
+    AdaptiveThrottlerGuard,
+    IpReputationService,
   ],
   exports: [
     RedisService,
@@ -32,6 +38,9 @@ import { OpaService } from '../../modules/sec/opa.service';
     CsrfGuard,
     RbacGuard,
     OpaService,
+
+    AdaptiveThrottlerGuard,
+    IpReputationService,
   ],
 })
 export class GuardsModule {}
