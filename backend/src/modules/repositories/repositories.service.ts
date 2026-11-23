@@ -9,12 +9,14 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { QueryRepositoriesDto, RepositorySortBy, SortOrder } from './dto/repositories.dto';
 import { RocksDbService } from '../storage/rocksdb.service';
 import type { ParsedAstPayload, FileSymbolTable } from '../storage/rocksdb.service';
+import { DocEvaluatorService } from '../ai/doc-evaluator.service';
 
 @Injectable()
 export class RepositoriesService {
   constructor(
     private readonly prisma: PrismaService,
     @Optional() private readonly rocksDb?: RocksDbService,
+    @Optional() private readonly docEvaluatorService?: DocEvaluatorService,
   ) {}
 
   /**
@@ -247,5 +249,48 @@ export class RepositoriesService {
     }
 
     return [];
+  }
+
+  /**
+   * Evaluates the documentation quality of a repository README (#368).
+   * Generates a Documentation Score (0-100), checklist, readability score, and badge URL.
+   */
+  async getRepositoryDocScore(
+    userId: string,
+    repositoryId: string,
+    customReadme?: string,
+  ) {
+    const repository = await this.getRepositoryById(userId, repositoryId);
+
+    const evaluator = this.docEvaluatorService || new DocEvaluatorService();
+
+    const readmeContent =
+      customReadme ||
+      `# ${repository.name}\n\n${repository.description || 'Enterprise repository powered by CodePulse.'}\n\n## Installation\n\`\`\`bash\nnpm install\n\`\`\`\n\n## Usage\n\`\`\`bash\nnpm run dev\n\`\`\`\n\n## Contributing\nContributions are welcome! Please open an issue or pull request.\n\n## License\nMIT\n`;
+
+    return evaluator.evaluateDocumentation(readmeContent, {
+      id: repository.id,
+      name: repository.name,
+    });
+  }
+
+  /**
+   * Generates dynamic SVG badge for repository doc score (#368).
+   */
+  async getRepositoryDocBadge(
+    userId: string,
+    repositoryId: string,
+  ): Promise<string> {
+    const repository = await this.prisma.repository.findUnique({
+      where: { id: repositoryId },
+    });
+
+    if (!repository) {
+      throw new NotFoundException(`Repository ${repositoryId} not found`);
+    }
+
+    const evaluator = this.docEvaluatorService || new DocEvaluatorService();
+    const result = await this.getRepositoryDocScore(repository.userId, repositoryId);
+    return evaluator.generateBadgeSvg(result.score, result.grade);
   }
 }

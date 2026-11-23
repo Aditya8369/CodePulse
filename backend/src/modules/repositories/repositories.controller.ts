@@ -176,4 +176,44 @@ export class RepositoriesController {
   ) {
     return this.repositoriesService.getWorkspaceSymbols(req.user.id, id, commitSha);
   }
+
+  @Get(':id/doc-score')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Evaluate repository README and API documentation quality score with linter checklist (#368)',
+  })
+  @ApiParam({ name: 'id', description: 'Repository ID' })
+  @ApiQuery({ name: 'customReadme', required: false, description: 'Optional custom README markdown text to evaluate' })
+  async getRepositoryDocScore(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Query('customReadme') customReadme?: string,
+  ) {
+    return this.repositoriesService.getRepositoryDocScore(
+      req.user.id,
+      id,
+      customReadme,
+    );
+  }
+
+  @Get(':id/doc-score/badge.svg')
+  @ApiOperation({
+    summary: 'Get dynamic SVG documentation quality badge for repository README embed (#368)',
+  })
+  @ApiParam({ name: 'id', description: 'Repository ID' })
+  @ApiQuery({ name: 'userId', required: false, description: 'Optional owner user ID' })
+  async getRepositoryDocBadge(
+    @Param('id') id: string,
+    @Res() res: Response,
+    @Query('userId') userId?: string,
+  ) {
+    const svg = await this.repositoriesService.getRepositoryDocBadge(
+      userId || 'anonymous',
+      id,
+    );
+    res.setHeader('Content-Type', 'image/svg+xml');
+    res.setHeader('Cache-Control', 'public, max-age=300');
+    res.send(svg);
+  }
 }
