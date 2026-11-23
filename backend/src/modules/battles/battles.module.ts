@@ -32,6 +32,7 @@ import { RoomService } from './room.service';
 import { EvaluatorService } from './evaluator.service';
 import { RaftStateService } from './consensus/raft-state.service';
 import { WalLogService } from './consensus/wal-log.service';
+import { TeamMatchmakingService } from './team-matchmaking.service';
 
 import { CrdtRelayGateway } from './crdt-relay.gateway';
 import { ShardedMatchmakingQueueService } from './matchmaking/sharded-queue.service';
@@ -97,6 +98,8 @@ import { MutationTestingService } from './mutation-testing.service';
     FuzzingEvaluatorService,
     BattleDisputeService,
     MutationTestingService,
+
+    TeamMatchmakingService,
   ],
   exports: [
     BattlesService,
@@ -128,6 +131,8 @@ import { MutationTestingService } from './mutation-testing.service';
     FuzzingEvaluatorService,
     BattleDisputeService,
     MutationTestingService,
+
+    TeamMatchmakingService,
   ],
 })
 export class BattlesModule {}
