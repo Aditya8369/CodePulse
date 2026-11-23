@@ -50,7 +50,7 @@ export interface PredictionPoolState {
   };
 }
 
-export const SPOILER_LOCK_WINDOW_MS = 120_000; // 2 minutes into match start
+export const SPOILER_LOCK_WINDOW_MS = 60_000; // 60 seconds into match start to prevent spoiler cheating
 export const DEFAULT_STARTING_PULSE_BITS = 1_000;
 export const MAX_SINGLE_WAGER_BITS = 5_000;
 
@@ -119,6 +119,7 @@ export class PredictionMarketService {
     title?: string;
     outcomes: Record<string, string>;
     matchStartedAtMs?: number;
+    lockWindowMs?: number;
   }): PredictionPoolState {
     const outcomeKeys = Object.keys(params.outcomes);
     if (outcomeKeys.length < 2) {
@@ -126,6 +127,7 @@ export class PredictionMarketService {
     }
 
     const matchStartedAtMs = params.matchStartedAtMs ?? Date.now();
+    const lockWindowMs = params.lockWindowMs ?? SPOILER_LOCK_WINDOW_MS;
     const outcomePools: Record<string, number> = {};
     for (const key of outcomeKeys) {
       outcomePools[key] = 0;
@@ -142,7 +144,7 @@ export class PredictionMarketService {
       totalPoolBits: 0,
       status: 'OPEN',
       matchStartedAtMs,
-      lockDeadlineMs: matchStartedAtMs + SPOILER_LOCK_WINDOW_MS,
+      lockDeadlineMs: matchStartedAtMs + lockWindowMs,
       verifiedByJudge: false,
       wagers: [],
       tokenCompliance: {
@@ -292,17 +294,47 @@ export class PredictionMarketService {
     const winningPoolBits = pool.outcomePools[params.winningOutcome];
     const payouts: Array<{ userId: string; stakeBits: number; payoutBits: number }> = [];
 
+    const winningWagers = pool.wagers.filter((w) => w.outcomeKey === params.winningOutcome);
     for (const wager of pool.wagers) {
       wager.settled = true;
-      if (wager.outcomeKey === params.winningOutcome && winningPoolBits > 0) {
-        const share = wager.stakeBits / winningPoolBits;
-        const payout = Math.floor(share * pool.totalPoolBits);
-        wager.payoutBits = payout;
-        this.creditPulseBits(wager.userId, payout);
+    }
+
+    if (winningWagers.length > 0 && winningPoolBits > 0 && pool.totalPoolBits > 0) {
+      // Zero Rounding Leak Algorithm (Largest Remainder Method / Hare-Niemeyer)
+      // Guarantees sum(payouts) === totalPoolBits with 0 leaked fractional tokens
+      const calculations = winningWagers.map((w, idx) => {
+        const exactPayout = (w.stakeBits * pool.totalPoolBits) / winningPoolBits;
+        const basePayout = Math.floor(exactPayout);
+        const remainder = exactPayout - basePayout;
+        return {
+          wager: w,
+          idx,
+          basePayout,
+          remainder,
+          finalPayout: basePayout,
+        };
+      });
+
+      const totalBase = calculations.reduce((sum, c) => sum + c.basePayout, 0);
+      const remainderBits = pool.totalPoolBits - totalBase;
+
+      // Distribute remainder bits in descending order of fractional remainder
+      calculations.sort((a, b) => {
+        if (b.remainder !== a.remainder) return b.remainder - a.remainder;
+        return a.idx - b.idx;
+      });
+
+      for (let i = 0; i < remainderBits && i < calculations.length; i++) {
+        calculations[i].finalPayout += 1;
+      }
+
+      for (const item of calculations) {
+        item.wager.payoutBits = item.finalPayout;
+        this.creditPulseBits(item.wager.userId, item.finalPayout);
         payouts.push({
-          userId: wager.userId,
-          stakeBits: wager.stakeBits,
-          payoutBits: payout,
+          userId: item.wager.userId,
+          stakeBits: item.wager.stakeBits,
+          payoutBits: item.finalPayout,
         });
       }
     }
@@ -310,6 +342,63 @@ export class PredictionMarketService {
     return {
       pool,
       payouts,
+    };
+  }
+
+  /**
+   * Simulates large-scale pari-mutuel payout across thousands of spectators.
+   * Proves mathematically that total disbursed equals total pool with zero rounding leaks.
+   */
+  async simulateLargeSpectatorPayout(
+    battleId: string,
+    spectatorCount = 1000,
+  ): Promise<{
+    totalPool: number;
+    totalDisbursed: number;
+    roundingLeak: number;
+    spectatorCount: number;
+    zeroRoundingLeak: boolean;
+  }> {
+    const startMs = Date.now();
+    this.createPredictionPool({
+      battleId,
+      outcomes: { playerA: 'Winner A', playerB: 'Challenger B' },
+      matchStartedAtMs: startMs,
+      lockWindowMs: 120_000,
+    });
+
+    for (let i = 0; i < spectatorCount; i++) {
+      const outcome = i % 3 === 0 ? 'playerB' : 'playerA';
+      const stake = 10 + (i % 50); // Varied odd stakes
+      const userId = `spec_mass_${battleId}_${i}`;
+      this.creditPulseBits(userId, 5000);
+      await this.placePrediction({
+        battleId,
+        userId,
+        outcomeKey: outcome,
+        stakeBits: stake,
+        nowMs: startMs + 1000,
+      });
+    }
+
+    const poolBefore = this.getPool(battleId);
+    const totalPool = poolBefore.totalPoolBits;
+
+    const resolution = await this.resolveMarket({
+      battleId,
+      winningOutcome: 'playerA',
+      verifiedByJudge: true,
+    });
+
+    const totalDisbursed = resolution.payouts.reduce((sum, p) => sum + p.payoutBits, 0);
+    const roundingLeak = totalPool - totalDisbursed;
+
+    return {
+      totalPool,
+      totalDisbursed,
+      roundingLeak,
+      spectatorCount,
+      zeroRoundingLeak: roundingLeak === 0,
     };
   }
 
