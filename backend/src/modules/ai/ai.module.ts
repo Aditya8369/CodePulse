@@ -16,6 +16,7 @@ import { MultiAgentReviewerService } from './agents/pr-reviewer.service';
 import { DocEvaluatorService } from './doc-evaluator.service';
 import { VoiceCodeAssistantGateway } from './voice-code-assistant.gateway';
 import { TestGeneratorService } from './test-generator.service';
+import { PolyglotTranspilerService } from './transpiler/polyglot-transpiler.service';
 import { GithubModule } from '../github/github.module';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { RedisService } from '../../common/redis/redis.service';
@@ -40,6 +41,7 @@ import { RedisService } from '../../common/redis/redis.service';
     DocEvaluatorService,
     VoiceCodeAssistantGateway,
     TestGeneratorService,
+    PolyglotTranspilerService,
     RedisService,
   ],
   exports: [
@@ -59,6 +61,7 @@ import { RedisService } from '../../common/redis/redis.service';
     DocEvaluatorService,
     VoiceCodeAssistantGateway,
     TestGeneratorService,
+    PolyglotTranspilerService,
   ],
 })
 export class AiModule {}

@@ -21,6 +21,10 @@ import {
 import { ReviewCommitRequestDto } from './dto/review-commit.dto';
 import { PersonaBattleService } from './persona-battle.service';
 import { CodeHintService } from './code-hint.service';
+import {
+  PolyglotTranspilerService,
+  type PolyglotTranspileRequest,
+} from './transpiler/polyglot-transpiler.service';
 import { RequestHintDto, HintResponseDto } from './dto/code-hint.dto';
 import {
   TranspileRequestDto,
@@ -50,6 +54,7 @@ export class AiController {
     private readonly changelogGenerator: ChangelogGeneratorService,
     private readonly personaBattleService: PersonaBattleService,
     private readonly codeHintService: CodeHintService,
+    private readonly polyglotTranspiler?: PolyglotTranspilerService,
   ) {}
 
   @Post('transpile')
@@ -206,6 +211,16 @@ export class AiController {
   async requestBattleHint(@Body() dto: RequestHintDto): Promise<HintResponseDto> {
     return this.codeHintService.requestHint(dto);
   }
+
+  @Post('polyglot-transpile')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Transpile algorithms across TypeScript, Python, Go, Rust, and C++ with unit tests',
+  })
+  async transpilePolyglot(@Body() dto: PolyglotTranspileRequest) {
+    if (!this.polyglotTranspiler) {
+      throw new BadRequestException('PolyglotTranspilerService unavailable');
+    }
+    return this.polyglotTranspiler.transpileAndVerify(dto);
+  }
 }
-
-
