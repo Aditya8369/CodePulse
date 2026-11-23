@@ -3,8 +3,8 @@ import { Injectable, Logger } from '@nestjs/common';
 export interface NetemRule {
   targetService?: string;
   delayMs: number;
-  jitterMs?: number;
-  packetLossPercent?: number; // 0 to 100
+  jitterMs: number;
+  packetLossPercent: number; // 0 to 100
   enabled: boolean;
 }
 

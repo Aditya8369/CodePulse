@@ -49,12 +49,12 @@ export class ChaosInjectionService {
   private totalRecovered = 0;
   private totalInterruptions = 0;
 
+  private readonly latencyInjector: LatencyInjectorService;
+
   constructor(
-    @Optional() private latencyInjector: LatencyInjectorService
+    @Optional() latencyInjector?: LatencyInjectorService
   ) {
-    if (!this.latencyInjector) {
-      this.latencyInjector = new LatencyInjectorService();
-    }
+    this.latencyInjector = latencyInjector || new LatencyInjectorService();
   }
 
   /**

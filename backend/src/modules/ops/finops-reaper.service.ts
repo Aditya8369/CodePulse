@@ -35,12 +35,12 @@ export class FinOpsReaperService {
   private readonly COST_PER_UNATTACHED_IP = 3.65; // $0.005 / hour * 730 hours = ~$3.65/mo
   private readonly COST_PER_IDLE_RUNNER_POD = 45.00; // 2 vCPU + 4GB RAM runner ~ $45/mo
 
+  private readonly ledger: SavingsLedgerService;
+
   constructor(
-    @Optional() private ledger: SavingsLedgerService
+    @Optional() ledger?: SavingsLedgerService
   ) {
-    if (!this.ledger) {
-      this.ledger = new SavingsLedgerService();
-    }
+    this.ledger = ledger || new SavingsLedgerService();
   }
 
   /**
