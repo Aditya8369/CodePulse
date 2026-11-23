@@ -14,12 +14,18 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateChallengeDto } from './dto/challenges.dto';
 import { XpService } from '../xp/xp.service';
+import {
+  SkillMatrixService,
+  type ChallengeCandidate,
+  type DeveloperSkillProfile,
+} from '../analytics/skill-matrix.service';
 
 @Injectable()
 export class ChallengesService {
   constructor(
     private readonly prisma: PrismaService,
     @Optional() private readonly xpService?: XpService,
+    @Optional() private readonly skillMatrixService?: SkillMatrixService,
   ) {}
 
   async getActiveChallenges() {
@@ -353,5 +359,14 @@ export class ChallengesService {
     return {
       expiredUserChallengesCount: expiredUserChallenges.count,
     };
+  }
+
+  recommendZpdChallenges(
+    profile: DeveloperSkillProfile,
+    candidates: ChallengeCandidate[],
+    peers: DeveloperSkillProfile[] = [],
+  ) {
+    if (!this.skillMatrixService) return [];
+    return this.skillMatrixService.recommendChallengesForUser(profile, candidates, peers);
   }
 }
