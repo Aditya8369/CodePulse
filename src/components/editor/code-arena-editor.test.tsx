@@ -3,6 +3,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import {
   CodeArenaEditor,
   MONOSPACE_FONTS,
+  getMonospaceFont,
   type MonospaceFont,
 } from "./code-arena-editor";
 
@@ -50,5 +51,11 @@ describe("CodeArenaEditor Component - Monospace Font Toggle", () => {
     expect(fontIds).toContain("fira-code");
     expect(fontIds).toContain("source-code-pro");
     expect(MONOSPACE_FONTS).toHaveLength(3);
+  });
+
+  it("retrieves font option by id using getMonospaceFont helper", () => {
+    const fira = getMonospaceFont("fira-code");
+    expect(fira.name).toBe("Fira Code");
+    expect(fira.fontFamily).toContain("Fira Code");
   });
 });
