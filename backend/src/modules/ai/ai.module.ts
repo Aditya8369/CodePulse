@@ -6,6 +6,7 @@ import { CodeReviewerService } from './code-reviewer.service';
 import { ChangelogGeneratorService } from './changelog-generator.service';
 import { PersonaBattleService } from './persona-battle.service';
 import { CodeHintService } from './code-hint.service';
+import { ComplexityAnalyzerService } from './complexity-analyzer.service';
 import { GithubModule } from '../github/github.module';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { RedisService } from '../../common/redis/redis.service';
@@ -20,6 +21,7 @@ import { RedisService } from '../../common/redis/redis.service';
     ChangelogGeneratorService,
     PersonaBattleService,
     CodeHintService,
+    ComplexityAnalyzerService,
     RedisService,
   ],
   exports: [
@@ -29,6 +31,7 @@ import { RedisService } from '../../common/redis/redis.service';
     ChangelogGeneratorService,
     PersonaBattleService,
     CodeHintService,
+    ComplexityAnalyzerService,
   ],
 })
 export class AiModule {}
