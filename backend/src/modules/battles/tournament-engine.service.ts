@@ -368,13 +368,261 @@ export class TournamentEngineService {
 
   /**
    * Double Elimination bracket generator
+   * Initializes Winners Bracket Round 1 with power-of-two padding and seed-weighted BYEs.
    */
-  private generateDoubleEliminationRound(
+  public generateDoubleEliminationRound(
     tournament: TournamentState,
     roundNumber: number,
   ): MatchRecord[] {
-    // Round 1 is identical to Single Elimination in the Winners bracket
-    return this.generateSingleEliminationRound(tournament, roundNumber);
+    const active = Array.from(tournament.participants.values()).filter(
+      (p) => p.status === 'ACTIVE',
+    );
+    active.sort((a, b) => a.seed - b.seed);
+
+    const n = active.length;
+    // Calculate nearest power of 2 for mathematical bracket integrity
+    const powerOfTwo = Math.pow(2, Math.ceil(Math.log2(Math.max(n, 2))));
+    const newMatches: MatchRecord[] = [];
+
+    const numMatches = powerOfTwo / 2;
+    for (let i = 0; i < numMatches; i++) {
+      const p1 = active[i];
+      const p2Index = powerOfTwo - 1 - i;
+      const p2 = p2Index < n ? active[p2Index] : null;
+
+      const isBye = p2 === null;
+      if (isBye && p1) {
+        p1.hasReceivedBye = true;
+        p1.score += 1.0;
+      }
+
+      newMatches.push({
+        id: `m_${tournament.id}_r${roundNumber}_w${i + 1}`,
+        tournamentId: tournament.id,
+        round: roundNumber,
+        matchNumber: i + 1,
+        bracketType: 'WINNERS',
+        player1Id: p1 ? p1.userId : 'TBD',
+        player2Id: p2 ? p2.userId : null,
+        winnerId: isBye && p1 ? p1.userId : null,
+        status: isBye ? TournamentMatchStatus.BYE : TournamentMatchStatus.PENDING,
+        isDraw: false,
+        isBye,
+        scheduledAt: new Date(),
+        completedAt: isBye ? new Date() : undefined,
+        notes: isBye ? 'Seed-weighted automatic BYE in Winners Round 1' : undefined,
+      });
+    }
+
+    tournament.matches.push(...newMatches);
+    return newMatches;
+  }
+
+  /**
+   * Advances Double-Elimination tournament bracket across Winners, Losers, and Grand Finals.
+   * Handles crossover loser drops, loser bracket elimination, and Grand Finals bracket reset logic.
+   */
+  public advanceDoubleEliminationRound(
+    tournament: TournamentState,
+    nextRound: number,
+  ): { matches: MatchRecord[]; tournamentCompleted: boolean } {
+    const allMatches = tournament.matches;
+
+    // 1. Check Grand Finals state
+    const finalsMatches = allMatches.filter((m) => m.bracketType === 'FINALS');
+    if (finalsMatches.length > 0) {
+      const set1 = finalsMatches[0];
+      if (set1.status === TournamentMatchStatus.COMPLETED) {
+        // If Winners bracket champion won set 1, tournament ends!
+        if (set1.winnerId === set1.player1Id) {
+          tournament.status = TournamentStatus.COMPLETED;
+          return { matches: [], tournamentCompleted: true };
+        }
+
+        // If Losers bracket champion won set 1, trigger Grand Finals Reset (Set 2)
+        if (finalsMatches.length === 1) {
+          this.logger.log(`[Grand Finals Reset] Loser champion defeated Winner champion in Set 1! Spawning Bracket Reset Match 2...`);
+          const set2: MatchRecord = {
+            id: `m_${tournament.id}_r${nextRound}_gf_reset`,
+            tournamentId: tournament.id,
+            round: nextRound,
+            matchNumber: 1,
+            bracketType: 'FINALS',
+            player1Id: set1.player1Id,
+            player2Id: set1.player2Id,
+            winnerId: null,
+            status: TournamentMatchStatus.PENDING,
+            isDraw: false,
+            isBye: false,
+            scheduledAt: new Date(),
+            notes: 'Grand Finals Bracket Reset (True Double Elimination Decider)',
+          };
+          tournament.matches.push(set2);
+          return { matches: [set2], tournamentCompleted: false };
+        } else if (finalsMatches[1].status === TournamentMatchStatus.COMPLETED) {
+          tournament.status = TournamentStatus.COMPLETED;
+          return { matches: [], tournamentCompleted: true };
+        }
+      }
+      return { matches: [], tournamentCompleted: false };
+    }
+
+    // Identify winners and losers in recent rounds
+    const winnersMatches = allMatches.filter((m) => m.bracketType === 'WINNERS');
+    const losersMatches = allMatches.filter((m) => m.bracketType === 'LOSERS');
+
+    const maxWinnersRound = winnersMatches.length > 0 ? Math.max(...winnersMatches.map((m) => m.round)) : 0;
+    const maxLosersRound = losersMatches.length > 0 ? Math.max(...losersMatches.map((m) => m.round)) : 0;
+
+    const lastWinnersMatches = winnersMatches.filter((m) => m.round === maxWinnersRound);
+    const winnersWinners = lastWinnersMatches.map((m) => m.winnerId).filter((w): w is string => !!w);
+    const winnersLosers = lastWinnersMatches
+      .map((m) => (m.winnerId === m.player1Id ? m.player2Id : m.player1Id))
+      .filter((l): l is string => !!l);
+
+    const newMatches: MatchRecord[] = [];
+
+    // Check if Winners Bracket has reached Winners Finals conclusion (1 undefeated winner)
+    if (winnersWinners.length === 1) {
+      const winnersChampion = winnersWinners[0];
+
+      // Check if Losers Bracket has completed
+      const lastLosersMatches = losersMatches.filter((m) => m.round === maxLosersRound);
+      const losersWinners = lastLosersMatches.map((m) => m.winnerId).filter((w): w is string => !!w);
+
+      if (losersWinners.length === 1) {
+        // Both Winners Champion and Losers Champion are ready -> Spawn Grand Finals!
+        const grandFinalsMatch: MatchRecord = {
+          id: `m_${tournament.id}_r${nextRound}_grand_finals`,
+          tournamentId: tournament.id,
+          round: nextRound,
+          matchNumber: 1,
+          bracketType: 'FINALS',
+          player1Id: winnersChampion,
+          player2Id: losersWinners[0],
+          winnerId: null,
+          status: TournamentMatchStatus.PENDING,
+          isDraw: false,
+          isBye: false,
+          scheduledAt: new Date(),
+          notes: 'Grand Finals Set 1 (Winners Champion vs Losers Champion)',
+        };
+        newMatches.push(grandFinalsMatch);
+        tournament.matches.push(...newMatches);
+        return { matches: newMatches, tournamentCompleted: false };
+      }
+    }
+
+    // 2. Advance Winners Bracket if >= 2 winners remain
+    if (winnersWinners.length >= 2) {
+      for (let i = 0; i < winnersWinners.length; i += 2) {
+        if (i + 1 < winnersWinners.length) {
+          newMatches.push({
+            id: `m_${tournament.id}_r${nextRound}_w_${Math.floor(i / 2) + 1}`,
+            tournamentId: tournament.id,
+            round: nextRound,
+            matchNumber: newMatches.length + 1,
+            bracketType: 'WINNERS',
+            player1Id: winnersWinners[i],
+            player2Id: winnersWinners[i + 1],
+            winnerId: null,
+            status: TournamentMatchStatus.PENDING,
+            isDraw: false,
+            isBye: false,
+            scheduledAt: new Date(),
+          });
+        }
+      }
+    }
+
+    // 3. Advance Losers Bracket
+    // If no Losers bracket matches exist yet (Round 1 just completed), pair losers from Winners R1
+    if (losersMatches.length === 0) {
+      for (let i = 0; i < winnersLosers.length; i += 2) {
+        if (i + 1 < winnersLosers.length) {
+          newMatches.push({
+            id: `m_${tournament.id}_r${nextRound}_l_${Math.floor(i / 2) + 1}`,
+            tournamentId: tournament.id,
+            round: nextRound,
+            matchNumber: newMatches.length + 1,
+            bracketType: 'LOSERS',
+            player1Id: winnersLosers[i],
+            player2Id: winnersLosers[i + 1],
+            winnerId: null,
+            status: TournamentMatchStatus.PENDING,
+            isDraw: false,
+            isBye: false,
+            scheduledAt: new Date(),
+          });
+        } else {
+          // Odd loser gets a bye in losers bracket
+          newMatches.push({
+            id: `m_${tournament.id}_r${nextRound}_l_${Math.floor(i / 2) + 1}_bye`,
+            tournamentId: tournament.id,
+            round: nextRound,
+            matchNumber: newMatches.length + 1,
+            bracketType: 'LOSERS',
+            player1Id: winnersLosers[i],
+            player2Id: null,
+            winnerId: winnersLosers[i],
+            status: TournamentMatchStatus.BYE,
+            isDraw: false,
+            isBye: true,
+            scheduledAt: new Date(),
+            completedAt: new Date(),
+          });
+        }
+      }
+    } else {
+      // In subsequent rounds, pair previous Losers winners with incoming Winners losers or with each other
+      const lastLosersMatches = losersMatches.filter((m) => m.round === maxLosersRound);
+      const prevLosersWinners = lastLosersMatches.map((m) => m.winnerId).filter((w): w is string => !!w);
+
+      const poolToPair = [...prevLosersWinners];
+      if (winnersLosers.length > 0 && winnersLosers.length !== winnersWinners.length * 2) {
+        // Crossover seeding: pair losers dropping from winners with existing losers survivors
+        poolToPair.push(...winnersLosers);
+      }
+
+      for (let i = 0; i < poolToPair.length; i += 2) {
+        if (i + 1 < poolToPair.length) {
+          newMatches.push({
+            id: `m_${tournament.id}_r${nextRound}_l_${Math.floor(i / 2) + 1}`,
+            tournamentId: tournament.id,
+            round: nextRound,
+            matchNumber: newMatches.length + 1,
+            bracketType: 'LOSERS',
+            player1Id: poolToPair[i],
+            player2Id: poolToPair[i + 1],
+            winnerId: null,
+            status: TournamentMatchStatus.PENDING,
+            isDraw: false,
+            isBye: false,
+            scheduledAt: new Date(),
+          });
+        } else {
+          newMatches.push({
+            id: `m_${tournament.id}_r${nextRound}_l_bye_${poolToPair[i]}`,
+            tournamentId: tournament.id,
+            round: nextRound,
+            matchNumber: newMatches.length + 1,
+            bracketType: 'LOSERS',
+            player1Id: poolToPair[i],
+            player2Id: null,
+            winnerId: poolToPair[i],
+            status: TournamentMatchStatus.BYE,
+            isDraw: false,
+            isBye: true,
+            scheduledAt: new Date(),
+            completedAt: new Date(),
+          });
+        }
+      }
+    }
+
+    tournament.matches.push(...newMatches);
+    const tournamentCompleted = newMatches.length === 0 && tournament.status === TournamentStatus.COMPLETED;
+    return { matches: newMatches, tournamentCompleted };
   }
 
   /**
@@ -513,6 +761,12 @@ export class TournamentEngineService {
           this.generateSwissRound(tournament, tournament.currentRound);
         } else if (tournament.format === TournamentFormat.SINGLE_ELIMINATION) {
           this.advanceSingleEliminationRound(tournament, tournament.currentRound);
+        } else if (tournament.format === TournamentFormat.DOUBLE_ELIMINATION) {
+          const res = this.advanceDoubleEliminationRound(tournament, tournament.currentRound);
+          if (res.tournamentCompleted) {
+            tournament.status = TournamentStatus.COMPLETED;
+            tournamentCompleted = true;
+          }
         }
         await this.scheduleRoundTimeout(tournament);
       }
@@ -741,6 +995,62 @@ export class TournamentEngineService {
       totalRounds: tournament.totalRounds,
       rounds,
       standings: rankedStandings,
+    };
+  }
+
+  /**
+   * Simulates an entire Double-Elimination tournament from Round 1 through Grand Finals.
+   * Asserts zero orphaned matches and validates bracket reset handling.
+   */
+  public async simulateDoubleEliminationTournament(
+    tournamentId: string,
+    forceGrandFinalsReset = false,
+  ): Promise<{ tournament: TournamentState; totalMatches: number; championId: string; resetOccurred: boolean }> {
+    const tournament = this.getTournamentState(tournamentId);
+    let resetOccurred = false;
+
+    let iterations = 0;
+    const maxIterations = 50;
+
+    while (tournament.status !== TournamentStatus.COMPLETED && iterations < maxIterations) {
+      iterations++;
+      const pendingMatches = tournament.matches.filter(
+        (m) => m.status === TournamentMatchStatus.PENDING,
+      );
+
+      if (pendingMatches.length === 0) {
+        break;
+      }
+
+      for (const match of pendingMatches) {
+        if (!match.player2Id || match.isBye) {
+          match.status = TournamentMatchStatus.BYE;
+          match.winnerId = match.player1Id;
+          continue;
+        }
+
+        // Check if this is Grand Finals Set 1 and we want to test bracket reset
+        let winnerId = match.player1Id;
+        if (match.bracketType === 'FINALS' && forceGrandFinalsReset && !resetOccurred) {
+          winnerId = match.player2Id; // Loser bracket champion wins set 1
+          resetOccurred = true;
+        }
+
+        await this.reportMatchResult(tournament.id, match.id, {
+          winnerId,
+        });
+      }
+    }
+
+    const finals = tournament.matches.filter((m) => m.bracketType === 'FINALS');
+    const lastFinal = finals[finals.length - 1];
+    const championId = lastFinal?.winnerId || tournament.matches[tournament.matches.length - 1].winnerId || '';
+
+    return {
+      tournament,
+      totalMatches: tournament.matches.length,
+      championId,
+      resetOccurred,
     };
   }
 

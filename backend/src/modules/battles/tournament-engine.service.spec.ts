@@ -252,4 +252,97 @@ describe('TournamentEngineService (#535)', () => {
       }
     });
   });
+
+  describe('Double-Elimination Bracket Advancement Engine (#1088)', () => {
+    it('simulates a 64-player double-elimination tournament to completion with zero orphaned matches', async () => {
+      const participants = Array.from({ length: 64 }, (_, i) => ({
+        userId: `player_de_${i + 1}`,
+        username: `DE_Pro_${i + 1}`,
+        seed: i + 1,
+        elo: 1500 - i * 5,
+      }));
+
+      const tournament = await service.createTournament({
+        name: 'Nexus 64 Double Elimination Championship',
+        format: TournamentFormat.DOUBLE_ELIMINATION,
+        participants,
+      });
+
+      await service.startTournament(tournament.id);
+
+      const simResult = await service.simulateDoubleEliminationTournament(tournament.id, false);
+
+      expect(simResult.tournament.status).toBe(TournamentStatus.COMPLETED);
+      expect(simResult.totalMatches).toBeGreaterThan(60);
+      expect(simResult.championId).toBeDefined();
+      expect(simResult.championId.length).toBeGreaterThan(0);
+
+      // Verify zero orphaned matches: every match must either be completed, bye, or forfeited
+      const uncompletedMatches = simResult.tournament.matches.filter(
+        (m) => m.status === TournamentMatchStatus.PENDING || m.status === TournamentMatchStatus.IN_PROGRESS,
+      );
+      expect(uncompletedMatches.length).toBe(0);
+    });
+
+    it('handles odd participant counts (50 players) with automatic seed-weighted BYEs', async () => {
+      const participants = Array.from({ length: 50 }, (_, i) => ({
+        userId: `odd_de_${i + 1}`,
+        username: `OddPlayer_${i + 1}`,
+        seed: i + 1,
+        elo: 1400,
+      }));
+
+      const tournament = await service.createTournament({
+        name: '50-Player Odd DE Cup',
+        format: TournamentFormat.DOUBLE_ELIMINATION,
+        participants,
+      });
+
+      await service.startTournament(tournament.id);
+
+      // Power of 2 padding for 50 is 64; num matches in R1 = 32
+      const r1Matches = tournament.matches.filter((m) => m.round === 1);
+      expect(r1Matches.length).toBe(32);
+
+      // 14 players should receive automatic BYEs (64 - 50 = 14)
+      const byeMatches = r1Matches.filter((m) => m.isBye);
+      expect(byeMatches.length).toBe(14);
+
+      // Seed 1 through 14 should have received BYEs
+      for (let s = 1; s <= 14; s++) {
+        const p = tournament.participants.get(`odd_de_${s}`);
+        expect(p?.hasReceivedBye).toBe(true);
+      }
+
+      // Simulate to completion
+      const sim = await service.simulateDoubleEliminationTournament(tournament.id);
+      expect(sim.tournament.status).toBe(TournamentStatus.COMPLETED);
+    });
+
+    it('triggers and resolves Grand Finals Bracket Reset when loser bracket champion wins Set 1', async () => {
+      const participants = Array.from({ length: 8 }, (_, i) => ({
+        userId: `reset_player_${i + 1}`,
+        username: `ResetPro_${i + 1}`,
+        seed: i + 1,
+      }));
+
+      const tournament = await service.createTournament({
+        name: 'Bracket Reset Invitational',
+        format: TournamentFormat.DOUBLE_ELIMINATION,
+        participants,
+      });
+
+      await service.startTournament(tournament.id);
+
+      // Force Grand Finals Reset where loser bracket champion wins set 1
+      const sim = await service.simulateDoubleEliminationTournament(tournament.id, true);
+
+      expect(sim.resetOccurred).toBe(true);
+      expect(sim.tournament.status).toBe(TournamentStatus.COMPLETED);
+
+      const finalsMatches = sim.tournament.matches.filter((m) => m.bracketType === 'FINALS');
+      expect(finalsMatches.length).toBe(2); // Set 1 + Set 2 (Bracket Reset)
+      expect(finalsMatches[1].notes).toContain('Grand Finals Bracket Reset');
+    });
+  });
 });
