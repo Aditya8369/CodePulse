@@ -1286,6 +1286,8 @@ model GdprDeletionCertificate {
   @@map("gdpr_deletion_certificates")
 }
 
+// Declarative Range Partitioning by Month on createdAt (#1058)
+// Managed via backend/prisma/migrations/partitioning.sql
 model AuditLog {
   id         String   @id @default(uuid())
   actorId    String?
@@ -1306,6 +1308,8 @@ model AuditLog {
   @@map("audit_logs")
 }
 
+// Declarative Range Partitioning by Month on createdAt (#1058)
+// Managed via backend/prisma/migrations/partitioning.sql
 model BattleSubmission {
   id              String   @id @default(uuid())
   battleId        String
@@ -1321,6 +1325,7 @@ model BattleSubmission {
 
   @@index([battleId])
   @@index([userId])
+  @@index([createdAt])
   @@map("battle_submissions")
 }
 
