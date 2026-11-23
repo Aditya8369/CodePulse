@@ -83,7 +83,8 @@ export class CodeHintService {
       tier,
       requestedAt: new Date().toISOString(),
       penaltyPercentage: penaltyInfo.timeDecayedPercent,
-      hintSummary: `${tierName} (-${(penaltyInfo.timeDecayedPercent * 100).toFixed(1)}% XP)`,
+      hintSummary: `${tierName} (-${(penaltyInfo.timeDecayedPercent * 100).toFixed(1)}% XP, -${penaltyInfo.estimatedEloPenalty} ELO)`,
+      eloPenaltyPoints: penaltyInfo.estimatedEloPenalty,
     };
 
     if (this.prisma && battle) {
@@ -110,6 +111,7 @@ export class CodeHintService {
       basePenaltyPercent: penaltyInfo.basePercent,
       timeDecayedPenaltyPercent: penaltyInfo.timeDecayedPercent,
       estimatedXpDeduction: penaltyInfo.estimatedXpDeduction,
+      estimatedEloPenalty: penaltyInfo.estimatedEloPenalty,
       cooldownSeconds: CodeHintService.COOLDOWN_SECONDS,
       nextAllowedAt,
       guardrailStatus,
@@ -155,6 +157,7 @@ export class CodeHintService {
     basePercent: number;
     timeDecayedPercent: number;
     estimatedXpDeduction: number;
+    estimatedEloPenalty: number;
   } {
     let basePercent = 0.1;
     if (tier === 2) basePercent = 0.25;
@@ -171,11 +174,13 @@ export class CodeHintService {
     const estimatedXpDeduction = Math.round(
       CodeHintService.BASE_WINNER_XP * timeDecayedPercent,
     );
+    const estimatedEloPenalty = Math.max(1, Math.round(25 * timeDecayedPercent));
 
     return {
       basePercent,
       timeDecayedPercent,
       estimatedXpDeduction,
+      estimatedEloPenalty,
     };
   }
 
@@ -385,10 +390,13 @@ export class CodeHintService {
     let cleaned = rawText;
     let filtered = false;
 
-    // Reject runnable function declarations in popular languages
+    // Reject runnable function declarations in popular languages (JS/TS, Python, Go, Rust, Java, C++)
     const forbiddenPatterns = [
       /function\s+\w+\s*\([^)]*\)\s*\{[\s\S]*?\}/gi,
       /def\s+\w+\s*\([^)]*\)\s*:[\s\S]*?(?=\n\S|\Z)/gi,
+      /(?:pub\s+)?fn\s+\w+\s*\([^)]*\)\s*(?:->\s*[^{]+)?\{[\s\S]*?\}/gi,
+      /func\s+\w+\s*\([^)]*\)\s*[^{]*\{[\s\S]*?\}/gi,
+      /(?:public|private|protected)\s+(?:static\s+)?[\w<>[\]]+\s+\w+\s*\([^)]*\)\s*\{[\s\S]*?\}/gi,
       /class\s+Solution[\s\S]*?\}/gi,
       /const\s+\w+\s*=\s*\([^)]*\)\s*=>\s*\{[\s\S]*?\}/gi,
     ];

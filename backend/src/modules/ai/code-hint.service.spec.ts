@@ -237,6 +237,34 @@ describe('CodeHintService - Progressive AI Code Hint Engine with Time-Decay XP P
       expect(result.cleanedMarkdown).not.toContain('function solveTwoSum');
     });
 
+    it('should block leaked Rust and Go code solutions (#1073)', () => {
+      const leakedRust = `
+        pub fn two_sum(nums: Vec<i32>, target: i32) -> Vec<i32> {
+          vec![0, 1]
+        }
+      `;
+      const rustResult = service.sanitizeHintOutput(leakedRust, 2);
+      expect(rustResult.guardrailStatus).toBe('FILTERED');
+      expect(rustResult.cleanedMarkdown).toContain('SOLUTION CODE BLOCKED BY AI GUARDRAILS');
+
+      const leakedGo = `
+        func TwoSum(nums []int, target int) []int {
+          return []int{0, 1}
+        }
+      `;
+      const goResult = service.sanitizeHintOutput(leakedGo, 2);
+      expect(goResult.guardrailStatus).toBe('FILTERED');
+      expect(goResult.cleanedMarkdown).toContain('SOLUTION CODE BLOCKED BY AI GUARDRAILS');
+    });
+
+    it('should calculate time-decayed ELO penalty alongside XP (#1073)', () => {
+      const penaltyEarly = service.calculatePenalty(1, 0, 1200);
+      expect(penaltyEarly.estimatedEloPenalty).toBeGreaterThan(0);
+
+      const penaltyLate = service.calculatePenalty(1, 1200, 1200);
+      expect(penaltyLate.estimatedEloPenalty).toBeLessThanOrEqual(penaltyEarly.estimatedEloPenalty);
+    });
+
     it('should pass clean markdown without filtering', () => {
       const cleanHint = '### Strategy: Use two pointers at ends of sorted array.';
       const result = service.sanitizeHintOutput(cleanHint, 1);
