@@ -46,6 +46,7 @@ import { OpsModule } from './modules/ops/ops.module';
 import { GrpcModule } from './modules/grpc/grpc.module';
 
 import { RealtimeModule } from './modules/realtime/realtime.module';
+import { MessagingModule } from './modules/messaging/messaging.module';
 
 import { SreModule } from './modules/sre/sre.module';
 
@@ -164,6 +165,7 @@ import { VaultModule } from './common/vault/vault.module';
     AiModule,
     TournamentsModule,
     OpsModule,
+    MessagingModule,
 
     RealtimeModule,
 
