@@ -6,6 +6,8 @@ import { CloudController } from './cloud.controller';
 import { K8sOperatorService } from './k8s-operator.service';
 import { QueueVelocityProbeService } from './queue-velocity-probe.service';
 import { CompositeAutoscalerService } from './composite-autoscaler.service';
+import { K8sNamespaceCleanerService } from './k8s-namespace-cleaner.service';
+import { PreviewEnvManagerService } from './preview-env-manager.service';
 
 @Module({
   controllers: [CloudCostController, CloudController],
@@ -15,6 +17,8 @@ import { CompositeAutoscalerService } from './composite-autoscaler.service';
     K8sOperatorService,
     QueueVelocityProbeService,
     CompositeAutoscalerService,
+    K8sNamespaceCleanerService,
+    PreviewEnvManagerService,
   ],
   exports: [
     ResourceReaperService,
@@ -22,6 +26,8 @@ import { CompositeAutoscalerService } from './composite-autoscaler.service';
     K8sOperatorService,
     QueueVelocityProbeService,
     CompositeAutoscalerService,
+    K8sNamespaceCleanerService,
+    PreviewEnvManagerService,
   ],
 })
 export class CloudModule {}
