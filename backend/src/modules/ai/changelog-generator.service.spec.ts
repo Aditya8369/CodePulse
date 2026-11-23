@@ -335,4 +335,32 @@ Update all frontend WebSocket connection parameters from 'roomId' to 'lobbyId'.`
       expect(result.markdown).toContain('v2.0.0');
     });
   });
+
+  describe('Direct Git Commit Logs Parsing (#1076)', () => {
+    it('generates production-grade GitHub Release markdown directly from raw commit logs', () => {
+      const gitLogs = `
+a1b2c3d feat(auth): add passkey WebAuthn biometric login (#105)
+e4f5a6b fix(queue): prevent memory leak during high-concurrency match polling (#106)
+c7d8e9f feat(battles)!: BREAKING CHANGE: migrate battle state to distributed Raft (#107)
+1a2b3c4 docs(api): update OpenAPI spec for v2 routes (#108)
+      `.trim();
+
+      const result = service.generateChangelogFromCommitLogs(gitLogs, {
+        targetVersion: 'v2.0.0',
+        previousVersion: 'v1.9.0',
+        repository: 'code-with-abhi-i5/CodePulse',
+      });
+
+      expect(result.targetVersion).toBe('v2.0.0');
+      expect(result.categories.features.length).toBeGreaterThan(0);
+      expect(result.categories.bugFixes.length).toBeGreaterThan(0);
+      expect(result.categories.breakingChanges.length).toBeGreaterThan(0);
+      expect(result.breakingChanges.length).toBeGreaterThan(0);
+      expect(result.markdown).toContain('### 🚀 Features');
+      expect(result.markdown).toContain('### 🐛 Bug Fixes');
+      expect(result.markdown).toContain('### ⚠️ Breaking Changes');
+      expect(result.markdown).toContain('### 📊 Release Statistics');
+      expect(result.markdown).toContain('### 👥 Contributors');
+    });
+  });
 });
