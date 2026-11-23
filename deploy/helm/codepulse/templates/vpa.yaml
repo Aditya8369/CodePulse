@@ -1,0 +1,26 @@
+{{- if .Values.api.vpa.enabled -}}
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: {{ include "codepulse.fullname" . }}-api-vpa
+  labels:
+    {{- include "codepulse.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "codepulse.fullname" . }}-api
+  updatePolicy:
+    updateMode: {{ .Values.api.vpa.updateMode | quote }}
+  resourcePolicy:
+    containerPolicies:
+      - containerName: api
+        minAllowed:
+          cpu: 250m
+          memory: 256Mi
+        maxAllowed:
+          cpu: 4000m
+          memory: 8192Mi
+        controlledResources: ["cpu", "memory"]
+{{- end }}

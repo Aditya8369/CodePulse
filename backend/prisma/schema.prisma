@@ -290,6 +290,7 @@ model Challenge {
   icon        String?
   category    String?
   embedding   Unsupported("vector(1536)")? // pgvector 1536-dimensional semantic embedding (#1060)
+  searchVector Unsupported("tsvector")? // PostgreSQL tsvector for BM25 full-text search
   expiresAt   DateTime
   createdAt   DateTime        @default(now())
   users       UserChallenge[]

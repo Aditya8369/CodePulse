@@ -8,6 +8,7 @@ import { PowService } from './pow.service';
 import { PowController } from './pow.controller';
 import { SecurityController } from './security.controller';
 import { TyposquatScannerService } from './typosquat-scanner.service';
+import { TaintAnalyzerService } from './taint-analyzer.service';
 import { PowChallengeGuard } from '../../common/guards/pow-challenge.guard';
 import { ThreatDetectorService } from './threat-detector.service';
 import { ThreatMonitorInterceptor } from '../../common/interceptors/threat-monitor.interceptor';
@@ -32,6 +33,7 @@ import {
     MtlsMeshService,
     MtlsVerificationMiddleware,
     TyposquatScannerService,
+    TaintAnalyzerService,
   ],
   exports: [
     AcmeCertService,
@@ -46,6 +48,7 @@ import {
     MtlsMeshService,
     MtlsVerificationMiddleware,
     TyposquatScannerService,
+    TaintAnalyzerService,
   ],
 })
 export class SecurityModule {}
