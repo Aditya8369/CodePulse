@@ -40,6 +40,8 @@ import { CodeSandboxService } from './code-sandbox.service';
 
 import { ProtobufStreamService } from './protobuf-stream.service';
 
+import { WebRtcSignalingGateway } from './webrtc-signaling.gateway';
+
 @Module({
   imports: [
     PrismaModule,
@@ -86,6 +88,8 @@ import { ProtobufStreamService } from './protobuf-stream.service';
     CodeSandboxService,
 
     ProtobufStreamService,
+
+    WebRtcSignalingGateway,
   ],
   exports: [
     BattlesService,
@@ -117,6 +121,8 @@ import { ProtobufStreamService } from './protobuf-stream.service';
     CodeSandboxService,
 
     ProtobufStreamService,
+
+    WebRtcSignalingGateway,
   ],
 })
 export class BattlesModule {}
