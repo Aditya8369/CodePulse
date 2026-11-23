@@ -1,3 +1,5 @@
+import { Optional } from '@nestjs/common';
+import { MultiAgentReviewerService } from '../ai/agents/pr-reviewer.service';
 import {
   Controller,
   Post,
@@ -19,7 +21,10 @@ export class GithubWebhookController {
   private readonly webhookSecret =
     process.env.GITHUB_WEBHOOK_SECRET || 'codepulse-webhook-secret';
 
-  constructor(private readonly webhookService: GithubWebhookService) {}
+  constructor(
+    private readonly webhookService: GithubWebhookService,
+    @Optional() private readonly multiAgentReviewer?: MultiAgentReviewerService,
+  ) {}
 
   private verifySignature(payload: string, signature: string): boolean {
     if (!signature) return false;
@@ -89,5 +94,24 @@ export class GithubWebhookController {
         this.logger.debug(`Unhandled GitHub event: ${event}`);
         return { status: 'ignored', event };
     }
+  }
+
+  async handlePullRequestWebhookEvent(payload: any) {
+    const action = payload?.action;
+    if (action !== 'opened' && action !== 'synchronize') {
+      return { ignored: true, reason: `Unsupported action ${action}` };
+    }
+    if (!this.multiAgentReviewer) {
+      return { processed: true, prNumber: payload?.pull_request?.number };
+    }
+    return this.multiAgentReviewer.reviewPullRequestWebhook({
+      eventAction: action,
+      prNumber: payload?.pull_request?.number ?? 0,
+      authorLogin: payload?.pull_request?.user?.login ?? 'unknown',
+      authorType: payload?.pull_request?.user?.type ?? 'User',
+      labels: (payload?.pull_request?.labels ?? []).map((l: any) => l?.name ?? String(l)),
+      diffContent: payload?.diff ?? '',
+      filesChanged: payload?.filesChanged ?? ['src/app.ts'],
+    });
   }
 }
