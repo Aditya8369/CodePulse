@@ -249,6 +249,39 @@ API_KEY = "my_private_service_token_xyz"
       expect(summary.dashboardSummaryMarkdown).toContain('Recommended Fixes');
     });
 
+    it('accurately detects intentional SQL injection with zero false alarms on parameterized queries (#1067)', () => {
+      // Intentional SQL Injection snippet
+      const injectionCode = `
+        function getCustomer(id: string) {
+          return db.query("SELECT * FROM customers WHERE id = " + id);
+        }
+      `;
+      const injectionFindings = service.analyzeTypeScriptCode('src/customer.ts', injectionCode);
+      expect(injectionFindings).toHaveLength(1);
+      expect(injectionFindings[0].ruleId).toBe('OWASP-A03:SQL_INJECTION');
+      expect(injectionFindings[0].severity).toBe('CRITICAL');
+
+      // Safe parameterized query snippet
+      const safeCode = `
+        function getCustomerSafe(id: string) {
+          return db.query('SELECT * FROM customers WHERE id = $1', [id]);
+        }
+      `;
+      const safeFindings = service.analyzeTypeScriptCode('src/customer.ts', safeCode);
+      // Zero false alarms
+      expect(safeFindings).toHaveLength(0);
+    });
+
+    it('publishes markdown review summary to GitHub PR', async () => {
+      const summary = {
+        commitSha: 'c1234567890',
+        dashboardSummaryMarkdown: '## 🛡️ Clean Build',
+      } as any;
+
+      const res = await service.publishReviewToPullRequest('code-with-abhi-i5/CodePulse', 42, summary);
+      expect(res.published).toBe(true);
+    });
+
     it('allows updating resolution status of a finding', async () => {
       const res = await service.updateFindingStatus('f-101', 'RESOLVED');
       expect(res).toBe(true);

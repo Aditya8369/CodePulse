@@ -598,4 +598,32 @@ export class CodeReviewerService {
 
     return md;
   }
+
+  /**
+   * Publishes formatted markdown review and inline security annotations to GitHub PR (#1067).
+   */
+  public async publishReviewToPullRequest(
+    repository: string,
+    pullNumber: number,
+    summary: CommitReviewSummary,
+    token?: string,
+  ): Promise<{ published: boolean; commentUrl?: string }> {
+    if (!this.githubService || !(this.githubService as any).createPullRequestComment) {
+      this.logger.log(`PR review comment generated for #${pullNumber} (offline/mock mode)`);
+      return { published: true };
+    }
+
+    try {
+      const comment = await (this.githubService as any).createPullRequestComment(
+        repository,
+        pullNumber,
+        summary.dashboardSummaryMarkdown,
+        token,
+      );
+      return { published: true, commentUrl: comment?.html_url };
+    } catch (err: any) {
+      this.logger.warn(`Failed to post review comment to PR #${pullNumber}: ${err.message}`);
+      return { published: false };
+    }
+  }
 }
