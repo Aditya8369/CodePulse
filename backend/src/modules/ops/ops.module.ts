@@ -10,6 +10,8 @@ import { ShardRebalancerService } from './shard-rebalancer.service';
 
 import { IndexAdvisorService } from './index-advisor.service';
 
+import { CostAttributionService } from './cost-attribution.service';
+
 @Module({
   providers: [
     ChaosRunnerService,
@@ -22,6 +24,8 @@ import { IndexAdvisorService } from './index-advisor.service';
     ShardRebalancerService,
 
     IndexAdvisorService,
+
+    CostAttributionService,
   ],
   exports: [
     ChaosRunnerService,
@@ -39,5 +43,7 @@ import { DataArchiverService } from './data-archiver.service';
     ShardRebalancerService,
 
     IndexAdvisorService,
+
+    CostAttributionService,
 })
 export class OpsModule {}

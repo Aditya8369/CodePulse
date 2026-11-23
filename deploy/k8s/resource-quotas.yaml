@@ -1,0 +1,52 @@
+# ==============================================================================
+# CodePulse Production Kubernetes Resource Quotas & LimitRanges
+# Enforces FinOps resource boundaries and prevents rogue container node starvation
+# ==============================================================================
+
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: runner-limit-range
+  namespace: codepulse-runners
+spec:
+  limits:
+    - type: Container
+      default:
+        cpu: "1000m"
+        memory: "1024Mi"
+      defaultRequest:
+        cpu: "250m"
+        memory: "256Mi"
+      max:
+        cpu: "2000m"
+        memory: "2048Mi"
+      min:
+        cpu: "100m"
+        memory: "64Mi"
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: runner-namespace-quota
+  namespace: codepulse-runners
+spec:
+  hard:
+    requests.cpu: "64"
+    requests.memory: "128Gi"
+    limits.cpu: "128"
+    limits.memory: "256Gi"
+    pods: "100"
+    count/services: "10"
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: production-core-quota
+  namespace: codepulse-production
+spec:
+  hard:
+    requests.cpu: "32"
+    requests.memory: "64Gi"
+    limits.cpu: "64"
+    limits.memory: "128Gi"
+    pods: "50"
