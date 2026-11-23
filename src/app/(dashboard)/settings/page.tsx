@@ -42,6 +42,7 @@ import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
 import { SoundSettingsCard } from "@/components/settings/sound-settings-card";
 import { WebhookDashboardSection } from "@/components/settings/webhook-dashboard";
+import { ActiveSessionsTable } from "@/components/settings/active-sessions-table";
 import { useCurrentUser } from "@/hooks/api/use-auth";
 import {
   buildUserDataExport,
@@ -888,12 +889,12 @@ export default function SettingsPage() {
                     <Smartphone className="w-4 h-4 text-muted-foreground" />
                     <span>Two-Factor Authentication</span>
                   </button>
-                  <button className="flex items-center gap-2 w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-sm hover:bg-white/10 transition-colors">
-                    <Eye className="w-4 h-4 text-muted-foreground" />
-                    <span>Active Sessions</span>
-                  </button>
                 </div>
               </div>
+
+              {/* Active Device Sessions Management Table with Remote Revocation */}
+              <ActiveSessionsTable />
+
               <div className="glass-card rounded-[20px] p-6 border border-red-500/10">
                 <h2 className="text-lg font-semibold mb-2 text-red-400">
                   Danger Zone
