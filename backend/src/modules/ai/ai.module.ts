@@ -10,6 +10,8 @@ import { VectorService } from './vector.service';
 
 import { VerificationCoordinatorService } from './swarm/verification-coordinator.service';
 import { VerificationSwarmService } from './verification-swarm.service';
+
+import { ComplexityAnalyzerService } from './complexity-analyzer.service';
 import { GithubModule } from '../github/github.module';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { RedisService } from '../../common/redis/redis.service';
@@ -28,6 +30,8 @@ import { RedisService } from '../../common/redis/redis.service';
 
     VerificationCoordinatorService,
     VerificationSwarmService,
+
+    ComplexityAnalyzerService,
     RedisService,
   ],
   exports: [
@@ -41,6 +45,8 @@ import { RedisService } from '../../common/redis/redis.service';
 
     VerificationCoordinatorService,
     VerificationSwarmService,
+
+    ComplexityAnalyzerService,
   ],
 })
 export class AiModule {}
