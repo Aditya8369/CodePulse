@@ -24,6 +24,8 @@ import { ApiKeyService } from './api-key.service';
 import { ApiKeyGuard } from '../../common/guards/api-key.guard';
 import { BruteForceService } from './brute-force.service';
 import { BruteForceGuard } from './guards/brute-force.guard';
+import { OAuthPkceService } from './oauth-pkce.service';
+import { TokenRotationService } from './token-rotation.service';
 
 
 
@@ -72,6 +74,8 @@ import { BruteForceGuard } from './guards/brute-force.guard';
     ApiKeyGuard,
     BruteForceService,
     BruteForceGuard,
+    OAuthPkceService,
+    TokenRotationService,
   ],
   exports: [
     AuthService,
@@ -87,6 +91,8 @@ import { BruteForceGuard } from './guards/brute-force.guard';
     ApiKeyGuard,
     BruteForceService,
     BruteForceGuard,
+    OAuthPkceService,
+    TokenRotationService,
   ],
 })
 export class AuthModule {}
