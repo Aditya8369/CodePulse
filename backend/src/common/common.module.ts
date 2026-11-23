@@ -6,6 +6,8 @@ import { EtcdWatcherService } from '../config/etcd-watcher.service';
 import { IdempotencyService } from './idempotency/idempotency.service';
 import { IdempotencyInterceptor } from './idempotency/idempotency.interceptor';
 
+import { QuorumWitnessService } from './cluster/quorum-witness.service';
+
 @Global()
 @Module({
   providers: [
@@ -14,6 +16,8 @@ import { IdempotencyInterceptor } from './idempotency/idempotency.interceptor';
     EtcdWatcherService,
     IdempotencyService,
     IdempotencyInterceptor,
+
+    QuorumWitnessService,
   ],
   exports: [
     SystemMetricsService,
@@ -26,5 +30,7 @@ import { IdempotencyInterceptor } from './idempotency/idempotency.interceptor';
 import { ReplicaRouter } from './db/replica-router';
   providers: [SystemMetricsService, LoadShedderMiddleware, EtcdWatcherService, ReplicaRouter],
   exports: [SystemMetricsService, LoadShedderMiddleware, EtcdWatcherService, ReplicaRouter],
+
+    QuorumWitnessService,
 })
 export class CommonModule {}
