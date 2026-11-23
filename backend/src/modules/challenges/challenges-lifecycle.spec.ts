@@ -241,7 +241,7 @@ describe('Challenges Lifecycle State Machine & Concurrency Engine (#502)', () =>
   describe('ChallengesWorker job processing', () => {
     it('executes cleanup-expired-challenges job', async () => {
       const dlq = { capture: jest.fn() } as any;
-      const worker = new ChallengesWorker(service, dlq);
+      const worker = new ChallengesWorker(service, {} as any, dlq);
 
       jest.spyOn(service, 'archiveExpiredChallenges').mockResolvedValueOnce({
         expiredUserChallengesCount: 5,

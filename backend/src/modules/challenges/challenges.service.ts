@@ -368,6 +368,8 @@ export class ChallengesService {
   ) {
     if (!this.skillMatrixService) return [];
     return this.skillMatrixService.recommendChallengesForUser(profile, candidates, peers);
+  }
+
   async transpileChallengeSolution(
     sourceCode: string,
     sourceLanguage: 'typescript' | 'python' | 'go' | 'rust' | 'cpp',

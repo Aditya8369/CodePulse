@@ -1577,6 +1577,8 @@ model AiReviewAudit {
 
   @@index([prNumber, createdAt])
   @@map("ai_review_audits")
+}
+
 model DeveloperFatigueSnapshot {
   id                      String   @id @default(uuid())
   userHash                String
@@ -1593,6 +1595,8 @@ model DeveloperFatigueSnapshot {
   @@index([userHash, createdAt])
   @@index([repositoryId])
   @@map("developer_fatigue_snapshots")
+}
+
 model FinopsSavingsLedger {
   id                String   @id @default(uuid())
   provider          String   // AWS, GCP, RENDER
@@ -1608,6 +1612,8 @@ model FinopsSavingsLedger {
   @@index([provider, reapedAt])
   @@index([resourceId])
   @@map("finops_savings_ledger")
+}
+
 model ChallengeSynthesizedTestSuite {
   id                       String   @id @default(uuid())
   challengeId              String
@@ -1621,6 +1627,8 @@ model ChallengeSynthesizedTestSuite {
 
   @@index([challengeId, createdAt])
   @@map("challenge_synthesized_test_suites")
+}
+
 model GitConflictResolution {
   id               String   @id @default(uuid())
   filePath         String

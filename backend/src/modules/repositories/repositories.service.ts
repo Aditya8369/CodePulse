@@ -297,6 +297,8 @@ export class RepositoriesService {
     const evaluator = this.docEvaluatorService || new DocEvaluatorService();
     const result = await this.getRepositoryDocScore(repository.userId, repositoryId);
     return evaluator.generateBadgeSvg(result.score, result.grade);
+  }
+
   analyzeRepositoryCodeOwnership(repositoryId: string, commits: BlameCommitTouch[]) {
     if (!this.ownershipHeatmap) return null;
     return this.ownershipHeatmap.analyzeOwnershipHeatmap({ repositoryId, commits });

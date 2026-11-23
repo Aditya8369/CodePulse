@@ -8,6 +8,7 @@ import {
   HttpCode,
   HttpStatus,
   BadRequestException,
+  Optional,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { TranspilerService } from './transpiler.service';
@@ -62,7 +63,7 @@ export class AiController {
     private readonly personaBattleService: PersonaBattleService,
     private readonly codeHintService: CodeHintService,
     private readonly polyglotTranspiler?: PolyglotTranspilerService,
-    private readonly reproSynthesizer: ReproSynthesizerService,
+    @Optional() private readonly reproSynthesizer?: ReproSynthesizerService,
   ) {}
 
   @Post('transpile')
@@ -231,7 +232,7 @@ export class AiController {
     }
     return this.polyglotTranspiler.transpileAndVerify(dto);
   }
-}
+
   // ==========================================
   // Bug Reproduction Script Synthesizer (#369)
   // ==========================================
@@ -254,6 +255,9 @@ export class AiController {
     if (!dto.issueBody) {
       throw new BadRequestException('issueBody is required to synthesize a reproduction script');
     }
+    if (!this.reproSynthesizer) {
+      throw new BadRequestException('ReproSynthesizerService is not available');
+    }
     return this.reproSynthesizer.synthesizeReproductionScript(dto);
   }
 
@@ -267,6 +271,9 @@ export class AiController {
     type: ReproStatsDto,
   })
   async getReproStats(): Promise<ReproStatsDto> {
+    if (!this.reproSynthesizer) {
+      throw new BadRequestException('ReproSynthesizerService is not available');
+    }
     return this.reproSynthesizer.getReproStats();
   }
 
@@ -285,6 +292,9 @@ export class AiController {
     @Param('id') id: string,
     @Body() dto: TrackReproExecutionDto,
   ): Promise<SynthesizedReproResponseDto> {
+    if (!this.reproSynthesizer) {
+      throw new BadRequestException('ReproSynthesizerService is not available');
+    }
     return this.reproSynthesizer.trackExecutionResult(id, dto);
   }
 }

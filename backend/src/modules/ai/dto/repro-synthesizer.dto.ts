@@ -218,6 +218,15 @@ export class SynthesizedReproResponseDto {
 
   @ApiProperty({ description: 'Timestamp of generation' })
   createdAt: string;
+
+  @ApiPropertyOptional({ description: 'Whether execution verified the bug' })
+  executionSuccess?: boolean;
+
+  @ApiPropertyOptional({ description: 'Output from reproduction run' })
+  executionOutput?: string;
+
+  @ApiPropertyOptional({ description: 'Error logs from reproduction run' })
+  errorLogs?: string;
 }
 
 export class TrackReproExecutionDto {

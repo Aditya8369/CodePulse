@@ -11,6 +11,7 @@ function rating(overrides: Partial<BattleRating> = {}): BattleRating {
     elo: 2125,
     placementMatchesRemaining: 0,
     seasonNumber: 1,
+    version: 1,
     lastBattleAt: new Date('2026-10-26T00:00:00Z'),
     decayPeriodsApplied: 0,
     decayFloor: 1800,

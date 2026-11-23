@@ -12,7 +12,6 @@ import { ChallengesService } from './challenges.service';
 import { DifficultyCalibratorService } from './difficulty-calibrator.service';
 import { CreateChallengeDto, RecordChallengeSubmissionDto } from './dto/challenges.dto';
 import { TestGeneratorService } from '../ai/test-generator.service';
-import { CreateChallengeDto } from './dto/challenges.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('challenges')

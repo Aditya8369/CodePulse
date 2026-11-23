@@ -8,11 +8,11 @@ describe('ReplicaRouter (Multi-Region Read Replica Router with Read-Your-Own-Wri
 
   beforeEach(() => {
     mockPrimary = {
-      $queryRaw: vi.fn().mockResolvedValue([{ version: 'PostgreSQL Primary 16' }]),
+      $queryRaw: jest.fn().mockResolvedValue([{ version: 'PostgreSQL Primary 16' }]),
     } as unknown as PrismaClient;
 
     mockReplica = {
-      $queryRaw: vi.fn().mockResolvedValue([{ version: 'PostgreSQL Read Replica 16' }]),
+      $queryRaw: jest.fn().mockResolvedValue([{ version: 'PostgreSQL Read Replica 16' }]),
     } as unknown as PrismaClient;
 
     router = new ReplicaRouter();

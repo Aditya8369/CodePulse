@@ -63,14 +63,14 @@ describe('IdempotencyInterceptor & IdempotencyService', () => {
       }),
     } as unknown as ExecutionContext;
 
-    vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue(options);
+    jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(options);
 
     return { context, req, res, setHeaders };
   }
 
   it('executes handler on first submission and caches result', async () => {
     const { context } = createMockContext({ key: 'test-1' });
-    const handler = { handle: vi.fn().mockReturnValue(of({ success: true, elo: 1200 })) } as CallHandler;
+    const handler = { handle: jest.fn().mockReturnValue(of({ success: true, elo: 1200 })) } as CallHandler;
 
     const obs = await interceptor.intercept(context, handler);
     const result = await lastValueFrom(obs);
@@ -81,7 +81,7 @@ describe('IdempotencyInterceptor & IdempotencyService', () => {
 
   it('returns cached response and sets Idempotent-Replayed header on duplicate submission', async () => {
     const { context, setHeaders } = createMockContext({ key: 'test-replay' });
-    const handler = { handle: vi.fn().mockReturnValue(of({ battleId: 'b-1' })) } as CallHandler;
+    const handler = { handle: jest.fn().mockReturnValue(of({ battleId: 'b-1' })) } as CallHandler;
 
     // First call
     const firstObs = await interceptor.intercept(context, handler);
@@ -104,7 +104,7 @@ describe('IdempotencyInterceptor & IdempotencyService', () => {
     await service.acquireKey(key, fingerprint, 60);
 
     const { context } = createMockContext({ key, body: { x: 1 } });
-    const handler = { handle: vi.fn() } as CallHandler;
+    const handler = { handle: jest.fn() } as CallHandler;
 
     await expect(interceptor.intercept(context, handler)).rejects.toThrow(
       new HttpException(
@@ -117,7 +117,7 @@ describe('IdempotencyInterceptor & IdempotencyService', () => {
   it('throws 422 Unprocessable Entity when key is reused with modified payload', async () => {
     const key = 'modified-payload-key';
     const { context: context1 } = createMockContext({ key, body: { attempt: 1 } });
-    const handler = { handle: vi.fn().mockReturnValue(of({ ok: true })) } as CallHandler;
+    const handler = { handle: jest.fn().mockReturnValue(of({ ok: true })) } as CallHandler;
 
     const obs1 = await interceptor.intercept(context1, handler);
     await lastValueFrom(obs1);
@@ -134,7 +134,7 @@ describe('IdempotencyInterceptor & IdempotencyService', () => {
 
   it('throws 400 Bad Request when Idempotency-Key header is missing and enforceHeader is true', async () => {
     const { context } = createMockContext({ key: undefined });
-    const handler = { handle: vi.fn() } as CallHandler;
+    const handler = { handle: jest.fn() } as CallHandler;
 
     await expect(interceptor.intercept(context, handler)).rejects.toThrow(
       new HttpException(

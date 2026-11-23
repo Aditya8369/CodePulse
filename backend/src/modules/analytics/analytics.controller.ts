@@ -308,6 +308,8 @@ export class AnalyticsController {
   @ApiOperation({ summary: 'Get repository cumulative carbon footprint and Green Code badge summary' })
   getRepositoryCarbonSummary(@Param('repositoryId') repositoryId: string) {
     return this.greenCarbonEstimator?.getRepositoryCarbonSummary(repositoryId);
+  }
+
   // Monte Carlo Sprint Velocity & Burndown Endpoints (#595)
   // ==========================================
 
@@ -352,6 +354,7 @@ export class AnalyticsController {
       dto.headFiles,
       dto.rules,
     );
+  }
   // Developer Flow State & Cognitive Fatigue Endpoints (#589)
   // ==========================================
 
