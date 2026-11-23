@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import {
   AlertCircle,
   CheckCircle2,
@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { treeSitterEngine, type SupportedLanguage } from "@/lib/editor/tree-sitter-wasm";
 
 export type MonospaceFont = "jetbrains-mono" | "fira-code" | "source-code-pro";
 
@@ -110,15 +111,19 @@ export function CodeArenaEditor({
   const [activeTab, setActiveTab] = useState<"editor" | "output">("editor");
   const [output, setOutput] = useState<string>("");
   const [isCopied, setIsCopied] = useState<boolean>(false);
-  const [diagnostics, setDiagnostics] = useState<SyntaxDiagnostic[]>([
-    {
-      line: 6,
-      column: 2,
-      message: "Trailing newline expected before closing brace",
-      severity: "warning",
-      ruleId: "gofmt/newline",
-    },
-  ]);
+  const [diagnostics, setDiagnostics] = useState<SyntaxDiagnostic[]>([]);
+
+  useEffect(() => {
+    try {
+      const res = treeSitterEngine.parse(
+        code,
+        (language.toLowerCase() as SupportedLanguage) || "go",
+      );
+      setDiagnostics(res.diagnostics);
+    } catch {
+      // ignore
+    }
+  }, [code, language]);
 
   const lines = useMemo(() => code.split("\n"), [code]);
 
