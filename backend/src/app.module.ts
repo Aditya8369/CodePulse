@@ -49,6 +49,7 @@ import { RealtimeModule } from './modules/realtime/realtime.module';
 import { SreModule } from './modules/sre/sre.module';
 
 
+
 import { LoggingModule } from './common/logging/logging.module';
 import { MentorshipModule } from './modules/mentorship/mentorship.module';
 import { GamificationModule } from './modules/gamification/gamification.module';
@@ -161,6 +162,7 @@ import { VaultModule } from './common/vault/vault.module';
     OpsModule,
 
     RealtimeModule,
+
 
   ],
   controllers: [AppController],
