@@ -1,9 +1,23 @@
 "use client";
 
 import type { ElementType } from "react";
-import { useMemo } from "react";
+import React, { useMemo, useState, useEffect, useCallback } from "react";
 import { Line, LineChart, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { Activity, Timer, Trophy, Zap, Target, ChevronRight } from "lucide-react";
+import {
+  Activity,
+  Timer,
+  Trophy,
+  Zap,
+  Target,
+  ChevronRight,
+  Play,
+  Pause,
+  RotateCcw,
+  SkipBack,
+  SkipForward,
+  Gauge,
+  FastForward,
+} from "lucide-react";
 import {
   Accordion,
   AccordionItem,
@@ -11,6 +25,7 @@ import {
   AccordionContent,
 } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface DevData {
   username: string;
@@ -41,11 +56,14 @@ interface BattleRound {
   cumulativeP2: number;
 }
 
-interface BattleTimelineProps {
+export interface BattleTimelineProps {
   player1: DevData;
   player2: DevData;
   battleType: string;
   isMuted?: boolean;
+  initialSpeed?: number;
+  onSpeedChange?: (speed: number) => void;
+  onPlayStateChange?: (isPlaying: boolean) => void;
 }
 
 const ROUND_CATEGORIES = [
@@ -69,6 +87,8 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Zap,
   Target,
 };
+
+const PLAYBACK_SPEEDS = [0.5, 1, 2, 4, 8] as const;
 
 function seedRandom(str: string) {
   let hash = 0;
@@ -136,7 +156,18 @@ function roundStats(battleType: string, p1: DevData, p2: DevData, id: string): R
   }
 }
 
-export function BattleTimeline({ player1, player2, battleType }: BattleTimelineProps) {
+export function BattleTimeline({
+  player1,
+  player2,
+  battleType,
+  initialSpeed = 1,
+  onSpeedChange,
+  onPlayStateChange,
+}: BattleTimelineProps) {
+  const [playbackSpeed, setPlaybackSpeed] = useState<number>(initialSpeed);
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [currentRoundIdx, setCurrentRoundIdx] = useState<number>(0);
+
   const rounds = useMemo(() => {
     const filterIds = ROUND_FILTERS[battleType] || ROUND_CATEGORIES.map((c) => c.id);
     const categories = ROUND_CATEGORIES.filter((c) => filterIds.includes(c.id));
@@ -183,6 +214,56 @@ export function BattleTimeline({ player1, player2, battleType }: BattleTimelineP
     }, []);
   }, [player1, player2, battleType]);
 
+  // Replay playback timer effect
+  useEffect(() => {
+    if (!isPlaying) return;
+
+    const intervalTime = Math.max(100, 1500 / playbackSpeed);
+    const timer = setInterval(() => {
+      setCurrentRoundIdx((prev) => {
+        if (prev >= rounds.length - 1) {
+          setIsPlaying(false);
+          onPlayStateChange?.(false);
+          return prev;
+        }
+        return prev + 1;
+      });
+    }, intervalTime);
+
+    return () => clearInterval(timer);
+  }, [isPlaying, playbackSpeed, rounds.length, onPlayStateChange]);
+
+  const togglePlay = useCallback(() => {
+    setIsPlaying((prev) => {
+      const next = !prev;
+      if (next && currentRoundIdx >= rounds.length - 1) {
+        setCurrentRoundIdx(0);
+      }
+      onPlayStateChange?.(next);
+      return next;
+    });
+  }, [currentRoundIdx, rounds.length, onPlayStateChange]);
+
+  const handleSpeedSelect = (speed: number) => {
+    setPlaybackSpeed(speed);
+    onSpeedChange?.(speed);
+    toast.success(`Replay speed set to ${speed}x`);
+  };
+
+  const handleRewind = () => {
+    setCurrentRoundIdx(0);
+    setIsPlaying(false);
+    onPlayStateChange?.(false);
+  };
+
+  const handleStepBack = () => {
+    setCurrentRoundIdx((prev) => Math.max(0, prev - 1));
+  };
+
+  const handleStepForward = () => {
+    setCurrentRoundIdx((prev) => Math.min(rounds.length - 1, prev + 1));
+  };
+
   const p1Faster = rounds.some((r) => r.timeP1 < r.timeP2);
   const p2Faster = rounds.some((r) => r.timeP2 < r.timeP1);
   const speedWinner = p1Faster && !p2Faster ? player1.name : p2Faster && !p1Faster ? player2.name : "Tie";
@@ -203,7 +284,7 @@ export function BattleTimeline({ player1, player2, battleType }: BattleTimelineP
   }));
 
   return (
-    <section className="space-y-6">
+    <section className="space-y-6" data-testid="battle-timeline-section">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Activity className="w-5 h-5 text-primary" />
@@ -211,6 +292,91 @@ export function BattleTimeline({ player1, player2, battleType }: BattleTimelineP
         </div>
         <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-2 py-1 rounded bg-primary/10 text-primary">
           {rounds.length} Rounds
+        </div>
+      </div>
+
+      {/* Battle Replay Playback Speed Controller Dock (0.5x, 1x, 2x, 4x, 8x) */}
+      <div
+        data-testid="playback-speed-controller-dock"
+        className="rounded-2xl border border-white/10 bg-slate-900/80 p-4 backdrop-blur-xl shadow-lg flex flex-col md:flex-row items-center justify-between gap-4"
+      >
+        {/* Play / Pause / Navigation Controls */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            data-testid="replay-play-pause-btn"
+            onClick={togglePlay}
+            aria-label={isPlaying ? "Pause replay" : "Play replay"}
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-md shadow-indigo-600/30 hover:bg-indigo-500 active:scale-95 transition-all cursor-pointer"
+          >
+            {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4 ml-0.5" />}
+          </button>
+
+          <button
+            type="button"
+            data-testid="replay-rewind-btn"
+            onClick={handleRewind}
+            aria-label="Rewind replay"
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white transition-all cursor-pointer"
+          >
+            <RotateCcw className="h-4 w-4" />
+          </button>
+
+          <button
+            type="button"
+            data-testid="replay-step-back-btn"
+            onClick={handleStepBack}
+            disabled={currentRoundIdx === 0}
+            aria-label="Previous round"
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 disabled:opacity-40 disabled:pointer-events-none transition-all cursor-pointer"
+          >
+            <SkipBack className="h-4 w-4" />
+          </button>
+
+          <button
+            type="button"
+            data-testid="replay-step-forward-btn"
+            onClick={handleStepForward}
+            disabled={currentRoundIdx >= rounds.length - 1}
+            aria-label="Next round"
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 disabled:opacity-40 disabled:pointer-events-none transition-all cursor-pointer"
+          >
+            <SkipForward className="h-4 w-4" />
+          </button>
+
+          <div className="ml-2 flex flex-col">
+            <span className="text-xs font-semibold text-white">
+              {isPlaying ? "Replay Streaming" : "Replay Paused"}
+            </span>
+            <span className="text-[11px] text-slate-400">
+              Round {currentRoundIdx + 1} of {rounds.length}
+            </span>
+          </div>
+        </div>
+
+        {/* Speed Selector Pill Dock */}
+        <div className="flex items-center gap-1.5 p-1 rounded-xl bg-black/40 border border-white/10">
+          <div className="px-2 text-slate-400 flex items-center gap-1 text-xs">
+            <Gauge className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Speed:</span>
+          </div>
+          {PLAYBACK_SPEEDS.map((speed) => (
+            <button
+              key={speed}
+              type="button"
+              data-testid={`speed-btn-${speed}x`}
+              onClick={() => handleSpeedSelect(speed)}
+              aria-pressed={playbackSpeed === speed}
+              className={cn(
+                "px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer",
+                playbackSpeed === speed
+                  ? "bg-indigo-600 text-white shadow-sm shadow-indigo-600/30 scale-105"
+                  : "text-slate-400 hover:text-white hover:bg-white/5"
+              )}
+            >
+              {speed}x
+            </button>
+          ))}
         </div>
       </div>
 
@@ -269,14 +435,22 @@ export function BattleTimeline({ player1, player2, battleType }: BattleTimelineP
       </div>
 
       <Accordion className="w-full">
-        {rounds.map((round) => {
+        {rounds.map((round, idx) => {
           const IconComp = ICON_MAP[round.icon] ?? Activity;
           const p1Badge = badgeFor(round.timeP1);
           const p2Badge = badgeFor(round.timeP2);
           const faster = round.timeP1 < round.timeP2 ? player1.name : round.timeP2 < round.timeP1 ? player2.name : "Tie";
+          const isCurrentActive = idx === currentRoundIdx;
 
           return (
-            <AccordionItem key={round.id} value={round.id} className="border-border rounded-xl">
+            <AccordionItem
+              key={round.id}
+              value={round.id}
+              className={cn(
+                "border-border rounded-xl transition-all",
+                isCurrentActive && "ring-1 ring-indigo-500/50 bg-indigo-500/[0.03]"
+              )}
+            >
               <AccordionTrigger className="flex items-center justify-between gap-3 bg-background/40 border-none p-3 text-left hover:bg-accent/50 transition-colors">
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                   <IconComp className="w-4 h-4" />
