@@ -42,6 +42,8 @@ import { ProtobufStreamService } from './protobuf-stream.service';
 
 import { WebRtcSignalingGateway } from './webrtc-signaling.gateway';
 
+import { FuzzingEvaluatorService } from './fuzzing-evaluator.service';
+
 @Module({
   imports: [
     PrismaModule,
@@ -90,6 +92,8 @@ import { WebRtcSignalingGateway } from './webrtc-signaling.gateway';
     ProtobufStreamService,
 
     WebRtcSignalingGateway,
+
+    FuzzingEvaluatorService,
   ],
   exports: [
     BattlesService,
@@ -123,6 +127,8 @@ import { WebRtcSignalingGateway } from './webrtc-signaling.gateway';
     ProtobufStreamService,
 
     WebRtcSignalingGateway,
+
+    FuzzingEvaluatorService,
   ],
 })
 export class BattlesModule {}
