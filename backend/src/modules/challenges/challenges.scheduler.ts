@@ -15,6 +15,12 @@ export class ChallengesScheduler {
     await this.challengesQueue.add('generate-daily-challenges', {});
   }
 
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  async scheduleDifficultyCalibration() {
+    this.logger.log('Scheduling nightly problem difficulty calibration...');
+    await this.challengesQueue.add('calibrate-challenge-difficulties', {});
+  }
+
   @Cron(CronExpression.EVERY_HOUR)
   async scheduleExpiredCleanup() {
     this.logger.log('Scheduling expired challenges cleanup...');

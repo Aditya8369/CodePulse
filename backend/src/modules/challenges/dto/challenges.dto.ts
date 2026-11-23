@@ -44,3 +44,37 @@ export class CreateChallengeDto {
   @IsNotEmpty()
   expiresAt: string;
 }
+
+export class RecordChallengeSubmissionDto {
+  @ApiProperty({ description: 'ID of the player submitting the solution' })
+  @IsString()
+  @IsNotEmpty()
+  userId: string;
+
+  @ApiProperty({ description: 'Whether the challenge submission passed all test cases' })
+  passed: boolean;
+
+  @ApiProperty({ required: false, description: 'Optional player Elo/Glicko rating' })
+  @IsOptional()
+  playerRating?: number;
+
+  @ApiProperty({ required: false, description: 'Optional player rating deviation' })
+  @IsOptional()
+  playerRd?: number;
+
+  @ApiProperty({ required: false, description: 'Optional partial test score between 0.0 and 1.0' })
+  @IsOptional()
+  partialScore?: number;
+
+  @ApiProperty({ required: false, description: 'Optional battle ID associated with submission' })
+  @IsString()
+  @IsOptional()
+  battleId?: string;
+}
+
+export class CalibrateChallengeBatchDto {
+  @ApiProperty({ required: false, description: 'Optional challenge ID to calibrate; omit to calibrate all' })
+  @IsString()
+  @IsOptional()
+  challengeId?: string;
+}

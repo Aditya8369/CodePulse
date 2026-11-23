@@ -2,6 +2,7 @@ import { Processor, WorkerHost, OnWorkerEvent } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { Logger } from '@nestjs/common';
 import { ChallengesService } from './challenges.service';
+import { DifficultyCalibratorService } from './difficulty-calibrator.service';
 import { DeadLetterQueueService } from '../queues/dlq.service';
 
 @Processor('challenges')
@@ -10,6 +11,7 @@ export class ChallengesWorker extends WorkerHost {
 
   constructor(
     private readonly challengesService: ChallengesService,
+    private readonly difficultyCalibratorService: DifficultyCalibratorService,
     private readonly dlq: DeadLetterQueueService,
   ) {
     super();
@@ -30,6 +32,12 @@ export class ChallengesWorker extends WorkerHost {
       const result = await this.challengesService.archiveExpiredChallenges();
       this.logger.log(
         `Archived ${result.expiredUserChallengesCount} expired user challenges.`,
+      );
+      return result;
+    } else if (job.name === 'calibrate-challenge-difficulties') {
+      const result = await this.difficultyCalibratorService.runNightlyCalibration();
+      this.logger.log(
+        `Nightly challenge calibration completed. Calibrated ${result.calibratedCount} challenges.`,
       );
       return result;
     }
