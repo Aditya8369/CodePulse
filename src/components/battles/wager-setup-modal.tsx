@@ -139,6 +139,7 @@ export const WagerSetupModal: React.FC<WagerSetupModalProps> = ({
           role="dialog"
           aria-modal="true"
           aria-labelledby="wager-modal-title"
+          aria-describedby="wager-modal-desc"
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4 overflow-y-auto"
           onClick={(e) => {
             if (e.target === e.currentTarget) onClose();
