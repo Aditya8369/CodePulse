@@ -9,6 +9,10 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags, ApiParam, ApiBody } from '@nestjs/swagger';
 import { TyposquatScannerService } from './typosquat-scanner.service';
+import {
+  SecurityMttrService,
+  type VulnerabilityLifecycleRecord,
+} from './security-mttr.service';
 import { MpcVaultService } from './mpc-vault.service';
 import type {
   CreateVaultSecretDto,
@@ -150,5 +154,63 @@ export class SecurityController {
   @ApiParam({ name: 'secretId' })
   async getAuditProofs(@Param('secretId') secretId: string) {
     return this.mpcVaultService.getAuditProofs(secretId);
+  }
+
+  @Post('mttr/advisories')
+  @HttpCode(HttpStatus.CREATED)
+  recordVulnerabilityAdvisory(
+    @Body()
+    dto: Omit<VulnerabilityLifecycleRecord, 'deployedInProduction'> & {
+      deployedInProduction?: boolean;
+    },
+  ) {
+    return this.securityMttrService?.recordAdvisory(dto);
+  }
+
+  @Post('mttr/advisories/:advisoryId/correlate-pr')
+  @HttpCode(HttpStatus.OK)
+  correlateAdvisoryWithPr(
+    @Param('advisoryId') advisoryId: string,
+    @Body()
+    dto: {
+      fixPrNumber: number;
+      fixPrCreatedAt: string;
+      fixMergedAt?: string;
+      patchedVersion?: string;
+    },
+  ) {
+    return this.securityMttrService?.correlateAdvisoryWithPr({
+      advisoryId,
+      ...dto,
+    });
+  }
+
+  @Get('mttr/repositories/:repositoryId')
+  getRepositoryMttrMetrics(
+    @Param('repositoryId') repositoryId: string,
+    @Query('asOf') asOf?: string,
+  ) {
+    return this.securityMttrService?.calculateRepositoryMttr(repositoryId, asOf);
+  }
+
+  @Get('mttr/repositories/:repositoryId/compliance-pdf')
+  downloadComplianceAuditPdf(
+    @Param('repositoryId') repositoryId: string,
+    @Query('standard') standard: 'SOC2' | 'ISO_27001' = 'SOC2',
+    @Res() res?: Response,
+  ) {
+    const pdfBuffer = this.securityMttrService?.generateExecutiveCompliancePdf(
+      repositoryId,
+      standard,
+    );
+    if (res && pdfBuffer) {
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${repositoryId}-${standard}-audit.pdf"`,
+      );
+      res.send(pdfBuffer);
+    }
+    return pdfBuffer;
   }
 }
