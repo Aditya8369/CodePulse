@@ -14,6 +14,7 @@ import { DistributedDeadlockDetectorService } from './concurrency/deadlock-detec
 
 import { CloudEventsProvider } from './events/cloudevents.provider';
 import { NatsJetStreamService } from './events/nats-jetstream.service';
+import { TDigestService } from './math/t-digest.service';
 
 @Global()
 @Module({
@@ -32,6 +33,7 @@ import { NatsJetStreamService } from './events/nats-jetstream.service';
 
     CloudEventsProvider,
     NatsJetStreamService,
+    TDigestService,
   ],
   exports: [
     SystemMetricsService,
@@ -48,6 +50,7 @@ import { NatsJetStreamService } from './events/nats-jetstream.service';
 
     CloudEventsProvider,
     NatsJetStreamService,
+    TDigestService,
   ],
 })
 export class CommonModule {}
