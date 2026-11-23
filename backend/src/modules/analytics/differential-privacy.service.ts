@@ -387,6 +387,41 @@ export class DifferentialPrivacyService {
     this.budgetLedger.delete(consumerKey);
   }
 
+  /**
+   * Sanitizes platform-wide developer metrics (solve times, typing speeds, peak active hours)
+   * with calibrated Laplace noise preventing re-identification attacks.
+   */
+  sanitizeDeveloperMetrics(
+    metrics: { solveTimesSeconds: number[]; typingSpeedsWpm: number[]; peakHours: number[] },
+    consumerKey = 'public-telemetry-dashboard',
+    epsilon = 1.0,
+  ): {
+    noisyMeanSolveTimeSeconds: number;
+    noisyMeanTypingSpeedWpm: number;
+    noisyPeakHour: number;
+    epsilonConsumed: number;
+    sanitized: boolean;
+  } {
+    this.consumeBudget(consumerKey, epsilon, 0, 10.0);
+
+    const meanSolve = metrics.solveTimesSeconds.reduce((a, b) => a + b, 0) / Math.max(1, metrics.solveTimesSeconds.length);
+    const meanTyping = metrics.typingSpeedsWpm.reduce((a, b) => a + b, 0) / Math.max(1, metrics.typingSpeedsWpm.length);
+    const meanHour = metrics.peakHours.reduce((a, b) => a + b, 0) / Math.max(1, metrics.peakHours.length);
+
+    // Add calibrated Laplace noise (sensitivity: solve=30s, typing=20wpm, hour=2h)
+    const noisyMeanSolveTimeSeconds = Math.max(1, Number(this.addLaplaceNoise(meanSolve, 30.0 / metrics.solveTimesSeconds.length, epsilon).toFixed(2)));
+    const noisyMeanTypingSpeedWpm = Math.max(1, Number(this.addLaplaceNoise(meanTyping, 20.0 / metrics.typingSpeedsWpm.length, epsilon).toFixed(2)));
+    const noisyPeakHour = Math.min(23, Math.max(0, Math.round(this.addLaplaceNoise(meanHour, 2.0 / metrics.peakHours.length, epsilon))));
+
+    return {
+      noisyMeanSolveTimeSeconds,
+      noisyMeanTypingSpeedWpm,
+      noisyPeakHour,
+      epsilonConsumed: epsilon,
+      sanitized: true,
+    };
+  }
+
   private secureUniformRandom(): number {
     const buf = randomBytes(4);
     const intVal = buf.readUInt32BE(0);
