@@ -8,6 +8,10 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { QueryRepositoriesDto, RepositorySortBy, SortOrder } from './dto/repositories.dto';
 import { RocksDbService } from '../storage/rocksdb.service';
+import {
+  OwnershipHeatmapService,
+  type BlameCommitTouch,
+} from '../analytics/ownership-heatmap.service';
 import type { ParsedAstPayload, FileSymbolTable } from '../storage/rocksdb.service';
 import { DocEvaluatorService } from '../ai/doc-evaluator.service';
 
@@ -17,6 +21,7 @@ export class RepositoriesService {
     private readonly prisma: PrismaService,
     @Optional() private readonly rocksDb?: RocksDbService,
     @Optional() private readonly docEvaluatorService?: DocEvaluatorService,
+    @Optional() private readonly ownershipHeatmap?: OwnershipHeatmapService,
   ) {}
 
   /**
@@ -292,5 +297,8 @@ export class RepositoriesService {
     const evaluator = this.docEvaluatorService || new DocEvaluatorService();
     const result = await this.getRepositoryDocScore(repository.userId, repositoryId);
     return evaluator.generateBadgeSvg(result.score, result.grade);
+  analyzeRepositoryCodeOwnership(repositoryId: string, commits: BlameCommitTouch[]) {
+    if (!this.ownershipHeatmap) return null;
+    return this.ownershipHeatmap.analyzeOwnershipHeatmap({ repositoryId, commits });
   }
 }
