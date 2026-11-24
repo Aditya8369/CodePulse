@@ -703,6 +703,90 @@ export class BattlesGateway
     });
   }
 
+  // WebRTC P2P Checkpoint Registry: Map<battleId, Map<sequence, Map<userId, string>>>
+  private p2pStateCheckpoints = new Map<string, Map<number, Map<string, string>>>();
+
+  @SubscribeMessage('webrtc:p2p_offer')
+  handleWebRtcP2pOffer(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: { battleId: string; userId: string; sdp: any },
+  ) {
+    client.to(`battle:${payload.battleId}`).emit('webrtc:p2p_offer', payload);
+  }
+
+  @SubscribeMessage('webrtc:p2p_answer')
+  handleWebRtcP2pAnswer(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: { battleId: string; userId: string; sdp: any },
+  ) {
+    client.to(`battle:${payload.battleId}`).emit('webrtc:p2p_answer', payload);
+  }
+
+  @SubscribeMessage('webrtc:p2p_ice_candidate')
+  handleWebRtcP2pIceCandidate(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: { battleId: string; userId: string; candidate: any },
+  ) {
+    client.to(`battle:${payload.battleId}`).emit('webrtc:p2p_ice_candidate', payload);
+  }
+
+  @SubscribeMessage('webrtc:p2p_fallback_notice')
+  handleWebRtcP2pFallback(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: { battleId: string; userId: string; reason: string },
+  ) {
+    this.logger.warn(
+      `WebRTC P2P fallback triggered for battle ${payload.battleId} user ${payload.userId}: ${payload.reason}`,
+    );
+    client.to(`battle:${payload.battleId}`).emit('webrtc:p2p_fallback_notice', payload);
+  }
+
+  /**
+   * Periodic cryptographic SHA-256 state hash checkpoint verification.
+   * Compares player viewports to guarantee zero desynchronization.
+   */
+  @SubscribeMessage('webrtc:p2p_state_checkpoint')
+  handleWebRtcStateCheckpoint(
+    @ConnectedSocket() client: Socket,
+    @MessageBody()
+    payload: { battleId: string; userId: string; sequence: number; hash: string; timestamp: number },
+  ) {
+    const { battleId, userId, sequence, hash } = payload;
+    if (!battleId) return;
+
+    if (!this.p2pStateCheckpoints.has(battleId)) {
+      this.p2pStateCheckpoints.set(battleId, new Map());
+    }
+    const battleSeqMap = this.p2pStateCheckpoints.get(battleId)!;
+    if (!battleSeqMap.has(sequence)) {
+      battleSeqMap.set(sequence, new Map());
+    }
+    const userHashMap = battleSeqMap.get(sequence)!;
+    userHashMap.set(userId, hash);
+
+    if (userHashMap.size >= 2) {
+      const hashes = Array.from(userHashMap.values());
+      const allMatch = hashes.every((h) => h === hashes[0]);
+      if (allMatch) {
+        this.server?.to(`battle:${battleId}`)?.emit('webrtc:p2p_state_verified', {
+          battleId,
+          sequence,
+          verified: true,
+          hash: hashes[0],
+        });
+      } else {
+        this.logger.warn(`[DESYNC DETECTED] SHA-256 hash mismatch in battle ${battleId} at sequence ${sequence}`);
+        this.server?.to(`battle:${battleId}`)?.emit('webrtc:p2p_state_desync', {
+          battleId,
+          sequence,
+          verified: false,
+          hashes: Object.fromEntries(userHashMap.entries()),
+        });
+      }
+      battleSeqMap.delete(sequence);
+    }
+  }
+
   @SubscribeMessage('player_join')
   handlePlayerJoin(
     @MessageBody() data: { battleId: string; userId: string; username: string },
