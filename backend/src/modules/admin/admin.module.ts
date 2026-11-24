@@ -5,9 +5,10 @@ import { AuditLogService } from './audit-log.service';
 import { SecurityModule } from '../security/security.module';
 import { StorageModule } from '../storage/storage.module';
 import { AuthModule } from '../auth/auth.module';
+import { AnalyticsModule } from '../analytics/analytics.module';
 
 @Module({
-  imports: [SecurityModule, StorageModule, AuthModule],
+  imports: [SecurityModule, StorageModule, AuthModule, AnalyticsModule],
   controllers: [AdminController],
   providers: [AdminService, AuditLogService],
   exports: [AdminService, AuditLogService],
