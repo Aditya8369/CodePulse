@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy, Optional } from '@nestjs/common';
 import * as os from 'os';
 
 export type CpuTaskType = 'JOHNSON_CYCLE_DETECTION' | 'MONTE_CARLO_SIMULATION' | 'AST_TRAVERSAL' | 'CUSTOM';
@@ -31,7 +31,7 @@ export class CpuTaskWorkerPoolService implements OnModuleDestroy {
   private totalFailed = 0;
   private isDestroyed = false;
 
-  constructor(customThreadCount?: number) {
+  constructor(@Optional() customThreadCount?: number) {
     this.threadCount = customThreadCount ?? Math.max(1, os.cpus().length - 1);
     this.logger.log(`Initialized CPU Task Worker Pool with ${this.threadCount} concurrent worker threads`);
   }
