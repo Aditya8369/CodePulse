@@ -30,6 +30,10 @@ import { RequestHintDto, HintResponseDto } from './dto/code-hint.dto';
 import { ReproSynthesizerService } from './repro-synthesizer.service';
 import { SyntheticBenchmarkService } from './synthetic-benchmark.service';
 import {
+  BenchmarkGeneratorService,
+  type AlgorithmConstraint,
+} from './benchmark-generator.service';
+import {
   GenerateBenchmarkRequestDto,
   GenerateBenchmarkResponseDto,
   ExecuteBenchmarkRequestDto,
@@ -72,6 +76,7 @@ export class AiController {
     private readonly polyglotTranspiler?: PolyglotTranspilerService,
     @Optional() private readonly reproSynthesizer?: ReproSynthesizerService,
     @Optional() private readonly syntheticBenchmark?: SyntheticBenchmarkService,
+    @Optional() private readonly benchmarkGenerator?: BenchmarkGeneratorService,
   ) {}
 
   @Post('transpile')
@@ -356,6 +361,87 @@ export class AiController {
       throw new BadRequestException('SyntheticBenchmarkService is not available');
     }
     return this.syntheticBenchmark.getBenchmark(id);
+  }
+
+  // ==========================================
+  // Automated Synthetic Benchmarking & Extreme Stress-Test Scenario Generator (#445)
+  // ==========================================
+
+  @Post('adversarial-benchmarks/generate')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Generate synthetic extreme adversarial benchmark suite for an algorithm challenge (#445)',
+  })
+  async generateAdversarialBenchmarks(
+    @Body()
+    body: {
+      challengeId: string;
+      description: string;
+      constraints?: Partial<AlgorithmConstraint>;
+      store?: boolean;
+    },
+  ) {
+    if (!this.benchmarkGenerator) {
+      throw new BadRequestException('BenchmarkGeneratorService is unavailable');
+    }
+    if (!body.challengeId) {
+      throw new BadRequestException('challengeId is required');
+    }
+    const analyzed = this.benchmarkGenerator.analyzeConstraints(
+      body.description || '',
+      body.constraints,
+    );
+    const suite = this.benchmarkGenerator.generateAdversarialSuite(
+      body.challengeId,
+      analyzed,
+    );
+    if (body.store !== false) {
+      await this.benchmarkGenerator.storeChallengeBenchmark(suite);
+    }
+    return suite;
+  }
+
+  @Post('adversarial-benchmarks/evaluate')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Evaluate code against extreme adversarial benchmark inputs and reject sub-optimal Big-O complexity (#445)',
+  })
+  async evaluateAlgorithmAgainstBenchmarks(
+    @Body()
+    body: {
+      challengeId: string;
+      sourceCode: string;
+      description?: string;
+      constraints?: Partial<AlgorithmConstraint>;
+    },
+  ) {
+    if (!this.benchmarkGenerator) {
+      throw new BadRequestException('BenchmarkGeneratorService is unavailable');
+    }
+    if (!body.challengeId || !body.sourceCode) {
+      throw new BadRequestException('challengeId and sourceCode are required');
+    }
+    const analyzed = this.benchmarkGenerator.analyzeConstraints(
+      body.description || '',
+      body.constraints,
+    );
+    return this.benchmarkGenerator.evaluateAlgorithmAgainstBenchmarks(
+      body.challengeId,
+      body.sourceCode,
+      analyzed,
+    );
+  }
+
+  @Get('adversarial-benchmarks/:challengeId')
+  @ApiOperation({
+    summary: 'Retrieve stored adversarial benchmark suite for a challenge (#445)',
+  })
+  @ApiParam({ name: 'challengeId', description: 'Challenge Identifier' })
+  async getAdversarialBenchmarks(@Param('challengeId') challengeId: string) {
+    if (!this.benchmarkGenerator) {
+      throw new BadRequestException('BenchmarkGeneratorService is unavailable');
+    }
+    return this.benchmarkGenerator.getChallengeBenchmark(challengeId);
   }
 }
 

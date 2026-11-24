@@ -1673,6 +1673,23 @@ model ChallengeSynthesizedTestSuite {
   @@map("challenge_synthesized_test_suites")
 }
 
+model ChallengeBenchmark {
+  id                  String   @id @default(uuid())
+  challengeId         String
+  optimalComplexity   String   // e.g. "O(N log N)", "O(N)", "O(V + E)"
+  timeLimitMs         Int      @default(1000)
+  memoryLimitMb       Int      @default(128)
+  syntheticCasesCount Int      @default(0)
+  testDataPayload     Json     // extreme adversarial inputs
+  rejectionCriteria   Json     // bounds and thresholds
+  verified            Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([challengeId, createdAt])
+  @@map("challenge_benchmarks")
+}
+
 model GitConflictResolution {
   id               String   @id @default(uuid())
   filePath         String
