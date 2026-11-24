@@ -1,0 +1,92 @@
+syntax = "proto3";
+
+package codepulse.execution.v1;
+
+option go_package = "github.com/code-with-abhi-i5/CodePulse/proto/execution/v1;executionv1";
+
+service CodeExecutionService {
+  // Unary RPC for standard code execution
+  rpc Execute (ExecuteRequest) returns (ExecuteResponse);
+
+  // Server-streaming RPC for real-time incremental test execution progress
+  rpc StreamExecute (ExecuteRequest) returns (stream ExecuteStatus);
+
+  // Bidirectional streaming RPC for interactive terminal execution (REPL / stdin streaming)
+  rpc BidirectionalStreamExecute (stream ExecuteClientMessage) returns (stream ExecuteStatus);
+
+  // Health check RPC for client-side load balancing
+  rpc Check (HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+message ExecuteRequest {
+  string execution_id = 1;
+  string code = 2;
+  string language = 3;            // typescript, python, rust, go, cpp, java
+  string stdin = 4;
+  int32 timeout_ms = 5;           // default 5000ms
+  int32 memory_limit_mb = 6;      // default 256MB
+  map<string, string> env_vars = 7;
+  repeated string compiler_flags = 8;
+}
+
+message ExecuteResponse {
+  string execution_id = 1;
+  string stdout = 2;
+  string stderr = 3;
+  int32 exit_code = 4;
+  int64 duration_ms = 5;
+  int64 memory_used_kb = 6;
+  ExecutionStatus status = 7;     // SUCCESS, TIMEOUT, MEMORY_EXCEEDED, RUNTIME_ERROR, COMPILATION_ERROR
+  string runner_node_id = 8;
+}
+
+enum ExecutionStatus {
+  UNKNOWN = 0;
+  SUCCESS = 1;
+  TIMEOUT = 2;
+  MEMORY_EXCEEDED = 3;
+  RUNTIME_ERROR = 4;
+  COMPILATION_ERROR = 5;
+  SANDBOX_VIOLATION = 6;
+}
+
+message ExecuteStatus {
+  string execution_id = 1;
+  string step = 2;                // QUEUED, COMPILING, RUNNING, COMPLETED
+  int32 progress_percent = 3;     // 0 - 100
+  string partial_stdout = 4;
+  string partial_stderr = 5;
+  int64 memory_current_kb = 6;
+  ExecutionStatus status = 7;
+  int64 timestamp_ns = 8;
+  int32 test_case_index = 9;
+  int32 total_test_cases = 10;
+  bool test_case_passed = 11;
+}
+
+message ExecuteClientMessage {
+  string execution_id = 1;
+  oneof payload {
+    ExecuteRequest initial_request = 2;
+    string stdin_chunk = 3;
+    bool cancel = 4;
+  }
+}
+
+message HealthCheckRequest {
+  string service = 1;
+}
+
+message HealthCheckResponse {
+  enum ServingStatus {
+    UNKNOWN = 0;
+    SERVING = 1;
+    NOT_SERVING = 2;
+    SERVICE_UNKNOWN = 3;
+  }
+  ServingStatus status = 1;
+  int32 active_workers = 2;
+  float cpu_utilization = 3;
+  int64 memory_available_mb = 4;
+}
+

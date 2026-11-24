@@ -75,6 +75,12 @@ export class AnalyticsController {
     return this.analyticsService.getPlatformStats();
   }
 
+  @Get('clickhouse-status')
+  @ApiOperation({ summary: 'Get ClickHouse OLAP cluster status and CDC metrics' })
+  async getClickhouseStatus() {
+    return this.analyticsService.getClickHouseStatus();
+  }
+
   @Get('privacy-safe-aggregations')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

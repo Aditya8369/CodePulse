@@ -19,6 +19,16 @@ import {
   DeadlockResolverService,
   type DeadlockRetryOptions,
 } from '../common/monitoring/deadlock-resolver.service';
+import {
+  ZeroDowntimeMigrationEngine,
+  DualWriteCoordinator,
+  type BackfillOptions,
+  type BackfillProgress,
+  type ExpandPlan,
+  type ContractPlan,
+  type PreflightLockCheckResult,
+  type VerificationResult,
+} from './zero-downtime';
 
 const DEFAULT_SLOW_QUERY_THRESHOLD_MS = 200;
 
@@ -290,5 +300,86 @@ export class PrismaService
       return this.deadlockResolver.executeWithDeadlockRetry(() => runTx(), options);
     }
     return runTx();
+  }
+
+  public readonly zeroDowntimeMigration = new ZeroDowntimeMigrationEngine();
+  public readonly dualWriteCoordinator: DualWriteCoordinator =
+    this.zeroDowntimeMigration.dualWriteCoordinator;
+
+  /**
+   * Checks for active locks or long-running queries on a PostgreSQL table before DDL execution.
+   */
+  async checkTableLocks(
+    tableName: string,
+    maxDurationSec = 5,
+  ): Promise<PreflightLockCheckResult> {
+    return this.zeroDowntimeMigration.checkPreflightLocks(
+      this,
+      tableName,
+      maxDurationSec,
+    );
+  }
+
+  /**
+   * Executes DDL with PostgreSQL lock_timeout (default 2s) and statement_timeout guards
+   * to guarantee zero downtime and avoid cascading queueing on production tables.
+   */
+  async executeZeroDowntimeDDL(
+    ddlSql: string,
+    options?: { lockTimeoutMs?: number; statementTimeoutMs?: number },
+  ): Promise<void> {
+    return this.zeroDowntimeMigration.executeSafeDDL(this, ddlSql, options);
+  }
+
+  /**
+   * Executes Phase 1 (Expand) non-blocking schema migration.
+   */
+  async executePhaseExpand(
+    plan: ExpandPlan,
+  ): Promise<{ applied: string[]; status: 'SUCCESS' }> {
+    return this.zeroDowntimeMigration.executePhaseExpand(this, plan);
+  }
+
+  /**
+   * Executes Phase 3 (Backfill) with keyset pagination & sleep intervals between batches.
+   */
+  async runZeroDowntimeBackfill(
+    options: BackfillOptions,
+    onProgress?: (p: BackfillProgress) => void,
+  ): Promise<BackfillProgress> {
+    return this.zeroDowntimeMigration.runBackfill(this, options, onProgress);
+  }
+
+  /**
+   * Executes automated verification ensuring 100% data consistency between old and new columns.
+   */
+  async verifyMigrationConsistency(options: {
+    tableName: string;
+    primaryKey?: string;
+    sourceColumn: string;
+    targetColumn: string;
+    sampleLimit?: number;
+  }): Promise<VerificationResult> {
+    return this.zeroDowntimeMigration.verifyDataConsistency(this, options);
+  }
+
+  /**
+   * Executes Phase 4 (Contract) safely dropping old columns after verification.
+   */
+  async executePhaseContract(
+    plan: ContractPlan,
+  ): Promise<{ applied: string[]; status: 'SUCCESS' }> {
+    return this.zeroDowntimeMigration.executePhaseContract(this, plan);
+  }
+
+  /**
+   * Rollback execution with fast lock timeouts.
+   */
+  async executeZeroDowntimeRollback(
+    planOrSql:
+      | { tableName?: string; rollbackSql: string[]; lockTimeoutMs?: number }
+      | string[],
+  ): Promise<{ rolledBack: string[]; status: 'SUCCESS' }> {
+    return this.zeroDowntimeMigration.executeRollback(this, planOrSql);
   }
 }

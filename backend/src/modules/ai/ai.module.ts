@@ -20,6 +20,7 @@ import { PolyglotTranspilerService } from './transpiler/polyglot-transpiler.serv
 import { SemanticConflictResolverService } from '../git/semantic-conflict-resolver.service';
 import { GitService } from '../git/git.service';
 import { ReproSynthesizerService } from './repro-synthesizer.service';
+import { SyntheticBenchmarkService } from './synthetic-benchmark.service';
 import { GithubModule } from '../github/github.module';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { RedisService } from '../../common/redis/redis.service';
@@ -48,6 +49,8 @@ import { RedisService } from '../../common/redis/redis.service';
     SemanticConflictResolverService,
     GitService,
     ReproSynthesizerService,
+    SyntheticBenchmarkService,
+    SyntheticBenchmarkService,
     RedisService,
   ],
   exports: [
@@ -71,6 +74,7 @@ import { RedisService } from '../../common/redis/redis.service';
     SemanticConflictResolverService,
     GitService,
     ReproSynthesizerService,
+    SyntheticBenchmarkService,
   ],
 })
 export class AiModule {}

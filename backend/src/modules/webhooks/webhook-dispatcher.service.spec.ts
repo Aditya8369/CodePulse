@@ -1,5 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { WebhookDispatcherService, RETRY_DELAYS_MS } from './webhook-dispatcher.service';
+import {
+  WebhookDispatcherService,
+  RETRY_DELAYS_MS,
+  EXPONENTIAL_BACKOFF_DELAYS_MS,
+  CONSECUTIVE_FAILURE_THRESHOLD,
+} from './webhook-dispatcher.service';
 import { WebhooksController } from './webhooks.controller';
 import { PrismaService } from '../../prisma/prisma.service';
 import axios from 'axios';
@@ -27,6 +32,12 @@ describe('WebhookDispatcherService & WebhooksController', () => {
         update: jest.fn(),
         findMany: jest.fn(),
         findUnique: jest.fn(),
+      },
+      webhookDelivery: {
+        create: jest.fn(),
+        update: jest.fn(),
+        upsert: jest.fn(),
+        findMany: jest.fn(),
       },
     };
 
@@ -278,6 +289,143 @@ describe('WebhookDispatcherService & WebhooksController', () => {
       const dlq = await controller.getDeadLetterQueue();
       expect(dlq).toHaveLength(1);
       expect(dlq[0].isDeadLetter).toBe(true);
+    });
+  });
+
+  describe('Global Webhook Dispatcher with Exponential Backoff & HMAC (#378)', () => {
+    it('signs outbound request with X-CodePulse-Signature: sha256=... header', async () => {
+      mockedAxios.post.mockResolvedValueOnce({ status: 200, data: 'OK' });
+      prismaMock.webhookDeliveryLog.update.mockResolvedValueOnce({});
+      prismaMock.webhookSubscription.update.mockResolvedValueOnce({});
+
+      await service.executeDelivery(
+        'sub-hmac',
+        'del-hmac',
+        'https://api.mycorp.com/hooks',
+        'whsec_mysecretkey',
+        'battle.ended',
+        { score: 100 },
+        0,
+      );
+
+      const [url, body, config] = mockedAxios.post.mock.calls[0];
+      const signatureHeader = config?.headers?.['X-CodePulse-Signature'];
+      expect(signatureHeader).toBeDefined();
+      expect(signatureHeader).toMatch(/^sha256=[a-f0-9]{64}$/);
+    });
+
+    it('defines exponential backoff retry schedule for BullMQ queue (10s, 30s, 2m, 10m)', () => {
+      expect(EXPONENTIAL_BACKOFF_DELAYS_MS).toEqual([
+        10 * 1000,
+        30 * 1000,
+        2 * 60 * 1000,
+        10 * 60 * 1000,
+      ]);
+      expect(service.calculateQueueBackoffDelay(0)).toBe(10_000);
+      expect(service.calculateQueueBackoffDelay(1)).toBe(30_000);
+      expect(service.calculateQueueBackoffDelay(2)).toBe(120_000);
+      expect(service.calculateQueueBackoffDelay(3)).toBe(600_000);
+    });
+
+    it('automatically disables endpoint after 50 consecutive delivery failures', async () => {
+      mockedAxios.post.mockRejectedValueOnce({
+        message: 'Endpoint unreachable 503',
+        response: { status: 503 },
+      });
+
+      // Mock subscription with 49 previous failures
+      prismaMock.webhookSubscription.findUnique.mockResolvedValueOnce({
+        id: 'sub-dead',
+        consecutiveFailures: 49,
+      });
+      prismaMock.webhookSubscription.update.mockResolvedValueOnce({});
+      prismaMock.webhookDeliveryLog.update.mockResolvedValueOnce({});
+
+      await service.executeDelivery(
+        'sub-dead',
+        'del-dead-50',
+        'https://dead-endpoint.com/hook',
+        'whsec_secret',
+        'battle.ended',
+        { error: true },
+        0,
+      );
+
+      // 50th failure -> auto-deactivates
+      expect(prismaMock.webhookSubscription.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'sub-dead' },
+          data: expect.objectContaining({
+            consecutiveFailures: 50,
+            isActive: false,
+            status: 'DISABLED',
+          }),
+        }),
+      );
+    });
+
+    it('resets consecutiveFailures to 0 on successful delivery', async () => {
+      mockedAxios.post.mockResolvedValueOnce({ status: 200, data: 'OK' });
+      prismaMock.webhookDeliveryLog.update.mockResolvedValueOnce({});
+      prismaMock.webhookSubscription.update.mockResolvedValueOnce({});
+
+      await service.executeDelivery(
+        'sub-healthy',
+        'del-healthy',
+        'https://healthy.com/hook',
+        'whsec_secret',
+        'badge.awarded',
+        { badge: 'first-place' },
+        0,
+      );
+
+      expect(prismaMock.webhookSubscription.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'sub-healthy' },
+          data: expect.objectContaining({
+            consecutiveFailures: 0,
+          }),
+        }),
+      );
+    });
+
+    it('exposes POST /api/v1/webhooks, GET /api/v1/webhooks, and POST /api/v1/webhooks/:id/test', async () => {
+      prismaMock.webhookSubscription.create.mockResolvedValueOnce({
+        id: 'sub-rest',
+        url: 'https://test.com/hook',
+        events: ['*'],
+        isActive: true,
+      });
+      prismaMock.webhookSubscription.findMany.mockResolvedValueOnce([
+        { id: 'sub-rest', url: 'https://test.com/hook', isActive: true },
+      ]);
+      prismaMock.webhookSubscription.findUnique.mockResolvedValueOnce({
+        id: 'sub-rest',
+        url: 'https://test.com/hook',
+        secret: 'whsec_test',
+        events: ['*'],
+        isActive: true,
+      });
+
+      mockedAxios.post.mockResolvedValueOnce({ status: 200, data: 'pong' });
+      prismaMock.webhookDeliveryLog.update.mockResolvedValueOnce({});
+
+      const created = await controller.createWebhook({
+        url: 'https://test.com/hook',
+        events: ['*'],
+      });
+      expect(created.id).toBe('sub-rest');
+
+      const list = await controller.listWebhooks();
+      expect(list).toHaveLength(1);
+
+      const testResult = await controller.testEndpoint('sub-rest');
+      expect(testResult.success).toBe(true);
+      expect(mockedAxios.post).toHaveBeenCalledWith(
+        'https://test.com/hook',
+        expect.stringContaining('CodePulse webhook test ping'),
+        expect.anything(),
+      );
     });
   });
 });

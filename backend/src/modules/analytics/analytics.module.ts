@@ -27,6 +27,7 @@ import { TumblingWindowService } from './tumbling-window.service';
 import { StreamAggregatorService } from './stream-aggregator.service';
 import { DebtForecasterService } from './debt-forecaster.service';
 import { DebtForecastingService } from './debt-forecasting.service';
+import { ClickHouseService } from './clickhouse.service';
 
 @Module({
   controllers: [
@@ -60,9 +61,11 @@ import { DebtForecastingService } from './debt-forecasting.service';
     StreamAggregatorService,
     DebtForecasterService,
     DebtForecastingService,
+    ClickHouseService,
   ],
   exports: [
     AnalyticsService,
+    ClickHouseService,
     DifferentialPrivacyService,
     ScyllaKeystrokeService,
     ScyllaDbTelemetryService,

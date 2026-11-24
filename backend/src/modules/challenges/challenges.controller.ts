@@ -4,14 +4,23 @@ import {
   Post,
   Body,
   Param,
+  Query,
   UseGuards,
   Request,
+  Optional,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ChallengesService } from './challenges.service';
 import { DifficultyCalibratorService } from './difficulty-calibrator.service';
-import { CreateChallengeDto, RecordChallengeSubmissionDto } from './dto/challenges.dto';
+import {
+  CreateChallengeDto,
+  RecordChallengeSubmissionDto,
+  AuthorProblemSubmissionDto,
+  FuzzPreviewDto,
+  AwardAuthorRoyaltyDto,
+} from './dto/challenges.dto';
 import { TestGeneratorService } from '../ai/test-generator.service';
+import { ProblemAuthoringService } from './problem-authoring.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('challenges')
@@ -21,6 +30,7 @@ export class ChallengesController {
     private readonly challengesService: ChallengesService,
     private readonly difficultyCalibratorService: DifficultyCalibratorService,
     private readonly testGeneratorService: TestGeneratorService,
+    @Optional() private readonly problemAuthoringService?: ProblemAuthoringService,
   ) {}
 
   @Get('active')
@@ -35,6 +45,82 @@ export class ChallengesController {
   @ApiOperation({ summary: 'Get challenges for current authenticated user' })
   async getMyChallenges(@Request() req: any) {
     return this.challengesService.getUserChallenges(req.user.id);
+  }
+
+  @Post('author/submit')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Submit community battle challenge for 1,000-case property-based fuzzing and auto-publishing',
+  })
+  async submitAuthoredProblem(
+    @Request() req: any,
+    @Body() dto: AuthorProblemSubmissionDto,
+  ) {
+    if (!this.problemAuthoringService) {
+      throw new Error('ProblemAuthoringService is not available');
+    }
+    const authorId = req.user?.id || dto.authorId;
+    return this.problemAuthoringService.submitProblem({
+      ...dto,
+      authorId,
+    });
+  }
+
+  @Post('author/fuzz-preview')
+  @ApiOperation({
+    summary:
+      'Live property-based fuzz preview for Problem Authoring IDE (without publishing)',
+  })
+  async previewProblemFuzzing(@Body() dto: FuzzPreviewDto) {
+    if (!this.problemAuthoringService) {
+      throw new Error('ProblemAuthoringService is not available');
+    }
+    return this.problemAuthoringService.fuzzPreview(
+      dto.referenceSolution,
+      dto.validationSchema,
+      dto.testGeneratorScript,
+      dto.count,
+    );
+  }
+
+  @Get('author/problems')
+  @ApiOperation({ summary: 'List all community authored problems' })
+  async listAuthoredProblems(@Query('authorId') authorId?: string) {
+    if (!this.problemAuthoringService) {
+      throw new Error('ProblemAuthoringService is not available');
+    }
+    return this.problemAuthoringService.listAuthoredProblems(authorId);
+  }
+
+  @Get('author/problems/:problemId')
+  @ApiOperation({ summary: 'Get details, fuzz report, and quality score of an authored problem' })
+  async getAuthoredProblem(@Param('problemId') problemId: string) {
+    if (!this.problemAuthoringService) {
+      throw new Error('ProblemAuthoringService is not available');
+    }
+    const problem = this.problemAuthoringService.getAuthoredProblem(problemId);
+    if (!problem) {
+      throw new Error(`Authored problem '${problemId}' not found`);
+    }
+    return problem;
+  }
+
+  @Post('author/problems/:problemId/royalty')
+  @ApiOperation({ summary: 'Award author XP royalty when their problem is used in official battle' })
+  async awardAuthorRoyalty(
+    @Param('problemId') problemId: string,
+    @Body() dto: AwardAuthorRoyaltyDto,
+  ) {
+    if (!this.problemAuthoringService) {
+      throw new Error('ProblemAuthoringService is not available');
+    }
+    return this.problemAuthoringService.awardAuthorRoyalty(
+      problemId,
+      dto.battleId,
+      dto.royaltyAmount,
+    );
   }
 
   @Get(':id/difficulty')

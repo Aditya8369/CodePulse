@@ -41,7 +41,7 @@ export class WebhookConsumer extends WorkerHost {
           'X-CodePulse-Event': event,
           'X-CodePulse-Delivery': deliveryId,
           'X-CodePulse-Timestamp': String(timestamp),
-          'X-CodePulse-Signature': `v1=${signature}`,
+          'X-CodePulse-Signature': `sha256=${signature}`,
           'User-Agent': 'CodePulse-Webhook-Dispatcher/1.0',
         },
         timeout: 5000,

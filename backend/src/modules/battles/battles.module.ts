@@ -46,6 +46,7 @@ import { DistributedDisruptorRelayService } from './distributed-disruptor-relay.
 import { BattlesFirecrackerPoolService } from './firecracker-pool.service';
 import { CodeSandboxService } from './code-sandbox.service';
 import { ProtobufStreamService } from './protobuf-stream.service';
+import { ProtoGatewayService } from './proto-gateway.service';
 import { WebRtcSignalingGateway } from './webrtc-signaling.gateway';
 import { FuzzingEvaluatorService } from './fuzzing-evaluator.service';
 import { BattleDisputeService } from './dispute.service';
@@ -104,6 +105,7 @@ import { TrueSkill2Service } from './trueskill2.service';
     BattlesFirecrackerPoolService,
     CodeSandboxService,
     ProtobufStreamService,
+    ProtoGatewayService,
     WebRtcSignalingGateway,
     FuzzingEvaluatorService,
     BattleDisputeService,
@@ -143,6 +145,7 @@ import { TrueSkill2Service } from './trueskill2.service';
     BattlesFirecrackerPoolService,
     CodeSandboxService,
     ProtobufStreamService,
+    ProtoGatewayService,
     WebRtcSignalingGateway,
     FuzzingEvaluatorService,
     BattleDisputeService,
