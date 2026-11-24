@@ -36,6 +36,7 @@ import { CpuTaskWorkerPoolService } from './resilience/cpu-task-worker-pool.serv
 import { AdaptiveCircuitBreakerService } from './resilience/adaptive-circuit-breaker.service';
 import { DbConnectionGuardService } from './resilience/db-connection-guard.service';
 import { RedisResilienceManagerService } from './resilience/redis-resilience-manager.service';
+import { UnhandledRejectionGuardrailService } from './resilience/unhandled-rejection-guardrail.service';
 
 
 import { CloudEventsProvider } from './events/cloudevents.provider';
@@ -88,6 +89,7 @@ import { RedlockService } from './redis/redlock.service';
     AdaptiveCircuitBreakerService,
     DbConnectionGuardService,
     RedisResilienceManagerService,
+    UnhandledRejectionGuardrailService,
 
 
     CloudEventsProvider,
@@ -129,6 +131,7 @@ import { RedlockService } from './redis/redlock.service';
     AdaptiveCircuitBreakerService,
     DbConnectionGuardService,
     RedisResilienceManagerService,
+    UnhandledRejectionGuardrailService,
 
 
     CloudEventsProvider,
