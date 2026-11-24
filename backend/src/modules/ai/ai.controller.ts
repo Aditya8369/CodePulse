@@ -28,6 +28,13 @@ import {
 } from './transpiler/polyglot-transpiler.service';
 import { RequestHintDto, HintResponseDto } from './dto/code-hint.dto';
 import { ReproSynthesizerService } from './repro-synthesizer.service';
+import { SyntheticBenchmarkService } from './synthetic-benchmark.service';
+import {
+  GenerateBenchmarkRequestDto,
+  GenerateBenchmarkResponseDto,
+  ExecuteBenchmarkRequestDto,
+  BenchmarkExecutionResultDto,
+} from './dto/benchmark-request.dto';
 import {
   SynthesizeReproRequestDto,
   SynthesizedReproResponseDto,
@@ -64,6 +71,7 @@ export class AiController {
     private readonly codeHintService: CodeHintService,
     private readonly polyglotTranspiler?: PolyglotTranspilerService,
     @Optional() private readonly reproSynthesizer?: ReproSynthesizerService,
+    @Optional() private readonly syntheticBenchmark?: SyntheticBenchmarkService,
   ) {}
 
   @Post('transpile')
@@ -296,6 +304,58 @@ export class AiController {
       throw new BadRequestException('ReproSynthesizerService is not available');
     }
     return this.reproSynthesizer.trackExecutionResult(id, dto);
+  }
+
+  @Post('benchmarks/generate')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Generate synthetic k6 load testing scenarios from OpenAPI / Swagger specifications (#527)',
+    description:
+      'Parses OpenAPI 3.0 / Swagger endpoint schemas, synthesizes realistic dummy payloads, and outputs production-ready k6 load test scripts with threshold assertions.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Generated executable k6 benchmark scenario',
+    type: GenerateBenchmarkResponseDto,
+  })
+  async generateBenchmark(
+    @Body() dto: GenerateBenchmarkRequestDto,
+  ): Promise<GenerateBenchmarkResponseDto> {
+    if (!this.syntheticBenchmark) {
+      throw new BadRequestException('SyntheticBenchmarkService is not available');
+    }
+    return this.syntheticBenchmark.generateBenchmark(dto);
+  }
+
+  @Post('benchmarks/execute')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Execute or simulate sandboxed k6 stress-testing benchmark scenario (#527)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Benchmark execution result with throughput timeline and latency percentiles',
+    type: BenchmarkExecutionResultDto,
+  })
+  async executeBenchmark(
+    @Body() dto: ExecuteBenchmarkRequestDto,
+  ): Promise<BenchmarkExecutionResultDto> {
+    if (!this.syntheticBenchmark) {
+      throw new BadRequestException('SyntheticBenchmarkService is not available');
+    }
+    return this.syntheticBenchmark.executeBenchmark(dto);
+  }
+
+  @Get('benchmarks/:id')
+  @ApiOperation({
+    summary: 'Retrieve saved benchmark script by ID (#527)',
+  })
+  @ApiParam({ name: 'id', description: 'Benchmark ID' })
+  async getBenchmark(@Param('id') id: string) {
+    if (!this.syntheticBenchmark) {
+      throw new BadRequestException('SyntheticBenchmarkService is not available');
+    }
+    return this.syntheticBenchmark.getBenchmark(id);
   }
 }
 
