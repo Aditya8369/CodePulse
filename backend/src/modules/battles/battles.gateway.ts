@@ -33,6 +33,7 @@ import { CodeHintService } from '../ai/code-hint.service';
 import { DistributedDisruptorRelayService } from './distributed-disruptor-relay.service';
 
 import { ProtobufStreamService, KeystrokeType } from './protobuf-stream.service';
+import { ProtoGatewayService } from './proto-gateway.service';
 
 interface PlayerState {
   userId: string;
@@ -88,6 +89,7 @@ export class BattlesGateway
     @Optional() private readonly disruptorRelay?: DistributedDisruptorRelayService,
 
     @Optional() private readonly protobufStream?: ProtobufStreamService,
+    @Optional() private readonly protoGateway?: ProtoGatewayService,
   ) {}
 
   @WebSocketServer()
@@ -301,6 +303,31 @@ export class BattlesGateway
           this.server?.to(`battle:${battleId}`)?.emit('opponent_keystroke_binary', binaryBuffer);
         }
 
+        if (this.protoGateway) {
+          const protoBuf = this.protoGateway.encodeBinaryPayload('keystroke', {
+            battleId,
+            userId,
+            sequence: data?.sequence || 0,
+            cursorPosition: data?.cursorPosition || 0,
+            deltaLength: data?.delta?.length || 0,
+            delta: data?.delta,
+            key: data?.key,
+            timestamp: event.timestamp,
+          });
+          const jsonBytes = Buffer.byteLength(
+            JSON.stringify({
+              battleId,
+              userId,
+              deltaLength: data?.delta?.length || 0,
+              cursorPosition: data?.cursorPosition,
+              timestamp: event.timestamp,
+            }),
+            'utf8',
+          );
+          this.protoGateway.recordBandwidth(battleId, 'keystroke', jsonBytes, protoBuf.byteLength, true);
+          this.server?.to(`battle:${battleId}`)?.emit('battle:keystroke_binary', protoBuf);
+        }
+
         // Live spectator stream in read-only mode
         this.server
           ?.to(`spectator:${battleId}`)
@@ -406,6 +433,15 @@ export class BattlesGateway
     }
     this.metrics.socketConnected(client.id);
     this.logger.log(`Client connected to battle socket: ${client.id}`);
+
+    // Negotiate binary encoding (application/x-protobuf) with fallback to JSON
+    const encoding = this.protoGateway ? this.protoGateway.negotiateEncoding(client.handshake) : 'json';
+    client.data = client.data || {};
+    client.data.encoding = encoding;
+    client.emit('battle:encoding_negotiated', {
+      encoding,
+      contentType: encoding === 'binary' ? 'application/x-protobuf' : 'application/json',
+    });
   }
 
   handleDisconnect(client: Socket) {
@@ -524,6 +560,83 @@ export class BattlesGateway
       data,
       timestamp: Date.now(),
     });
+  }
+
+  /**
+   * Compact binary event handler for Protocol Buffers WebSocket streaming.
+   * Decodes incoming ArrayBuffer/Buffer and broadcasts binary to room participants.
+   */
+  @SubscribeMessage('battle:binary_event')
+  handleBinaryEvent(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: any,
+  ) {
+    if (this.isSocketSpectator(client.id)) {
+      client.emit('error', { message: 'Spectators are read-only' });
+      return;
+    }
+    if (!this.protoGateway) return;
+
+    const decoded = this.protoGateway.decodeBinaryPayload(payload);
+    const battleId = decoded.battleId;
+    if (!battleId) return;
+
+    const jsonBytes = Buffer.byteLength(JSON.stringify(decoded), 'utf8');
+    const binaryBytes = payload?.byteLength || payload?.length || jsonBytes;
+    this.protoGateway.recordBandwidth(battleId, decoded.eventType || 'binary_event', jsonBytes, binaryBytes, true);
+
+    client.to(`battle:${battleId}`).emit('battle:event_binary', payload);
+  }
+
+  /**
+   * Cursor position streaming with automatic binary encoding negotiation.
+   */
+  @SubscribeMessage('battle:cursor_move')
+  handleCursorMove(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: any,
+  ) {
+    if (this.isSocketSpectator(client.id)) {
+      return;
+    }
+
+    const isBinary = data instanceof ArrayBuffer || Buffer.isBuffer(data) || client.data?.encoding === 'binary';
+    let cursorData = data;
+    let binaryPayload: any = data;
+
+    if (this.protoGateway) {
+      if (data instanceof ArrayBuffer || Buffer.isBuffer(data)) {
+        cursorData = this.protoGateway.decodeBinaryPayload(data);
+      } else {
+        binaryPayload = this.protoGateway.encodeBinaryPayload('cursor', data);
+      }
+      const jsonBytes = Buffer.byteLength(JSON.stringify(cursorData), 'utf8');
+      const binaryBytes = binaryPayload?.byteLength || binaryPayload?.length || jsonBytes;
+      if (cursorData?.battleId) {
+        this.protoGateway.recordBandwidth(cursorData.battleId, 'cursor', jsonBytes, binaryBytes, isBinary);
+      }
+    }
+
+    if (cursorData?.battleId) {
+      client.to(`battle:${cursorData.battleId}`).emit('battle:cursor_stream', cursorData);
+      if (binaryPayload) {
+        client.to(`battle:${cursorData.battleId}`).emit('battle:cursor_binary', binaryPayload);
+      }
+    }
+  }
+
+  /**
+   * Telemetry endpoint for tracking bandwidth savings per active battle.
+   */
+  @SubscribeMessage('battle:get_bandwidth_telemetry')
+  handleGetBandwidthTelemetry(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { battleId?: string },
+  ) {
+    if (!this.protoGateway) return null;
+    const telemetry = this.protoGateway.getBandwidthTelemetry(data?.battleId);
+    client.emit('battle:bandwidth_telemetry', telemetry);
+    return telemetry;
   }
 
   @SubscribeMessage('latency_ping')
