@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy, Optional } from '@nestjs/common';
 
 export interface MonitoredJob {
   jobId: string;
@@ -30,7 +30,7 @@ export class QueueStallReconciliationService implements OnModuleDestroy {
   private readonly dlqJobs = new Map<string, MonitoredJob>();
   private reaperInterval?: NodeJS.Timeout;
 
-  constructor(private readonly stallTtlMs = QueueStallReconciliationService.DEFAULT_STALL_TTL_MS) {
+  constructor(@Optional() private readonly stallTtlMs = QueueStallReconciliationService.DEFAULT_STALL_TTL_MS) {
     this.reaperInterval = setInterval(() => this.reconcileStalledJobs(), 30000);
     if (this.reaperInterval.unref) {
       this.reaperInterval.unref();

@@ -1,8 +1,8 @@
 import 'dotenv/config';
-import { OtelTracerService } from './common/observability/otel-tracer.service';
+import { initTracer } from './common/tracing/tracer';
 
 // Initialize OpenTelemetry NodeSDK distributed tracing before application bootstrap
-void OtelTracerService.getInstance().initSdk();
+void initTracer();
 
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';

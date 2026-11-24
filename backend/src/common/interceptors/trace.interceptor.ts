@@ -14,6 +14,11 @@ import {
   OtelTracerService,
   TraceContextCarrier,
 } from '../observability/otel-tracer.service';
+import {
+  OpenTelemetryTracerManager,
+  tracerManager,
+  BusinessBottleneckType,
+} from '../tracing/tracer';
 
 @Injectable()
 export class TraceInterceptor implements NestInterceptor {
@@ -102,6 +107,16 @@ export class TraceInterceptor implements NestInterceptor {
               span.setAttribute('http.status_code', status);
               span.recordException(err);
 
+              // Injects traceId into error response body so users and maintainers can cross-reference logs
+              if (err && typeof err === 'object') {
+                err.traceId = traceId;
+                if (err.response && typeof err.response === 'object') {
+                  err.response.traceId = traceId;
+                } else if (typeof err.response === 'string') {
+                  err.response = { message: err.response, traceId, statusCode: status };
+                }
+              }
+
               // Injects traceId into error logs allowing one-click lookup from logs to trace view
               this.logger.error(
                 `[TraceID: ${traceId}] HTTP ${req.method} ${req.path} failed with status ${status}: ${err?.message}`,
@@ -177,5 +192,17 @@ export class TraceInterceptor implements NestInterceptor {
           .subscribe(subscriber);
       });
     });
+  }
+
+  /**
+   * Creates custom child spans for business logic bottlenecks:
+   * Elo calculation, AST parsing, webhook signing, etc.
+   */
+  public static traceBusinessBottleneck<T>(
+    bottleneckType: BusinessBottleneckType,
+    operationFn: (span: Span) => Promise<T>,
+    attributes?: Record<string, string | number | boolean>,
+  ): Promise<T> {
+    return tracerManager.traceBusinessOperation(bottleneckType, operationFn, attributes);
   }
 }
