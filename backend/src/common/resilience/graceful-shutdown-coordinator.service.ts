@@ -1,4 +1,4 @@
-import { Injectable, Logger, BeforeApplicationShutdown } from '@nestjs/common';
+import { Injectable, Logger, BeforeApplicationShutdown, Optional } from '@nestjs/common';
 
 export type ShutdownPhase = 'IDLE' | 'READINESS_CLOSED' | 'DRAINING_CONNECTIONS' | 'FLUSHING_LOGS' | 'CLOSING_POOLS' | 'TERMINATED';
 
@@ -24,7 +24,7 @@ export class GracefulShutdownCoordinatorService implements BeforeApplicationShut
   private readonly activeWebSockets = new Map<string, WebSocketSessionStub>();
   private readonly drainTimeoutMs: number;
 
-  constructor(timeoutMs = 30000) {
+  constructor(@Optional() timeoutMs = 30000) {
     this.drainTimeoutMs = timeoutMs;
   }
 

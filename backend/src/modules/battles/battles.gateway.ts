@@ -14,6 +14,7 @@ import { MetricsService } from '../metrics/metrics.service';
 import { ZkpVerifierService } from '../crypto/zkp-verifier.service';
 import type { ZkpVerificationRequest } from '../crypto/zkp-verifier.service';
 import { DisruptorRingBuffer } from '../../common/concurrency/disruptor-ring-buffer';
+import { BattlesService } from './battles.service';
 import { WatermarkService } from './watermark.service';
 import { HypeMeterService, EmojiType } from './hype-meter.service';
 import { AiShoutcasterService } from '../esports/ai-shoutcaster.service';
@@ -86,6 +87,7 @@ export class BattlesGateway
     @Optional() private readonly personaBattleService?: PersonaBattleService,
     @Optional() private readonly codeHintService?: CodeHintService,
     @Optional() private readonly disruptorRelay?: DistributedDisruptorRelayService,
+    @Optional() private readonly battlesService?: BattlesService,
 
     @Optional() private readonly protobufStream?: ProtobufStreamService,
   ) {}
@@ -259,9 +261,17 @@ export class BattlesGateway
    */
   private startDisruptorConsumerLoop() {
     this.drainInterval = setInterval(() => {
+      const batch: BattleIngestEvent[] = [];
       this.ringBuffer.drain((event) => {
         this.processRingBufferEvent(event.payload);
+        if (event.payload) {
+          batch.push(event.payload);
+        }
       }, 1024);
+
+      if (batch.length > 0 && this.battlesService) {
+        void this.battlesService.batchPersistBattleEvents(batch);
+      }
     }, 5); // 5ms micro-batching drain
   }
 
@@ -544,6 +554,18 @@ export class BattlesGateway
     } else {
       client.emit('latency_pong', { serverTimestamp, rttMs: 20 });
     }
+  }
+
+  @SubscribeMessage('battle:get_disruptor_stats')
+  handleGetDisruptorStats(@ConnectedSocket() client: Socket) {
+    const stats = this.ringBuffer.getStats();
+    const persistenceStats = this.battlesService?.getBatchPersistenceMetrics();
+    const result = {
+      ringBuffer: stats,
+      persistence: persistenceStats,
+    };
+    client.emit('battle:disruptor_stats', result);
+    return result;
   }
 
   @SubscribeMessage('rollback_frame_sync')

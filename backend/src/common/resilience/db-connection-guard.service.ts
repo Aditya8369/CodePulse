@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 
 export type QueryPriority = 'CRITICAL' | 'USER_FACING' | 'BACKGROUND_ANALYTICS';
 
@@ -34,7 +34,7 @@ export class DbConnectionGuardService {
   private readonly userFacingQueue: Array<QueuedQuery<any>> = [];
   private readonly backgroundQueue: Array<QueuedQuery<any>> = [];
 
-  constructor(maxLimit = 10) {
+  constructor(@Optional() maxLimit = 10) {
     this.maxConnections = maxLimit;
   }
 
