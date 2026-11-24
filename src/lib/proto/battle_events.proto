@@ -1,0 +1,83 @@
+syntax = "proto3";
+
+package codepulse.battle;
+
+enum KeystrokeType {
+  KEYSTROKE_TYPE_UNSPECIFIED = 0;
+  KEYSTROKE_TYPE_INSERT = 1;
+  KEYSTROKE_TYPE_DELETE = 2;
+  KEYSTROKE_TYPE_CURSOR_MOVE = 3;
+  KEYSTROKE_TYPE_REPLACE = 4;
+}
+
+enum MatchStatusState {
+  MATCH_STATUS_UNSPECIFIED = 0;
+  MATCH_STATUS_WAITING = 1;
+  MATCH_STATUS_STARTING = 2;
+  MATCH_STATUS_IN_PROGRESS = 3;
+  MATCH_STATUS_PAUSED = 4;
+  MATCH_STATUS_COMPLETED = 5;
+  MATCH_STATUS_SUDDEN_DEATH = 6;
+  MATCH_STATUS_CANCELLED = 7;
+}
+
+message KeystrokeDelta {
+  string battle_id = 1;
+  string user_id = 2;
+  uint32 sequence = 3;
+  int64 timestamp = 4;
+  int32 cursor_position = 5;
+  int32 delta_length = 6;
+  KeystrokeType keystroke_type = 7;
+  string key = 8;
+  string patch_snippet = 9;
+  bool is_typo_correction = 10;
+}
+
+message CursorPosition {
+  string battle_id = 1;
+  string user_id = 2;
+  int32 line_number = 3;
+  int32 column = 4;
+  int32 selection_start_line = 5;
+  int32 selection_start_column = 6;
+  int32 selection_end_line = 7;
+  int32 selection_end_column = 8;
+  int64 timestamp = 9;
+}
+
+message TestResult {
+  string battle_id = 1;
+  string user_id = 2;
+  string test_case_id = 3;
+  bool passed = 4;
+  double duration_ms = 5;
+  string actual_output = 6;
+  string expected_output = 7;
+  string error_message = 8;
+  int32 memory_kb = 9;
+  int64 timestamp = 10;
+}
+
+message MatchStatus {
+  string battle_id = 1;
+  MatchStatusState status = 2;
+  string winner_id = 3;
+  int64 time_remaining_ms = 4;
+  map<string, int32> scores = 5;
+  int32 round_number = 6;
+  int64 timestamp = 7;
+}
+
+message BattleEventEnvelope {
+  uint32 version = 1;
+  int64 timestamp = 2;
+  string event_type = 3;
+  oneof payload {
+    KeystrokeDelta keystroke = 4;
+    CursorPosition cursor = 5;
+    TestResult test_result = 6;
+    MatchStatus match_status = 7;
+  }
+}
+
