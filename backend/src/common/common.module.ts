@@ -38,6 +38,7 @@ import { DbConnectionGuardService } from './resilience/db-connection-guard.servi
 import { RedisResilienceManagerService } from './resilience/redis-resilience-manager.service';
 import { UnhandledRejectionGuardrailService } from './resilience/unhandled-rejection-guardrail.service';
 import { CgroupsWatchdogService } from './resilience/cgroups-watchdog.service';
+import { OptimisticLockCoordinatorService } from './concurrency/optimistic-lock-coordinator.service';
 
 
 import { CloudEventsProvider } from './events/cloudevents.provider';
@@ -92,6 +93,7 @@ import { RedlockService } from './redis/redlock.service';
     RedisResilienceManagerService,
     UnhandledRejectionGuardrailService,
     CgroupsWatchdogService,
+    OptimisticLockCoordinatorService,
 
 
     CloudEventsProvider,
@@ -135,6 +137,7 @@ import { RedlockService } from './redis/redlock.service';
     RedisResilienceManagerService,
     UnhandledRejectionGuardrailService,
     CgroupsWatchdogService,
+    OptimisticLockCoordinatorService,
 
 
     CloudEventsProvider,
