@@ -35,6 +35,7 @@ import { AutonomousMemoryLeakDetectorService } from './resilience/autonomous-mem
 import { CpuTaskWorkerPoolService } from './resilience/cpu-task-worker-pool.service';
 import { AdaptiveCircuitBreakerService } from './resilience/adaptive-circuit-breaker.service';
 import { DbConnectionGuardService } from './resilience/db-connection-guard.service';
+import { RedisResilienceManagerService } from './resilience/redis-resilience-manager.service';
 
 
 import { CloudEventsProvider } from './events/cloudevents.provider';
@@ -86,6 +87,7 @@ import { RedlockService } from './redis/redlock.service';
     CpuTaskWorkerPoolService,
     AdaptiveCircuitBreakerService,
     DbConnectionGuardService,
+    RedisResilienceManagerService,
 
 
     CloudEventsProvider,
@@ -126,6 +128,7 @@ import { RedlockService } from './redis/redlock.service';
     CpuTaskWorkerPoolService,
     AdaptiveCircuitBreakerService,
     DbConnectionGuardService,
+    RedisResilienceManagerService,
 
 
     CloudEventsProvider,
