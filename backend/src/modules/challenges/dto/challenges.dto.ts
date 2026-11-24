@@ -78,3 +78,80 @@ export class CalibrateChallengeBatchDto {
   @IsOptional()
   challengeId?: string;
 }
+
+export class AuthorProblemSubmissionDto {
+  @ApiProperty({ description: 'Title of the battle challenge' })
+  @IsString()
+  @IsNotEmpty()
+  title: string;
+
+  @ApiProperty({ description: 'Problem description including constraints and examples' })
+  @IsString()
+  @IsNotEmpty()
+  description: string;
+
+  @ApiProperty({ enum: Difficulty, required: false })
+  @IsEnum(Difficulty)
+  @IsOptional()
+  difficulty?: Difficulty;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  category?: string;
+
+  @ApiProperty({ description: 'Community reference solution in TypeScript/JavaScript' })
+  @IsString()
+  @IsNotEmpty()
+  referenceSolution: string;
+
+  @ApiProperty({ required: false, description: 'Optional custom test generator function script' })
+  @IsString()
+  @IsOptional()
+  testGeneratorScript?: string;
+
+  @ApiProperty({ required: false, description: 'Optional validation schema and property constraints' })
+  @IsOptional()
+  validationSchema?: any;
+
+  @ApiProperty({ description: 'User ID of the author submitting the problem' })
+  @IsString()
+  @IsNotEmpty()
+  authorId: string;
+
+  @ApiProperty({ required: false, description: 'Initial XP award for the challenge' })
+  @IsOptional()
+  initialXpReward?: number;
+}
+
+export class FuzzPreviewDto {
+  @ApiProperty({ description: 'Reference solution in TypeScript/JavaScript' })
+  @IsString()
+  @IsNotEmpty()
+  referenceSolution: string;
+
+  @ApiProperty({ required: false, description: 'Optional validation schema' })
+  @IsOptional()
+  validationSchema?: any;
+
+  @ApiProperty({ required: false, description: 'Optional custom generator script' })
+  @IsString()
+  @IsOptional()
+  testGeneratorScript?: string;
+
+  @ApiProperty({ required: false, description: 'Number of fuzzing cases to execute (default 100)' })
+  @IsOptional()
+  count?: number;
+}
+
+export class AwardAuthorRoyaltyDto {
+  @ApiProperty({ description: 'Battle ID where the challenge was played' })
+  @IsString()
+  @IsNotEmpty()
+  battleId: string;
+
+  @ApiProperty({ required: false, description: 'Custom royalty XP amount (default 50)' })
+  @IsOptional()
+  royaltyAmount?: number;
+}
+

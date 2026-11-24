@@ -4,6 +4,7 @@ import { ChallengesService } from './challenges.service';
 import { DifficultyCalibratorService } from './difficulty-calibrator.service';
 import { BountyCalculatorService } from './bounty-calculator.service';
 import { RewardMultiplierService } from './reward-multiplier.service';
+import { ProblemAuthoringService } from './problem-authoring.service';
 
 import { QueuesModule } from '../queues/queues.module';
 import { ChallengesWorker } from './challenges.worker';
@@ -23,6 +24,7 @@ import { HybridSearchService } from './hybrid-search.service';
     DifficultyCalibratorService,
     BountyCalculatorService,
     RewardMultiplierService,
+    ProblemAuthoringService,
   ],
   exports: [
     ChallengesService,
@@ -30,6 +32,7 @@ import { HybridSearchService } from './hybrid-search.service';
     DifficultyCalibratorService,
     BountyCalculatorService,
     RewardMultiplierService,
+    ProblemAuthoringService,
   ],
 })
 export class ChallengesModule {}
