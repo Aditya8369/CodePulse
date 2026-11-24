@@ -10,7 +10,7 @@ export class ConfigHotReloadEngineService {
   }
 
   public getKey<T>(key: string, defaultValue?: T): T {
-    return this.configStore.has(key) ? this.configStore.get(key) : defaultValue;
+    return this.configStore.has(key) ? (this.configStore.get(key) as T) : (defaultValue as T);
   }
 
   public onChange(listener: (key: string, newVal: any) => void): void {

@@ -21,6 +21,8 @@ import { SemanticConflictResolverService } from '../git/semantic-conflict-resolv
 import { GitService } from '../git/git.service';
 import { ReproSynthesizerService } from './repro-synthesizer.service';
 import { SyntheticBenchmarkService } from './synthetic-benchmark.service';
+import { BenchmarkGeneratorService } from './benchmark-generator.service';
+import { ExecutionService } from '../battles/execution.service';
 import { GithubModule } from '../github/github.module';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { RedisService } from '../../common/redis/redis.service';
@@ -50,7 +52,8 @@ import { RedisService } from '../../common/redis/redis.service';
     GitService,
     ReproSynthesizerService,
     SyntheticBenchmarkService,
-    SyntheticBenchmarkService,
+    BenchmarkGeneratorService,
+    ExecutionService,
     RedisService,
   ],
   exports: [
@@ -75,6 +78,8 @@ import { RedisService } from '../../common/redis/redis.service';
     GitService,
     ReproSynthesizerService,
     SyntheticBenchmarkService,
+    BenchmarkGeneratorService,
+    ExecutionService,
   ],
 })
 export class AiModule {}

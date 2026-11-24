@@ -6,7 +6,7 @@ export interface W3CTraceContext {
 
 export class OTelKafkaTracePropagatorService {
   public inject(headers: Record<string, string>, context: W3CTraceContext): Record<string, string> {
-    const updated = { ...headers, traceparent: context.traceparent };
+    const updated: Record<string, string> = { ...headers, traceparent: context.traceparent };
     if (context.tracestate) updated.tracestate = context.tracestate;
     if (context.baggage) {
       updated.baggage = Object.entries(context.baggage).map(([k, v]) => `${k}=${v}`).join(',');
