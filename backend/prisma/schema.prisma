@@ -234,6 +234,7 @@ model Repository {
   archivedAt    DateTime?
   prMetrics     PullRequestMetric[]
   complexities  RepositoryComplexity[]
+  techDebtForecasts TechnicalDebtForecast[]
 
   @@unique([userId, githubRepoId])
   @@index([userId])
@@ -1693,4 +1694,28 @@ model SecurityPatch {
   @@index([packageName, cveId])
   @@index([status])
   @@map("security_patches")
+}
+
+model TechnicalDebtForecast {
+  id                              String      @id @default(uuid())
+  repositoryId                    String
+  currentTdr                      Float       // Technical Debt Ratio (0.0 to 1.0 or %)
+  projectedTdr6Months             Float
+  currentMaintainability          Float       // Maintainability Index (0-100)
+  projectedMaintainability6Months  Float
+  totalDebtHours                  Float       // Estimated hours needed to remediate debt
+  hoursSavedByRefactoring         Float       // Estimated engineering hours saved over 12 months
+  sqaleRating                     String      // 'A' (<=5%), 'B' (6-10%), 'C' (11-20%), 'D' (21-50%), 'E' (>50%)
+  timeBombsCount                  Int         @default(0)
+  timeBombs                       Json        // Modules where complexity is growing 3x faster than test coverage
+  forecastTimeline                Json        // 6-month projected data points
+  maintenanceRoadmap              Json        // Priority-ordered refactoring hotspots with ROI
+  createdAt                       DateTime    @default(now())
+  updatedAt                       DateTime    @updatedAt
+
+  repository                      Repository  @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+  @@index([repositoryId])
+  @@index([createdAt])
+  @@map("technical_debt_forecasts")
 }
