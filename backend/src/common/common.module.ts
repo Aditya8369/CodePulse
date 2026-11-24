@@ -41,6 +41,7 @@ import { CgroupsWatchdogService } from './resilience/cgroups-watchdog.service';
 import { OptimisticLockCoordinatorService } from './concurrency/optimistic-lock-coordinator.service';
 
 
+
 import { CloudEventsProvider } from './events/cloudevents.provider';
 import { NatsJetStreamService } from './events/nats-jetstream.service';
 import { TDigestService } from './math/t-digest.service';
@@ -96,6 +97,7 @@ import { RedlockService } from './redis/redlock.service';
     OptimisticLockCoordinatorService,
 
 
+
     CloudEventsProvider,
     NatsJetStreamService,
     TDigestService,
@@ -138,6 +140,7 @@ import { RedlockService } from './redis/redlock.service';
     UnhandledRejectionGuardrailService,
     CgroupsWatchdogService,
     OptimisticLockCoordinatorService,
+
 
 
     CloudEventsProvider,
