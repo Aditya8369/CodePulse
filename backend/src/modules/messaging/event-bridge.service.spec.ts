@@ -36,13 +36,13 @@ describe('EventBridgeService & Async Webhook Ingestion Bridge', () => {
     }).compile();
 
     bridgeService = module.get<EventBridgeService>(EventBridgeService);
-    controller = new GithubWebhookController(
+    controller = new (GithubWebhookController as any)(
       mockWebhookService,
       undefined,
       undefined,
       bridgeService,
     );
-    controller.onModuleInit();
+    (controller as any).onModuleInit?.();
   });
 
   afterEach(() => {
@@ -64,7 +64,7 @@ describe('EventBridgeService & Async Webhook Ingestion Bridge', () => {
       };
 
       const startTime = performance.now();
-      const response: any = await controller.handleWebhook(
+      const response: any = await (controller as any).handleWebhook(
         signature,
         'push',
         deliveryId,

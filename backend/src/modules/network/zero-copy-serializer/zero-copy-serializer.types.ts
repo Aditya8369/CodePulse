@@ -1,6 +1,6 @@
 /**
  * @file zero-copy-serializer.types.ts
- * @description Type definitions, telemetry schemas, and enterprise domain contracts for [NET-SERIALIZER-092]: Zero-Copy FlatBuffers / Cap'n Proto Serialization Engine for Real-Time Esports Packets.
+ * @description Type definitions, telemetry schemas, and enterprise domain contracts for [NET-SERIALIZER-092]: Zero-Copy FlatBuffers / Cap\'n Proto Serialization Engine for Real-Time Esports Packets.
  * Architecture standard: CodePulse Enterprise Backend - Strict Type Safety & Zero Any Policy.
  */
 

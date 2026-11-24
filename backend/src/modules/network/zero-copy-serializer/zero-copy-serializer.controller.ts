@@ -1,6 +1,6 @@
 /**
  * @file zero-copy-serializer.controller.ts
- * @description REST API gateway and management endpoints for [NET-SERIALIZER-092]: Zero-Copy FlatBuffers / Cap'n Proto Serialization Engine for Real-Time Esports Packets.
+ * @description REST API gateway and management endpoints for [NET-SERIALIZER-092]: Zero-Copy FlatBuffers / Cap\'n Proto Serialization Engine for Real-Time Esports Packets.
  * Exposes full CRUD, batch processing, telemetry metrics, and observability probes.
  */
 

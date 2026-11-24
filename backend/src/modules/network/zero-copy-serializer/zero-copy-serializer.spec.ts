@@ -1,6 +1,6 @@
 /**
  * @file zero-copy-serializer.spec.ts
- * @description Comprehensive unit, stress, and behavioral verification suite for [NET-SERIALIZER-092]: Zero-Copy FlatBuffers / Cap'n Proto Serialization Engine for Real-Time Esports Packets.
+ * @description Comprehensive unit, stress, and behavioral verification suite for [NET-SERIALIZER-092]: Zero-Copy FlatBuffers / Cap\'n Proto Serialization Engine for Real-Time Esports Packets.
  */
 
 import { ZeroCopySerializerService } from './zero-copy-serializer.service';
