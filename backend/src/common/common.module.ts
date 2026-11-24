@@ -33,6 +33,8 @@ import { PayloadAuditLoggerService } from './logger/payload-audit-logger.service
 import { GracefulShutdownCoordinatorService } from './resilience/graceful-shutdown-coordinator.service';
 import { AutonomousMemoryLeakDetectorService } from './resilience/autonomous-memory-leak-detector.service';
 import { CpuTaskWorkerPoolService } from './resilience/cpu-task-worker-pool.service';
+import { AdaptiveCircuitBreakerService } from './resilience/adaptive-circuit-breaker.service';
+import { DbConnectionGuardService } from './resilience/db-connection-guard.service';
 
 
 import { CloudEventsProvider } from './events/cloudevents.provider';
@@ -82,6 +84,8 @@ import { RedlockService } from './redis/redlock.service';
     GracefulShutdownCoordinatorService,
     AutonomousMemoryLeakDetectorService,
     CpuTaskWorkerPoolService,
+    AdaptiveCircuitBreakerService,
+    DbConnectionGuardService,
 
 
     CloudEventsProvider,
@@ -120,6 +124,8 @@ import { RedlockService } from './redis/redlock.service';
     GracefulShutdownCoordinatorService,
     AutonomousMemoryLeakDetectorService,
     CpuTaskWorkerPoolService,
+    AdaptiveCircuitBreakerService,
+    DbConnectionGuardService,
 
 
     CloudEventsProvider,
