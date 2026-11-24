@@ -1695,7 +1695,6 @@ model SecurityPatch {
   @@index([status])
   @@map("security_patches")
 }
-
 model TechnicalDebtForecast {
   id                              String      @id @default(uuid())
   repositoryId                    String
