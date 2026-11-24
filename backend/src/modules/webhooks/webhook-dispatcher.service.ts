@@ -1,4 +1,6 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, Optional } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { PrismaService } from '../../prisma/prisma.service';
 import * as crypto from 'crypto';
 import axios from 'axios';
@@ -17,6 +19,17 @@ export const RETRY_DELAYS_MS = [
   6 * 60 * 60 * 1000, // 6 hours
 ];
 
+// Dedicated BullMQ queue exponential backoff intervals: 10s, 30s, 2m, 10m
+export const EXPONENTIAL_BACKOFF_DELAYS_MS = [
+  10 * 1000, // 10s
+  30 * 1000, // 30s
+  2 * 60 * 1000, // 2m
+  10 * 60 * 1000, // 10m
+];
+
+// Maximum consecutive failures before automatically disabling endpoint
+export const CONSECUTIVE_FAILURE_THRESHOLD = 50;
+
 export interface WebhookDeliveryResult {
   success: boolean;
   statusCode?: number;
@@ -29,7 +42,12 @@ export interface WebhookDeliveryResult {
 export class WebhookDispatcherService {
   private readonly logger = new Logger(WebhookDispatcherService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional()
+    @InjectQueue('webhook-delivery')
+    private readonly webhookQueue?: Queue,
+  ) {}
 
   /**
    * Generates cryptographic HMAC-SHA256 signature for outgoing webhook payload
@@ -57,6 +75,19 @@ export class WebhookDispatcherService {
   }
 
   /**
+   * Calculates BullMQ queue exponential backoff delay (10s, 30s, 2m, 10m)
+   */
+  public calculateQueueBackoffDelay(attemptIndex: number, withJitter = false): number {
+    const clampedIndex = Math.min(attemptIndex, EXPONENTIAL_BACKOFF_DELAYS_MS.length - 1);
+    const baseDelay = EXPONENTIAL_BACKOFF_DELAYS_MS[clampedIndex];
+
+    if (!withJitter) return baseDelay;
+
+    const jitterFactor = 0.85 + Math.random() * 0.3;
+    return Math.floor(baseDelay * jitterFactor);
+  }
+
+  /**
    * Create new webhook subscription
    */
   public async createSubscription(userId: string | undefined, dto: CreateWebhookSubscriptionDto) {
@@ -68,6 +99,8 @@ export class WebhookDispatcherService {
         secret,
         description: dto.description,
         events: dto.events,
+        isActive: true,
+        consecutiveFailures: 0,
       },
     });
   }
@@ -136,6 +169,7 @@ export class WebhookDispatcherService {
     const subscriptions = await this.prisma.webhookSubscription.findMany({
       where: {
         status: 'ACTIVE',
+        isActive: { not: false },
         ...(userId ? { userId } : {}),
       },
     });
@@ -156,6 +190,53 @@ export class WebhookDispatcherService {
           maxAttempts: 5,
         },
       });
+
+      if (this.prisma?.webhookDelivery) {
+        try {
+          await this.prisma.webhookDelivery.create({
+            data: {
+              id: delivery.id,
+              subscriptionId: sub.id,
+              event: dto.event,
+              payload: dto.payload as any,
+              attempt: 1,
+            },
+          });
+        } catch {
+          // non-blocking
+        }
+      }
+
+      if (this.webhookQueue) {
+        await this.webhookQueue.add(
+          'deliver',
+          {
+            deliveryId: delivery.id,
+            subscriptionId: sub.id,
+            targetUrl: sub.url,
+            secret: sub.secret,
+            event: dto.event,
+            payload: dto.payload,
+            attempt: 0,
+          },
+          {
+            attempts: 5,
+            backoff: {
+              type: 'exponential',
+              delay: 10_000,
+            },
+            removeOnComplete: 1000,
+            removeOnFail: 5000,
+          },
+        );
+
+        return {
+          deliveryId: delivery.id,
+          subscriptionId: sub.id,
+          queued: true,
+          event: dto.event,
+        };
+      }
 
       return this.executeDelivery(sub.id, delivery.id, sub.url, sub.secret, dto.event, dto.payload, 0);
     });
@@ -192,7 +273,7 @@ export class WebhookDispatcherService {
       const response = await axios.post(url, bodyString, {
         headers: {
           'Content-Type': 'application/json',
-          'X-CodePulse-Signature': signature,
+          'X-CodePulse-Signature': `sha256=${signature}`,
           'X-CodePulse-Event': event,
           'X-CodePulse-Delivery': deliveryId,
           'User-Agent': 'CodePulse-Webhook-Dispatcher/1.0',
@@ -239,8 +320,45 @@ export class WebhookDispatcherService {
           isDeadLetter: false,
         },
       });
+
+      // Reset consecutive delivery failures on success
+      try {
+        await this.prisma.webhookSubscription.update({
+          where: { id: subscriptionId },
+          data: { consecutiveFailures: 0 },
+        });
+      } catch {
+        // non-blocking
+      }
+
       this.logger.log(`Webhook delivery ${deliveryId} succeeded [${result.statusCode}] in ${result.latencyMs}ms`);
     } else {
+      // Increment consecutive failures and auto-deactivate after 50 consecutive failures
+      try {
+        const sub = await this.prisma.webhookSubscription.findUnique({
+          where: { id: subscriptionId },
+          select: { consecutiveFailures: true },
+        });
+        const consecutiveFailures = (sub?.consecutiveFailures ?? 0) + 1;
+        const shouldDeactivate = consecutiveFailures >= CONSECUTIVE_FAILURE_THRESHOLD;
+
+        await this.prisma.webhookSubscription.update({
+          where: { id: subscriptionId },
+          data: {
+            consecutiveFailures,
+            ...(shouldDeactivate ? { isActive: false, status: 'DISABLED' } : {}),
+          },
+        });
+
+        if (shouldDeactivate) {
+          this.logger.warn(
+            `[CIRCUIT BREAKER] Webhook subscription ${subscriptionId} automatically disabled after ${consecutiveFailures} consecutive delivery failures.`,
+          );
+        }
+      } catch {
+        // non-blocking
+      }
+
       // Check if attempts exhausted -> send to Dead-Letter Queue (DLQ)
       const maxAttempts = 5;
       if (currentAttempt >= maxAttempts) {
@@ -280,7 +398,57 @@ export class WebhookDispatcherService {
       }
     }
 
+    // Also record into WebhookDelivery model if present
+    if (this.prisma?.webhookDelivery) {
+      try {
+        await this.prisma.webhookDelivery.upsert({
+          where: { id: deliveryId },
+          create: {
+            id: deliveryId,
+            subscriptionId,
+            event,
+            payload: payload as any,
+            statusCode: result.statusCode ?? null,
+            responseBody: result.responseBody?.slice(0, 1000) ?? null,
+            durationMs: result.latencyMs,
+            attempt: currentAttempt,
+          },
+          update: {
+            statusCode: result.statusCode ?? null,
+            responseBody: result.responseBody?.slice(0, 1000) ?? null,
+            durationMs: result.latencyMs,
+            attempt: currentAttempt,
+          },
+        });
+      } catch {
+        // non-blocking
+      }
+    }
+
     return result;
+  }
+
+  /**
+   * Dispatches a test webhook event to verify endpoint connectivity
+   */
+  public async testEndpoint(id: string) {
+    const sub = await this.getSubscription(id);
+    const testEvent = 'ping';
+    const testPayload = {
+      message: 'CodePulse webhook test ping',
+      subscriptionId: id,
+      timestamp: new Date().toISOString(),
+    };
+
+    return this.executeDelivery(
+      sub.id,
+      `test-${Date.now()}`,
+      sub.url,
+      sub.secret,
+      testEvent,
+      testPayload,
+      0,
+    );
   }
 
   /**
