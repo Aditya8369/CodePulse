@@ -26,6 +26,7 @@ import { ProductivityNormalizerService } from './productivity-normalizer.service
 import { TumblingWindowService } from './tumbling-window.service';
 import { StreamAggregatorService } from './stream-aggregator.service';
 import { DebtForecasterService } from './debt-forecaster.service';
+import { DebtForecastingService } from './debt-forecasting.service';
 import { ClickHouseService } from './clickhouse.service';
 
 @Module({
@@ -59,6 +60,7 @@ import { ClickHouseService } from './clickhouse.service';
     TumblingWindowService,
     StreamAggregatorService,
     DebtForecasterService,
+    DebtForecastingService,
     ClickHouseService,
   ],
   exports: [
@@ -85,6 +87,7 @@ import { ClickHouseService } from './clickhouse.service';
     TumblingWindowService,
     StreamAggregatorService,
     DebtForecasterService,
+    DebtForecastingService,
   ],
 })
 export class AnalyticsModule {}
