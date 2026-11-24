@@ -26,6 +26,7 @@ import { MetricsModule } from './modules/metrics/metrics.module';
 import { DynamicConfigModule } from './config/dynamic-config.module';
 import { RepositoriesModule } from './modules/repositories/repositories.module';
 import { SecurityModule } from './modules/security/security.module';
+import { SecModule } from './modules/sec/sec.module';
 import { HealthModule } from './modules/health/health.module';
 import { ExecutionModule } from './modules/execution/execution.module';
 import { CloudModule } from './modules/cloud/cloud.module';
@@ -44,8 +45,10 @@ import { AiModule } from './modules/ai/ai.module';
 import { TournamentsModule } from './modules/tournaments/tournaments.module';
 import { OpsModule } from './modules/ops/ops.module';
 import { GrpcModule } from './modules/grpc/grpc.module';
+import { TelemetryModule } from './modules/telemetry/telemetry.module';
 
 import { RealtimeModule } from './modules/realtime/realtime.module';
+import { MessagingModule } from './modules/messaging/messaging.module';
 
 import { SreModule } from './modules/sre/sre.module';
 
@@ -139,6 +142,7 @@ import { VaultModule } from './common/vault/vault.module';
     DynamicConfigModule,
     RepositoriesModule,
     SecurityModule,
+    SecModule,
     HealthModule,
     ExecutionModule,
     CloudModule,
@@ -164,6 +168,8 @@ import { VaultModule } from './common/vault/vault.module';
     AiModule,
     TournamentsModule,
     OpsModule,
+    MessagingModule,
+    TelemetryModule,
 
     RealtimeModule,
 

@@ -5,11 +5,17 @@ import { QueuesController } from './queues.controller';
 import { QueuesAdminGuard } from './queues-admin.guard';
 import { QueueStallReconciliationService } from './queue-stall-reconciliation.service';
 import { RETRY_POLICY, SOURCE_QUEUES } from './queue-policy';
+import { RETRY_POLICY, ALL_QUEUES } from './queue-policy';
+import { QueueManagerService } from './queue-manager.service';
+import { PrismaModule } from '../../prisma/prisma.module';
+import { RedisService } from '../../common/redis/redis.service';
+
 
 @Module({
   imports: [
+    PrismaModule,
     BullModule.registerQueue(
-      ...SOURCE_QUEUES.map((name) => ({
+      ...ALL_QUEUES.map((name) => ({
         name,
         defaultJobOptions: RETRY_POLICY,
       })),
@@ -19,5 +25,8 @@ import { RETRY_POLICY, SOURCE_QUEUES } from './queue-policy';
   controllers: [QueuesController],
   providers: [DeadLetterQueueService, QueuesAdminGuard, QueueStallReconciliationService],
   exports: [BullModule, DeadLetterQueueService, QueueStallReconciliationService],
+  providers: [DeadLetterQueueService, QueueManagerService, QueuesAdminGuard, RedisService],
+  exports: [BullModule, DeadLetterQueueService, QueueManagerService],
+
 })
 export class QueuesModule {}
