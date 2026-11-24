@@ -67,7 +67,7 @@ export class PolicyEvaluatorService {
         return false;
 
       case 'AuditLog':
-        return user.role === 'ADMIN' || (user.role === 'MODERATOR' && action === 'read');
+        return (user.role as string) === 'ADMIN' || (user.role === 'MODERATOR' && action === 'read');
 
       default:
         return false;

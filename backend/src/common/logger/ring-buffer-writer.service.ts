@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy, Optional } from '@nestjs/common';
 import * as fs from 'fs';
 
 export interface RingBufferOptions {
@@ -21,7 +21,7 @@ export class RingBufferWriterService implements OnModuleDestroy {
   private totalFlushedBytes = 0;
   private totalFlushedMessages = 0;
 
-  constructor(options?: Partial<RingBufferOptions>) {
+  constructor(@Optional() options?: Partial<RingBufferOptions>) {
     this.capacity = options?.bufferCapacity || 32768;
     this.buffer = new Array(this.capacity);
     this.fd = options?.destinationFd ?? 1; // stdout

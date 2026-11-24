@@ -103,6 +103,68 @@ describe('TraceInterceptor Suite', () => {
 
       expect(req.traceId).toBeDefined();
     });
+
+    it('should inject traceId into error response body for user cross-referencing', async () => {
+      const req: any = {
+        method: 'POST',
+        path: '/battles/calculate',
+        url: '/api/v1/battles/calculate',
+        headers: {},
+      };
+
+      const res: any = {
+        statusCode: 400,
+        setHeader: jest.fn(),
+      };
+
+      const customError: any = new Error('Invalid ELO rating input');
+      customError.status = 400;
+      customError.response = { message: 'Bad request' };
+
+      const mockContext: ExecutionContext = {
+        getType: () => 'http',
+        switchToHttp: () => ({
+          getRequest: () => req,
+          getResponse: () => res,
+        }),
+      } as any;
+
+      const mockCallHandler: CallHandler = {
+        handle: () => throwError(() => customError),
+      };
+
+      const resultObservable = interceptor.intercept(mockContext, mockCallHandler);
+
+      let thrownError: any;
+      await new Promise<void>((resolve) => {
+        resultObservable.subscribe({
+          next: () => {},
+          error: (err) => {
+            thrownError = err;
+            resolve();
+          },
+        });
+      });
+
+      expect(thrownError).toBeDefined();
+      expect(thrownError.traceId).toBeDefined();
+      expect(thrownError.response.traceId).toBe(thrownError.traceId);
+    });
+  });
+
+  describe('Business Logic Bottleneck Tracing', () => {
+    it('should trace bottleneck operations with child spans', async () => {
+      const result = await TraceInterceptor.traceBusinessBottleneck(
+        'elo.calculation',
+        async (span) => {
+          expect(span).toBeDefined();
+          return 1650;
+        },
+        { battleId: 'b-99' },
+      );
+
+      expect(result).toBe(1650);
+    });
   });
 
   describe('WebSocket Interception', () => {
