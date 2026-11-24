@@ -26,6 +26,7 @@ import { ProductivityNormalizerService } from './productivity-normalizer.service
 import { TumblingWindowService } from './tumbling-window.service';
 import { StreamAggregatorService } from './stream-aggregator.service';
 import { DebtForecasterService } from './debt-forecaster.service';
+import { DebtForecastingService } from './debt-forecasting.service';
 
 @Module({
   controllers: [
@@ -58,6 +59,7 @@ import { DebtForecasterService } from './debt-forecaster.service';
     TumblingWindowService,
     StreamAggregatorService,
     DebtForecasterService,
+    DebtForecastingService,
   ],
   exports: [
     AnalyticsService,
@@ -82,6 +84,7 @@ import { DebtForecasterService } from './debt-forecaster.service';
     TumblingWindowService,
     StreamAggregatorService,
     DebtForecasterService,
+    DebtForecastingService,
   ],
 })
 export class AnalyticsModule {}

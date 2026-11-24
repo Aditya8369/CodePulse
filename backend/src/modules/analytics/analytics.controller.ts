@@ -27,6 +27,10 @@ import { ComplexityService } from './complexity.service';
 import { GreenCarbonEstimatorService } from './green-carbon-estimator.service';
 import { DebtForecasterService } from './debt-forecaster.service';
 import {
+  DebtForecastingService,
+  type CreateMaintainabilitySnapshotDto,
+} from './debt-forecasting.service';
+import {
   MonteCarloVelocityService,
   type HistoricalSprintDay,
   type SprintTaskRiskItem,
@@ -62,6 +66,7 @@ export class AnalyticsController {
     @Optional() private readonly architecturalDrift?: ArchitecturalDriftService,
     @Optional() private readonly flowStateService?: FlowStateService,
     @Optional() private readonly debtForecaster?: DebtForecasterService,
+    @Optional() private readonly debtForecastingService?: DebtForecastingService,
   ) {}
 
   @Get('platform')
@@ -412,5 +417,75 @@ export class AnalyticsController {
       throw new BadRequestException('DebtForecasterService is unavailable');
     }
     return this.debtForecaster.getTechDebtForecast(repositoryId);
+  }
+
+  // ==========================================
+  // Predictive Code Maintainability & Technical Debt Forecasting Engine (#526)
+  // ==========================================
+
+  @Get('debt-forecast/:repoId')
+  @ApiOperation({
+    summary: 'Predictive code maintainability & 30-day technical debt degradation curve (#526)',
+  })
+  @ApiParam({ name: 'repoId', description: 'Repository identifier' })
+  async getDebtForecast(@Param('repoId') repoId: string) {
+    if (!this.debtForecastingService) {
+      throw new BadRequestException('DebtForecastingService is unavailable');
+    }
+    return this.debtForecastingService.getTechDebtForecast(repoId);
+  }
+
+  @Get('debt-hotspots/:repoId')
+  @ApiOperation({
+    summary: 'Retrieve top 5 technical debt hotspot files with actionable refactoring advice (#526)',
+  })
+  @ApiParam({ name: 'repoId', description: 'Repository identifier' })
+  async getDebtHotspots(@Param('repoId') repoId: string) {
+    if (!this.debtForecastingService) {
+      throw new BadRequestException('DebtForecastingService is unavailable');
+    }
+    const report = await this.debtForecastingService.getTechDebtForecast(repoId);
+    return {
+      repositoryId: repoId,
+      topHotspots: report.topHotspots,
+      summary: report.summaryInsights,
+    };
+  }
+
+  @Post('maintainability-snapshot')
+  @ApiOperation({
+    summary: 'Record historical maintainability snapshot for a file or repository (#526)',
+  })
+  async recordMaintainabilitySnapshot(@Body() body: CreateMaintainabilitySnapshotDto) {
+    if (!this.debtForecastingService) {
+      throw new BadRequestException('DebtForecastingService is unavailable');
+    }
+    return this.debtForecastingService.saveMaintainabilitySnapshot(body);
+  }
+
+  @Post('code-metrics')
+  @ApiOperation({
+    summary: 'Compute Halstead complexity, Cyclomatic complexity, and Maintainability Index for source code snippet (#526)',
+  })
+  computeSourceCodeMetrics(@Body() body: { code: string; commentRatio?: number }) {
+    if (!this.debtForecastingService) {
+      throw new BadRequestException('DebtForecastingService is unavailable');
+    }
+    const halstead = this.debtForecastingService.calculateHalstead(body.code || '');
+    const cyclomatic = this.debtForecastingService.calculateCyclomaticComplexity(body.code || '');
+    const loc = (body.code || '').split('\n').filter((l) => l.trim().length > 0).length || 1;
+    const maintainabilityIndex = this.debtForecastingService.calculateMaintainabilityIndex({
+      halsteadVolume: halstead.volume,
+      cyclomaticComplexity: cyclomatic,
+      loc,
+      commentRatio: body.commentRatio,
+    });
+
+    return {
+      loc,
+      cyclomaticComplexity: cyclomatic,
+      halstead,
+      maintainabilityIndex,
+    };
   }
 }

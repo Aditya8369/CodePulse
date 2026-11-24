@@ -235,6 +235,7 @@ model Repository {
   prMetrics     PullRequestMetric[]
   complexities  RepositoryComplexity[]
   techDebtForecasts TechnicalDebtForecast[]
+  maintainabilitySnapshots MaintainabilitySnapshot[]
 
   @@unique([userId, githubRepoId])
   @@index([userId])
@@ -1717,4 +1718,26 @@ model TechnicalDebtForecast {
   @@index([repositoryId])
   @@index([createdAt])
   @@map("technical_debt_forecasts")
+}
+
+model MaintainabilitySnapshot {
+  id                   String      @id @default(uuid())
+  repositoryId         String
+  filePath             String?
+  maintainabilityIndex Float       // Maintainability Index (0-100)
+  cyclomaticComplexity Float
+  halsteadVolume       Float
+  halsteadDifficulty   Float
+  halsteadEffort       Float
+  churnVelocity        Float       // lines or commits churned per observation period
+  bugFixRatio          Float       @default(0.0)
+  loc                  Int         @default(0)
+  createdAt            DateTime    @default(now())
+
+  repository           Repository  @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+  @@index([repositoryId])
+  @@index([repositoryId, createdAt])
+  @@index([filePath])
+  @@map("maintainability_snapshots")
 }
