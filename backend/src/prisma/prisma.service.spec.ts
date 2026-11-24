@@ -91,3 +91,103 @@ describe('PrismaService slow query logging', () => {
     });
   });
 });
+
+describe('PrismaService Zero-Downtime Blue-Green Migration Pipeline (#377)', () => {
+  let service: PrismaService;
+
+  beforeEach(() => {
+    service = new PrismaService();
+  });
+
+  it('exposes zeroDowntimeMigration engine and dualWriteCoordinator', () => {
+    expect(service.zeroDowntimeMigration).toBeDefined();
+    expect(service.dualWriteCoordinator).toBeDefined();
+  });
+
+  it('delegates pre-flight lock checks to zeroDowntimeMigration engine', async () => {
+    const spy = jest
+      .spyOn(service.zeroDowntimeMigration, 'checkPreflightLocks')
+      .mockResolvedValue({
+        safe: true,
+        targetTable: 'users',
+        activeLocksCount: 0,
+        longRunningQueriesCount: 0,
+        blockingQueries: [],
+        recommendedLockTimeoutMs: 2000,
+      });
+
+    const result = await service.checkTableLocks('users', 5);
+    expect(spy).toHaveBeenCalledWith(service, 'users', 5);
+    expect(result.safe).toBe(true);
+  });
+
+  it('delegates safe DDL execution to zeroDowntimeMigration engine', async () => {
+    const spy = jest
+      .spyOn(service.zeroDowntimeMigration, 'executeSafeDDL')
+      .mockResolvedValue();
+
+    await service.executeZeroDowntimeDDL(
+      'ALTER TABLE "users" ADD COLUMN "active" BOOLEAN;',
+      { lockTimeoutMs: 2000 },
+    );
+    expect(spy).toHaveBeenCalledWith(
+      service,
+      'ALTER TABLE "users" ADD COLUMN "active" BOOLEAN;',
+      { lockTimeoutMs: 2000 },
+    );
+  });
+
+  it('delegates backfill execution to zeroDowntimeMigration engine', async () => {
+    const spy = jest
+      .spyOn(service.zeroDowntimeMigration, 'runBackfill')
+      .mockResolvedValue({
+        tableName: 'users',
+        totalProcessed: 100,
+        batchesCompleted: 1,
+        durationMs: 50,
+        rateRowsPerSec: 2000,
+        isComplete: true,
+      });
+
+    const result = await service.runZeroDowntimeBackfill({
+      tableName: 'users',
+      sourceColumn: 'old_col',
+      targetColumn: 'new_col',
+    });
+    expect(spy).toHaveBeenCalled();
+    expect(result.totalProcessed).toBe(100);
+  });
+
+  it('delegates consistency verification and rollback', async () => {
+    const verifySpy = jest
+      .spyOn(service.zeroDowntimeMigration, 'verifyDataConsistency')
+      .mockResolvedValue({
+        tableName: 'users',
+        consistent: true,
+        totalRecordsChecked: 500,
+        mismatchCount: 0,
+        missingInTargetCount: 0,
+        discrepancies: [],
+      });
+    const rollbackSpy = jest
+      .spyOn(service.zeroDowntimeMigration, 'executeRollback')
+      .mockResolvedValue({
+        rolledBack: ['ALTER TABLE "users" DROP COLUMN "new_col";'],
+        status: 'SUCCESS',
+      });
+
+    const verifyRes = await service.verifyMigrationConsistency({
+      tableName: 'users',
+      sourceColumn: 'old_col',
+      targetColumn: 'new_col',
+    });
+    expect(verifySpy).toHaveBeenCalled();
+    expect(verifyRes.consistent).toBe(true);
+
+    const rollbackRes = await service.executeZeroDowntimeRollback([
+      'ALTER TABLE "users" DROP COLUMN "new_col";',
+    ]);
+    expect(rollbackSpy).toHaveBeenCalled();
+    expect(rollbackRes.status).toBe('SUCCESS');
+  });
+});
