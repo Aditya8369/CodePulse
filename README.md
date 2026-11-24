@@ -22,139 +22,161 @@ A heartfelt thank you to all the amazing developers contributing to **CodePulse*
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
 <!-- prettier-ignore-start -->
 <!-- markdownlint-disable -->
+<p align="center">
+  <a href="https://github.com/code-with-abhi-i5/CodePulse/graphs/contributors">
+    <img src="https://contrib.rocks/image?repo=code-with-abhi-i5/CodePulse" alt="CodePulse Contributors" />
+  </a>
+</p>
+
 <table>
   <tr>
     <td align="center" width="160px">
       <a href="https://github.com/code-with-abhi-i5">
-        <img src="https://avatars.githubusercontent.com/u/195516410?v=4&s=100" width="80px" style="border-radius: 50%;" alt="code-with-abhi-i5" /><br />
+        <img src="https://avatars.githubusercontent.com/u/195516410?v=4" width="80px" style="border-radius: 50%;" alt="code-with-abhi-i5" /><br />
         <sub><b>@code-with-abhi-i5</b></sub>
       </a><br />
-      <sub>💻 Contributor</sub><br />
-      <a href="https://github.com/pratikadamas/CodePulse/commits?author=code-with-abhi-i5"><sub>🔨 390 commits</sub></a>
+      <sub>👑 Project Admin & Maintainer</sub><br />
+      <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=code-with-abhi-i5"><sub>🔨 759 commits</sub></a>
+    </td>
+    <td align="center" width="160px">
+      <a href="https://github.com/code-with-dipak-777">
+        <img src="https://avatars.githubusercontent.com/u/219174195?v=4" width="80px" style="border-radius: 50%;" alt="code-with-dipak-777" /><br />
+        <sub><b>@code-with-dipak-777</b></sub>
+      </a><br />
+      <sub>🔥 Top Contributor & Architect</sub><br />
+      <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=code-with-dipak-777"><sub>🔨 415 commits</sub></a>
     </td>
     <td align="center" width="160px">
       <a href="https://github.com/Babin123456">
-        <img src="https://avatars.githubusercontent.com/u/265290994?v=4&s=100" width="80px" style="border-radius: 50%;" alt="Babin123456" /><br />
+        <img src="https://avatars.githubusercontent.com/u/265290994?v=4" width="80px" style="border-radius: 50%;" alt="Babin123456" /><br />
         <sub><b>@Babin123456</b></sub>
       </a><br />
-      <sub>💻 Contributor</sub><br />
-      <a href="https://github.com/pratikadamas/CodePulse/commits?author=Babin123456"><sub>🔨 120 commits</sub></a>
+      <sub>⭐ Core Contributor</sub><br />
+      <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=Babin123456"><sub>🔨 175 commits</sub></a>
     </td>
     <td align="center" width="160px">
       <a href="https://github.com/pratikadamas">
-        <img src="https://avatars.githubusercontent.com/u/147491382?v=4&s=100" width="80px" style="border-radius: 50%;" alt="pratikadamas" /><br />
+        <img src="https://avatars.githubusercontent.com/u/147491382?v=4" width="80px" style="border-radius: 50%;" alt="pratikadamas" /><br />
         <sub><b>@pratikadamas</b></sub>
       </a><br />
-      <sub>👑 Maintainer</sub><br />
-      <a href="https://github.com/pratikadamas/CodePulse/commits?author=pratikadamas"><sub>🔨 90 commits</sub></a>
-    </td>
-    <td align="center" width="160px">
-      <a href="https://github.com/divyanshAgarwal123">
-        <img src="https://avatars.githubusercontent.com/u/85987665?v=4&s=100" width="80px" style="border-radius: 50%;" alt="divyanshAgarwal123" /><br />
-        <sub><b>@divyanshAgarwal123</b></sub>
-      </a><br />
-      <sub>💻 Contributor</sub><br />
-      <a href="https://github.com/pratikadamas/CodePulse/commits?author=divyanshAgarwal123"><sub>🔨 31 commits</sub></a>
+      <sub>⭐ Core Contributor</sub><br />
+      <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=pratikadamas"><sub>🔨 136 commits</sub></a>
     </td>
     <td align="center" width="160px">
       <a href="https://github.com/Itssonia7">
-        <img src="https://avatars.githubusercontent.com/u/174490730?v=4&s=100" width="80px" style="border-radius: 50%;" alt="Itssonia7" /><br />
+        <img src="https://avatars.githubusercontent.com/u/174490730?v=4" width="80px" style="border-radius: 50%;" alt="Itssonia7" /><br />
         <sub><b>@Itssonia7</b></sub>
       </a><br />
       <sub>💻 Contributor</sub><br />
-      <a href="https://github.com/pratikadamas/CodePulse/commits?author=Itssonia7"><sub>🔨 20 commits</sub></a>
+      <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=Itssonia7"><sub>🔨 39 commits</sub></a>
     </td>
     <td align="center" width="160px">
+      <a href="https://github.com/divyanshAgarwal123">
+        <img src="https://avatars.githubusercontent.com/u/85987665?v=4" width="80px" style="border-radius: 50%;" alt="divyanshAgarwal123" /><br />
+        <sub><b>@divyanshAgarwal123</b></sub>
+      </a><br />
+      <sub>💻 Contributor</sub><br />
+      <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=divyanshAgarwal123"><sub>🔨 32 commits</sub></a>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="160px">
       <a href="https://github.com/Sarbajit-Sengupta">
-        <img src="https://avatars.githubusercontent.com/u/73594751?v=4&s=100" width="80px" style="border-radius: 50%;" alt="Sarbajit-Sengupta" /><br />
+        <img src="https://avatars.githubusercontent.com/u/73594751?v=4" width="80px" style="border-radius: 50%;" alt="Sarbajit-Sengupta" /><br />
         <sub><b>@Sarbajit-Sengupta</b></sub>
       </a><br />
       <sub>💻 Contributor</sub><br />
-      <a href="https://github.com/pratikadamas/CodePulse/commits?author=Sarbajit-Sengupta"><sub>🔨 11 commits</sub></a>
+      <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=Sarbajit-Sengupta"><sub>🔨 11 commits</sub></a>
     </td>
-  </tr>
-  <tr>
     <td align="center" width="160px">
       <a href="https://github.com/Trunal2005">
-        <img src="https://avatars.githubusercontent.com/u/183263614?v=4&s=100" width="80px" style="border-radius: 50%;" alt="Trunal2005" /><br />
+        <img src="https://avatars.githubusercontent.com/u/183263614?v=4" width="80px" style="border-radius: 50%;" alt="Trunal2005" /><br />
         <sub><b>@Trunal2005</b></sub>
       </a><br />
       <sub>💻 Contributor</sub><br />
-      <a href="https://github.com/pratikadamas/CodePulse/commits?author=Trunal2005"><sub>🔨 7 commits</sub></a>
+      <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=Trunal2005"><sub>🔨 7 commits</sub></a>
     </td>
     <td align="center" width="160px">
       <a href="https://github.com/aush5895">
-        <img src="https://avatars.githubusercontent.com/u/229103100?v=4&s=100" width="80px" style="border-radius: 50%;" alt="aush5895" /><br />
+        <img src="https://avatars.githubusercontent.com/u/229103100?v=4" width="80px" style="border-radius: 50%;" alt="aush5895" /><br />
         <sub><b>@aush5895</b></sub>
       </a><br />
       <sub>💻 Contributor</sub><br />
-      <a href="https://github.com/pratikadamas/CodePulse/commits?author=aush5895"><sub>🔨 6 commits</sub></a>
+      <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=aush5895"><sub>🔨 6 commits</sub></a>
     </td>
     <td align="center" width="160px">
       <a href="https://github.com/nilesh0199">
-        <img src="https://avatars.githubusercontent.com/u/205056958?v=4&s=100" width="80px" style="border-radius: 50%;" alt="nilesh0199" /><br />
+        <img src="https://avatars.githubusercontent.com/u/205056958?v=4" width="80px" style="border-radius: 50%;" alt="nilesh0199" /><br />
         <sub><b>@nilesh0199</b></sub>
       </a><br />
       <sub>💻 Contributor</sub><br />
-      <a href="https://github.com/pratikadamas/CodePulse/commits?author=nilesh0199"><sub>🔨 6 commits</sub></a>
+      <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=nilesh0199"><sub>🔨 6 commits</sub></a>
     </td>
     <td align="center" width="160px">
       <a href="https://github.com/Ankit-Kum-ar">
-        <img src="https://avatars.githubusercontent.com/u/111765525?v=4&s=100" width="80px" style="border-radius: 50%;" alt="Ankit-Kum-ar" /><br />
+        <img src="https://avatars.githubusercontent.com/u/111765525?v=4" width="80px" style="border-radius: 50%;" alt="Ankit-Kum-ar" /><br />
         <sub><b>@Ankit-Kum-ar</b></sub>
       </a><br />
       <sub>💻 Contributor</sub><br />
-      <a href="https://github.com/pratikadamas/CodePulse/commits?author=Ankit-Kum-ar"><sub>🔨 5 commits</sub></a>
+      <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=Ankit-Kum-ar"><sub>🔨 5 commits</sub></a>
     </td>
     <td align="center" width="160px">
       <a href="https://github.com/bhavyasingh-sa">
-        <img src="https://avatars.githubusercontent.com/u/176571887?v=4&s=100" width="80px" style="border-radius: 50%;" alt="bhavyasingh-sa" /><br />
+        <img src="https://avatars.githubusercontent.com/u/176571887?v=4" width="80px" style="border-radius: 50%;" alt="bhavyasingh-sa" /><br />
         <sub><b>@bhavyasingh-sa</b></sub>
       </a><br />
       <sub>💻 Contributor</sub><br />
-      <a href="https://github.com/pratikadamas/CodePulse/commits?author=bhavyasingh-sa"><sub>🔨 5 commits</sub></a>
-    </td>
-    <td align="center" width="160px">
-      <a href="https://github.com/shahkhushi0307">
-        <img src="https://avatars.githubusercontent.com/u/247197666?v=4&s=100" width="80px" style="border-radius: 50%;" alt="shahkhushi0307" /><br />
-        <sub><b>@shahkhushi0307</b></sub>
-      </a><br />
-      <sub>💻 Contributor</sub><br />
-      <a href="https://github.com/pratikadamas/CodePulse/commits?author=shahkhushi0307"><sub>🔨 3 commits</sub></a>
+      <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=bhavyasingh-sa"><sub>🔨 5 commits</sub></a>
     </td>
   </tr>
   <tr>
     <td align="center" width="160px">
+      <a href="https://github.com/shahkhushi0307">
+        <img src="https://avatars.githubusercontent.com/u/247197666?v=4" width="80px" style="border-radius: 50%;" alt="shahkhushi0307" /><br />
+        <sub><b>@shahkhushi0307</b></sub>
+      </a><br />
+      <sub>💻 Contributor</sub><br />
+      <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=shahkhushi0307"><sub>🔨 3 commits</sub></a>
+    </td>
+    <td align="center" width="160px">
       <a href="https://github.com/sumittiwari1302">
-        <img src="https://avatars.githubusercontent.com/u/251316528?v=4&s=100" width="80px" style="border-radius: 50%;" alt="sumittiwari1302" /><br />
+        <img src="https://avatars.githubusercontent.com/u/251316528?v=4" width="80px" style="border-radius: 50%;" alt="sumittiwari1302" /><br />
         <sub><b>@sumittiwari1302</b></sub>
       </a><br />
       <sub>💻 Contributor</sub><br />
-      <a href="https://github.com/pratikadamas/CodePulse/commits?author=sumittiwari1302"><sub>🔨 2 commits</sub></a>
+      <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=sumittiwari1302"><sub>🔨 2 commits</sub></a>
     </td>
     <td align="center" width="160px">
       <a href="https://github.com/chanchall26">
-        <img src="https://avatars.githubusercontent.com/u/190047591?v=4&s=100" width="80px" style="border-radius: 50%;" alt="chanchall26" /><br />
+        <img src="https://avatars.githubusercontent.com/u/190047591?v=4" width="80px" style="border-radius: 50%;" alt="chanchall26" /><br />
         <sub><b>@chanchall26</b></sub>
       </a><br />
       <sub>💻 Contributor</sub><br />
-      <a href="https://github.com/pratikadamas/CodePulse/commits?author=chanchall26"><sub>🔨 2 commits</sub></a>
+      <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=chanchall26"><sub>🔨 2 commits</sub></a>
+    </td>
+    <td align="center" width="160px">
+      <a href="https://github.com/forkprachii03">
+        <img src="https://avatars.githubusercontent.com/u/250967871?v=4" width="80px" style="border-radius: 50%;" alt="forkprachii03" /><br />
+        <sub><b>@forkprachii03</b></sub>
+      </a><br />
+      <sub>💻 Contributor</sub><br />
+      <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=forkprachii03"><sub>🔨 1 commits</sub></a>
     </td>
     <td align="center" width="160px">
       <a href="https://github.com/tesfa27">
-        <img src="https://avatars.githubusercontent.com/u/120743554?v=4&s=100" width="80px" style="border-radius: 50%;" alt="tesfa27" /><br />
+        <img src="https://avatars.githubusercontent.com/u/120743554?v=4" width="80px" style="border-radius: 50%;" alt="tesfa27" /><br />
         <sub><b>@tesfa27</b></sub>
       </a><br />
       <sub>💻 Contributor</sub><br />
-      <a href="https://github.com/pratikadamas/CodePulse/commits?author=tesfa27"><sub>🔨 1 commits</sub></a>
+      <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=tesfa27"><sub>🔨 1 commits</sub></a>
     </td>
     <td align="center" width="160px">
       <a href="https://github.com/yash-kumawat-0">
-        <img src="https://avatars.githubusercontent.com/u/191586321?v=4&s=100" width="80px" style="border-radius: 50%;" alt="yash-kumawat-0" /><br />
+        <img src="https://avatars.githubusercontent.com/u/191586321?v=4" width="80px" style="border-radius: 50%;" alt="yash-kumawat-0" /><br />
         <sub><b>@yash-kumawat-0</b></sub>
       </a><br />
       <sub>💻 Contributor</sub><br />
-      <a href="https://github.com/pratikadamas/CodePulse/commits?author=yash-kumawat-0"><sub>🔨 1 commits</sub></a>
+      <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=yash-kumawat-0"><sub>🔨 1 commits</sub></a>
     </td>
   </tr>
 </table>
