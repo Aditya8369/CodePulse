@@ -32,10 +32,14 @@ import { PiiMaskerService } from './logger/pii-masker.service';
 import { PayloadAuditLoggerService } from './logger/payload-audit-logger.service';
 import { GracefulShutdownCoordinatorService } from './resilience/graceful-shutdown-coordinator.service';
 
+
 import { CloudEventsProvider } from './events/cloudevents.provider';
 import { NatsJetStreamService } from './events/nats-jetstream.service';
 import { TDigestService } from './math/t-digest.service';
 import { ClocksModule } from './clocks/clocks.module';
+import { SlidingBloomFilterService } from './cache/sliding-bloom-filter.service';
+import { EventDeduplicatorService } from './cache/event-deduplicator.service';
+import { RedlockService } from './redis/redlock.service';
 
 @Global()
 @Module({
@@ -75,9 +79,13 @@ import { ClocksModule } from './clocks/clocks.module';
     PayloadAuditLoggerService,
     GracefulShutdownCoordinatorService,
 
+
     CloudEventsProvider,
     NatsJetStreamService,
     TDigestService,
+    SlidingBloomFilterService,
+    EventDeduplicatorService,
+    RedlockService,
   ],
   exports: [
     SystemMetricsService,
@@ -107,9 +115,13 @@ import { ClocksModule } from './clocks/clocks.module';
     PayloadAuditLoggerService,
     GracefulShutdownCoordinatorService,
 
+
     CloudEventsProvider,
     NatsJetStreamService,
     TDigestService,
+    SlidingBloomFilterService,
+    EventDeduplicatorService,
+    RedlockService,
     ClocksModule,
   ],
 })
