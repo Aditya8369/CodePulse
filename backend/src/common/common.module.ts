@@ -32,6 +32,7 @@ import { PiiMaskerService } from './logger/pii-masker.service';
 import { PayloadAuditLoggerService } from './logger/payload-audit-logger.service';
 import { GracefulShutdownCoordinatorService } from './resilience/graceful-shutdown-coordinator.service';
 import { AutonomousMemoryLeakDetectorService } from './resilience/autonomous-memory-leak-detector.service';
+import { CpuTaskWorkerPoolService } from './resilience/cpu-task-worker-pool.service';
 
 
 import { CloudEventsProvider } from './events/cloudevents.provider';
@@ -80,6 +81,7 @@ import { RedlockService } from './redis/redlock.service';
     PayloadAuditLoggerService,
     GracefulShutdownCoordinatorService,
     AutonomousMemoryLeakDetectorService,
+    CpuTaskWorkerPoolService,
 
 
     CloudEventsProvider,
@@ -117,6 +119,7 @@ import { RedlockService } from './redis/redlock.service';
     PayloadAuditLoggerService,
     GracefulShutdownCoordinatorService,
     AutonomousMemoryLeakDetectorService,
+    CpuTaskWorkerPoolService,
 
 
     CloudEventsProvider,
