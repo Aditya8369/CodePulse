@@ -7,6 +7,7 @@ import { ExecutionController } from './execution.controller';
 import { SandboxIpcController } from './sandbox-ipc.controller';
 import { LlvmJitService } from './llvm-jit.service';
 import { ZeroCopyIpcService } from '../../common/concurrency/zero-copy-ipc.service';
+import { GrpcExecutionClient } from './grpc-execution.client';
 
 @Module({
   controllers: [ExecutionController, SandboxIpcController],
@@ -17,6 +18,7 @@ import { ZeroCopyIpcService } from '../../common/concurrency/zero-copy-ipc.servi
     JailerService,
     ZeroCopyIpcService,
     LlvmJitService,
+    GrpcExecutionClient,
   ],
   exports: [
     SandboxIsolationService,
@@ -25,6 +27,7 @@ import { ZeroCopyIpcService } from '../../common/concurrency/zero-copy-ipc.servi
     JailerService,
     ZeroCopyIpcService,
     LlvmJitService,
+    GrpcExecutionClient,
   ],
 })
 export class ExecutionModule {}
