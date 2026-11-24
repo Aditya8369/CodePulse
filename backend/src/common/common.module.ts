@@ -37,6 +37,7 @@ import { AdaptiveCircuitBreakerService } from './resilience/adaptive-circuit-bre
 import { DbConnectionGuardService } from './resilience/db-connection-guard.service';
 import { RedisResilienceManagerService } from './resilience/redis-resilience-manager.service';
 import { UnhandledRejectionGuardrailService } from './resilience/unhandled-rejection-guardrail.service';
+import { CgroupsWatchdogService } from './resilience/cgroups-watchdog.service';
 
 
 import { CloudEventsProvider } from './events/cloudevents.provider';
@@ -90,6 +91,7 @@ import { RedlockService } from './redis/redlock.service';
     DbConnectionGuardService,
     RedisResilienceManagerService,
     UnhandledRejectionGuardrailService,
+    CgroupsWatchdogService,
 
 
     CloudEventsProvider,
@@ -132,6 +134,7 @@ import { RedlockService } from './redis/redlock.service';
     DbConnectionGuardService,
     RedisResilienceManagerService,
     UnhandledRejectionGuardrailService,
+    CgroupsWatchdogService,
 
 
     CloudEventsProvider,
