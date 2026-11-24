@@ -22,7 +22,7 @@ export class LogSanitizerService {
     if (input === null || input === undefined) return input;
 
     if (typeof input === 'string') {
-      let str = input;
+      let str: string = input as unknown as string;
       for (const pattern of this.SECRET_PATTERNS) {
         str = str.replace(pattern.regex, pattern.replacement);
       }

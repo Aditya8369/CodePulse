@@ -706,19 +706,23 @@ enum WebhookDeliveryStatus {
 }
 
 model WebhookSubscription {
-  id          String                @id @default(uuid())
-  userId      String?
-  url         String
-  secret      String                // HMAC secret key
-  description String?
-  events      String[]              // e.g. ["battle.ended", "pr.reviewed", "badge.awarded", "*"]
-  status      WebhookStatus         @default(ACTIVE)
-  deliveries  WebhookDeliveryLog[]
-  createdAt   DateTime              @default(now())
-  updatedAt   DateTime              @updatedAt
+  id                  String                @id @default(uuid())
+  userId              String?
+  url                 String
+  secret              String                // HMAC secret key
+  description         String?
+  events              String[]              // e.g. ["battle.ended", "pr.reviewed", "badge.awarded", "*"]
+  status              WebhookStatus         @default(ACTIVE)
+  isActive            Boolean               @default(true)
+  consecutiveFailures Int                   @default(0)
+  deliveries          WebhookDeliveryLog[]
+  webhookDeliveries   WebhookDelivery[]
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
 
   @@index([userId])
   @@index([status])
+  @@index([isActive])
   @@map("webhook_subscriptions")
 }
 
@@ -747,6 +751,23 @@ model WebhookDeliveryLog {
   @@index([isDeadLetter])
   @@index([nextRetryAt])
   @@map("webhook_delivery_logs")
+}
+
+model WebhookDelivery {
+  id             String              @id @default(uuid())
+  subscriptionId String
+  subscription   WebhookSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  event          String
+  payload        Json
+  statusCode     Int?
+  responseBody   String?             @db.Text
+  durationMs     Int?
+  attempt        Int                 @default(1)
+  createdAt      DateTime            @default(now())
+
+  @@index([subscriptionId])
+  @@index([event])
+  @@map("webhook_deliveries")
 }
 
 enum ShadowSessionStatus {

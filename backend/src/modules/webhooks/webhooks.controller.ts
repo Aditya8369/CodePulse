@@ -23,15 +23,35 @@ import {
 export class WebhooksController {
   constructor(private readonly webhookService: WebhookDispatcherService) {}
 
-  @Post('subscriptions')
+  @Post()
   @ApiOperation({ summary: 'Register a new webhook subscription' })
+  @ApiResponse({ status: 201, description: 'Webhook subscription created' })
+  async createWebhook(@Body() dto: CreateWebhookSubscriptionDto) {
+    return this.webhookService.createSubscription(undefined, dto);
+  }
+
+  @Get()
+  @ApiOperation({ summary: 'List all registered webhook subscriptions' })
+  async listWebhooks() {
+    return this.webhookService.listSubscriptions();
+  }
+
+  @Post(':id/test')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Send a test webhook event to verify endpoint connectivity' })
+  async testEndpoint(@Param('id') id: string) {
+    return this.webhookService.testEndpoint(id);
+  }
+
+  @Post('subscriptions')
+  @ApiOperation({ summary: 'Register a new webhook subscription (alias)' })
   @ApiResponse({ status: 201, description: 'Webhook subscription created' })
   async createSubscription(@Body() dto: CreateWebhookSubscriptionDto) {
     return this.webhookService.createSubscription(undefined, dto);
   }
 
   @Get('subscriptions')
-  @ApiOperation({ summary: 'List all registered webhook subscriptions' })
+  @ApiOperation({ summary: 'List all registered webhook subscriptions (alias)' })
   async listSubscriptions() {
     return this.webhookService.listSubscriptions();
   }
