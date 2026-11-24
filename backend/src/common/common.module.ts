@@ -34,11 +34,21 @@ import { GracefulShutdownCoordinatorService } from './resilience/graceful-shutdo
 import { AutonomousMemoryLeakDetectorService } from './resilience/autonomous-memory-leak-detector.service';
 import { CpuTaskWorkerPoolService } from './resilience/cpu-task-worker-pool.service';
 import { AdaptiveCircuitBreakerService } from './resilience/adaptive-circuit-breaker.service';
+import { DbConnectionGuardService } from './resilience/db-connection-guard.service';
+import { RedisResilienceManagerService } from './resilience/redis-resilience-manager.service';
+import { UnhandledRejectionGuardrailService } from './resilience/unhandled-rejection-guardrail.service';
+import { CgroupsWatchdogService } from './resilience/cgroups-watchdog.service';
+import { OptimisticLockCoordinatorService } from './concurrency/optimistic-lock-coordinator.service';
+
+
 
 import { CloudEventsProvider } from './events/cloudevents.provider';
 import { NatsJetStreamService } from './events/nats-jetstream.service';
 import { TDigestService } from './math/t-digest.service';
 import { ClocksModule } from './clocks/clocks.module';
+import { SlidingBloomFilterService } from './cache/sliding-bloom-filter.service';
+import { EventDeduplicatorService } from './cache/event-deduplicator.service';
+import { RedlockService } from './redis/redlock.service';
 
 @Global()
 @Module({
@@ -80,10 +90,20 @@ import { ClocksModule } from './clocks/clocks.module';
     AutonomousMemoryLeakDetectorService,
     CpuTaskWorkerPoolService,
     AdaptiveCircuitBreakerService,
+    DbConnectionGuardService,
+    RedisResilienceManagerService,
+    UnhandledRejectionGuardrailService,
+    CgroupsWatchdogService,
+    OptimisticLockCoordinatorService,
+
+
 
     CloudEventsProvider,
     NatsJetStreamService,
     TDigestService,
+    SlidingBloomFilterService,
+    EventDeduplicatorService,
+    RedlockService,
   ],
   exports: [
     SystemMetricsService,
@@ -115,10 +135,20 @@ import { ClocksModule } from './clocks/clocks.module';
     AutonomousMemoryLeakDetectorService,
     CpuTaskWorkerPoolService,
     AdaptiveCircuitBreakerService,
+    DbConnectionGuardService,
+    RedisResilienceManagerService,
+    UnhandledRejectionGuardrailService,
+    CgroupsWatchdogService,
+    OptimisticLockCoordinatorService,
+
+
 
     CloudEventsProvider,
     NatsJetStreamService,
     TDigestService,
+    SlidingBloomFilterService,
+    EventDeduplicatorService,
+    RedlockService,
     ClocksModule,
   ],
 })
