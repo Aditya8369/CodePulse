@@ -30,6 +30,8 @@ import { RingBufferWriterService } from './logger/ring-buffer-writer.service';
 import { ZeroAllocationLogger } from './logger/zero-allocation-logger';
 import { PiiMaskerService } from './logger/pii-masker.service';
 import { PayloadAuditLoggerService } from './logger/payload-audit-logger.service';
+import { GracefulShutdownCoordinatorService } from './resilience/graceful-shutdown-coordinator.service';
+
 
 import { CloudEventsProvider } from './events/cloudevents.provider';
 import { NatsJetStreamService } from './events/nats-jetstream.service';
@@ -75,6 +77,8 @@ import { RedlockService } from './redis/redlock.service';
     ZeroAllocationLogger,
     PiiMaskerService,
     PayloadAuditLoggerService,
+    GracefulShutdownCoordinatorService,
+
 
     CloudEventsProvider,
     NatsJetStreamService,
@@ -109,6 +113,8 @@ import { RedlockService } from './redis/redlock.service';
     ZeroAllocationLogger,
     PiiMaskerService,
     PayloadAuditLoggerService,
+    GracefulShutdownCoordinatorService,
+
 
     CloudEventsProvider,
     NatsJetStreamService,
