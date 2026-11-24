@@ -2,6 +2,7 @@ import { MultiAgentReviewerService } from '../ai/agents/pr-reviewer.service';
 import {
   Controller,
   Post,
+  Get,
   Headers,
   Body,
   UnauthorizedException,
@@ -9,15 +10,19 @@ import {
   HttpStatus,
   Logger,
   Optional,
+  OnModuleInit,
+  Res,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import type { Response } from 'express';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import * as crypto from 'crypto';
 import { GithubWebhookService } from './github.webhook.service';
 import { DoraMetricsService } from '../analytics/dora-metrics.service';
+import { EventBridgeService } from '../messaging/event-bridge.service';
 
 @ApiTags('github-webhooks')
 @Controller('api/v1/github/webhooks')
-export class GithubWebhookController {
+export class GithubWebhookController implements OnModuleInit {
   private readonly logger = new Logger(GithubWebhookController.name);
   private readonly webhookSecret =
     process.env.GITHUB_WEBHOOK_SECRET || 'codepulse-webhook-secret';
@@ -26,7 +31,18 @@ export class GithubWebhookController {
     private readonly webhookService: GithubWebhookService,
     @Optional() private readonly multiAgentReviewer?: MultiAgentReviewerService,
     @Optional() private readonly doraMetrics?: DoraMetricsService,
+    @Optional() private readonly eventBridge?: EventBridgeService,
   ) {}
+
+  onModuleInit() {
+    // Connect consumer group to asynchronous event processing pipeline (#373)
+    if (this.eventBridge) {
+      this.eventBridge.registerHandler(async (envelope) => {
+        return this.processDispatchedEvent(envelope.event, envelope.payload);
+      });
+      this.logger.log('Asynchronous Webhook EventBridge consumer worker registered.');
+    }
+  }
 
   private verifySignature(payload: string, signature: string): boolean {
     if (!signature) return false;
@@ -41,13 +57,20 @@ export class GithubWebhookController {
 
   @Post()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Handle incoming GitHub push, PR, and star webhooks' })
+  @ApiOperation({
+    summary: 'High-throughput async webhook ingestion bridge for GitHub events (#373)',
+    description:
+      'Validates HMAC signature and immediately acknowledges GitHub with HTTP 202 Accepted in < 15ms, queueing events in events.webhooks.raw for parallel in-order batch consumption.',
+  })
+  @ApiResponse({ status: 202, description: 'Webhook accepted and queued for asynchronous processing' })
+  @ApiResponse({ status: 200, description: 'Webhook processed synchronously (fallback mode)' })
   async handleWebhook(
     @Headers('x-hub-signature-256') signature: string,
     @Headers('x-github-event') event: string,
     @Headers('x-github-delivery') deliveryId: string,
     @Body() body: any,
-  ) {
+    @Res({ passthrough: true }) res?: Response,
+  ): Promise<any> {
     const rawPayload = JSON.stringify(body);
 
     // Validate HMAC signature (reject if signature missing or invalid)
@@ -68,6 +91,46 @@ export class GithubWebhookController {
 
     this.logger.log(`Received GitHub webhook event: ${event} (Delivery: ${deliveryId})`);
 
+    // If EventBridge is configured, queue event asynchronously and return HTTP 202 (< 10ms) (#373)
+    if (this.eventBridge) {
+      const partitionKey =
+        body?.repository?.id?.toString() ||
+        body?.repository?.full_name ||
+        body?.repository?.name ||
+        'global';
+
+      const ack = await this.eventBridge.publishWebhookEvent({
+        event,
+        deliveryId,
+        partitionKey,
+        signature,
+        payload: body,
+      });
+
+      if (res) {
+        res.status(HttpStatus.ACCEPTED);
+      }
+
+      return {
+        status: 'accepted',
+        message: 'Webhook queued for asynchronous processing',
+        deliveryId,
+        event,
+        partitionKey,
+        eventId: ack.eventId,
+        latencyMs: ack.latencyMs,
+        queuedAt: ack.queuedAt,
+      };
+    }
+
+    // Fallback: Synchronous processing if bridge is not available
+    return this.processDispatchedEvent(event, body);
+  }
+
+  /**
+   * Internal processor for GitHub webhook events.
+   */
+  async processDispatchedEvent(event: string, body: any) {
     switch (event) {
       case 'deployment_status': {
         const doraResult = this.doraMetrics?.ingestGithubWebhookEvent('deployment_status', body);
@@ -108,6 +171,26 @@ export class GithubWebhookController {
         this.logger.debug(`Unhandled GitHub event: ${event}`);
         return { status: 'ignored', event };
     }
+  }
+
+  @Get('bridge/metrics')
+  @ApiOperation({ summary: 'Retrieve event ingestion bridge metrics and Prometheus format (#373)' })
+  async getBridgeMetrics(@Res({ passthrough: true }) res?: Response) {
+    if (!this.eventBridge) {
+      return { enabled: false, message: 'EventBridgeService is not active.' };
+    }
+    return this.eventBridge.getMetrics();
+  }
+
+  @Post('bridge/replay')
+  @ApiOperation({ summary: 'Replay failed dead-letter webhook messages (#373)' })
+  async replayFailedWebhooks(
+    @Body() body: { partitionKey?: string; eventType?: string; limit?: number },
+  ) {
+    if (!this.eventBridge) {
+      return { replayedCount: 0, message: 'EventBridgeService is not active.' };
+    }
+    return this.eventBridge.replayFailedEvents(body);
   }
 
   async handlePullRequestWebhookEvent(payload: any) {

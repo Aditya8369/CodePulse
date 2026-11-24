@@ -37,10 +37,14 @@ import { AdaptiveCircuitBreakerService } from './resilience/adaptive-circuit-bre
 import { DbConnectionGuardService } from './resilience/db-connection-guard.service';
 import { RedisResilienceManagerService } from './resilience/redis-resilience-manager.service';
 
+
 import { CloudEventsProvider } from './events/cloudevents.provider';
 import { NatsJetStreamService } from './events/nats-jetstream.service';
 import { TDigestService } from './math/t-digest.service';
 import { ClocksModule } from './clocks/clocks.module';
+import { SlidingBloomFilterService } from './cache/sliding-bloom-filter.service';
+import { EventDeduplicatorService } from './cache/event-deduplicator.service';
+import { RedlockService } from './redis/redlock.service';
 
 @Global()
 @Module({
@@ -85,9 +89,13 @@ import { ClocksModule } from './clocks/clocks.module';
     DbConnectionGuardService,
     RedisResilienceManagerService,
 
+
     CloudEventsProvider,
     NatsJetStreamService,
     TDigestService,
+    SlidingBloomFilterService,
+    EventDeduplicatorService,
+    RedlockService,
   ],
   exports: [
     SystemMetricsService,
@@ -122,9 +130,13 @@ import { ClocksModule } from './clocks/clocks.module';
     DbConnectionGuardService,
     RedisResilienceManagerService,
 
+
     CloudEventsProvider,
     NatsJetStreamService,
     TDigestService,
+    SlidingBloomFilterService,
+    EventDeduplicatorService,
+    RedlockService,
     ClocksModule,
   ],
 })
