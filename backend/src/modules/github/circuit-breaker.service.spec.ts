@@ -3,6 +3,7 @@ import {
   CircuitOpenError,
   isUpstreamFailure,
 } from './circuit-breaker.service';
+import { GithubStaleStore } from './github-stale.store';
 
 describe('CircuitBreakerService', () => {
   let now: number;
@@ -130,6 +131,194 @@ describe('CircuitBreakerService', () => {
       ).toBe(false);
       expect(isUpstreamFailure({ response: { status: 404 } })).toBe(false);
       expect(isUpstreamFailure({ response: { status: 401 } })).toBe(false);
+    });
+  });
+
+  describe('Dynamic sliding error-rate window & Resilience (#376)', () => {
+    let mockTime: number;
+    let staleStore: GithubStaleStore;
+    let dynamicBreaker: CircuitBreakerService;
+
+    beforeEach(() => {
+      mockTime = 100_000;
+      staleStore = new GithubStaleStore();
+      dynamicBreaker = new CircuitBreakerService(
+        {
+          failureThreshold: 999, // isolate sliding window test from consecutive threshold
+          cooldownMs: 30_000,
+          slidingWindowMs: 60_000,
+          failureRateThreshold: 0.5,
+          minimumRequests: 10,
+          halfOpenProbeCount: 3,
+          now: () => mockTime,
+        },
+        staleStore,
+      );
+    });
+
+    it('trips to OPEN when 50% of requests fail within 60s sliding window (>= 10 requests)', async () => {
+      // 5 successes and 4 failures = 9 requests total (under minimumRequests 10)
+      for (let i = 0; i < 5; i++) {
+        await dynamicBreaker.execute(() => Promise.resolve('ok'));
+      }
+      for (let i = 0; i < 4; i++) {
+        await dynamicBreaker
+          .execute(() => Promise.reject({ response: { status: 502 } }))
+          .catch(() => undefined);
+      }
+      expect(dynamicBreaker.getState()).toBe('CLOSED');
+
+      // 10th request fails -> 5 failures / 10 requests = 50% error rate -> trips to OPEN
+      await dynamicBreaker
+        .execute(() => Promise.reject({ response: { status: 503 } }))
+        .catch(() => undefined);
+
+      expect(dynamicBreaker.getState()).toBe('OPEN');
+    });
+
+    it('prunes samples older than 60s sliding window', async () => {
+      // 5 failures at t = 100_000
+      for (let i = 0; i < 5; i++) {
+        await dynamicBreaker
+          .execute(() => Promise.reject({ response: { status: 500 } }))
+          .catch(() => undefined);
+      }
+
+      // Advance time by 61s (samples expire)
+      mockTime += 61_000;
+
+      // 5 successes at t = 161_000
+      for (let i = 0; i < 5; i++) {
+        await dynamicBreaker.execute(() => Promise.resolve('ok'));
+      }
+
+      // Only 5 samples in the current window -> under minimumRequests of 10
+      expect(dynamicBreaker.getState()).toBe('CLOSED');
+      expect(dynamicBreaker.getMetrics().slidingErrorRate).toBe(0);
+    });
+
+    it('rejects outbound calls immediately (< 1ms) in OPEN state with CircuitOpenError', () => {
+      // Force trip to OPEN
+      for (let i = 0; i < 10; i++) {
+        dynamicBreaker.recordFailure();
+      }
+      expect(dynamicBreaker.getState()).toBe('OPEN');
+
+      // Throws synchronously with CircuitOpenError
+      expect(() => dynamicBreaker.acquire()).toThrow(CircuitOpenError);
+
+      // Verify sub-millisecond execution across iterations (no I/O, no network wait)
+      const iterations = 100;
+      const start = performance.now();
+      for (let i = 0; i < iterations; i++) {
+        try {
+          dynamicBreaker.acquire();
+        } catch {
+          // expected
+        }
+      }
+      const avgDuration = (performance.now() - start) / iterations;
+      expect(avgDuration).toBeLessThan(1); // sub-millisecond rejection
+    });
+
+    it('serves stale cached data immediately when OPEN using executeWithFallback', async () => {
+      await staleStore.set('github:user:octocat', { login: 'octocat', public_repos: 8 }, 60_000);
+
+      // Force trip to OPEN
+      for (let i = 0; i < 10; i++) {
+        await dynamicBreaker
+          .execute(() => Promise.reject({ response: { status: 500 } }))
+          .catch(() => undefined);
+      }
+      expect(dynamicBreaker.getState()).toBe('OPEN');
+
+      const upstreamFn = jest.fn().mockResolvedValue({ login: 'octocat-fresh' });
+      const result = await dynamicBreaker.executeWithFallback(
+        upstreamFn,
+        'github:user:octocat',
+      );
+
+      expect(upstreamFn).not.toHaveBeenCalled();
+      expect(result.isStale).toBe(true);
+      expect(result.data).toEqual({ login: 'octocat', public_repos: 8 });
+    });
+
+    it('transitions to HALF_OPEN after 30s reset timeout and recovers to CLOSED after 3 successful probes', async () => {
+      // Trip to OPEN
+      for (let i = 0; i < 10; i++) {
+        await dynamicBreaker
+          .execute(() => Promise.reject({ response: { status: 500 } }))
+          .catch(() => undefined);
+      }
+      expect(dynamicBreaker.getState()).toBe('OPEN');
+
+      // Advance clock by 30 seconds
+      mockTime += 30_000;
+      expect(dynamicBreaker.getState()).toBe('HALF_OPEN');
+
+      // Probe 1
+      await expect(dynamicBreaker.execute(() => Promise.resolve('probe-1'))).resolves.toBe('probe-1');
+      expect(dynamicBreaker.getState()).toBe('HALF_OPEN');
+
+      // Probe 2
+      await expect(dynamicBreaker.execute(() => Promise.resolve('probe-2'))).resolves.toBe('probe-2');
+      expect(dynamicBreaker.getState()).toBe('HALF_OPEN');
+
+      // Probe 3 (3rd successful probe closes the circuit)
+      await expect(dynamicBreaker.execute(() => Promise.resolve('probe-3'))).resolves.toBe('probe-3');
+      expect(dynamicBreaker.getState()).toBe('CLOSED');
+    });
+
+    it('trips back to OPEN immediately if any probe fails during HALF_OPEN', async () => {
+      // Trip to OPEN
+      for (let i = 0; i < 10; i++) {
+        await dynamicBreaker
+          .execute(() => Promise.reject({ response: { status: 500 } }))
+          .catch(() => undefined);
+      }
+      expect(dynamicBreaker.getState()).toBe('OPEN');
+
+      // Advance clock by 30 seconds to HALF_OPEN
+      mockTime += 30_000;
+      expect(dynamicBreaker.getState()).toBe('HALF_OPEN');
+
+      // Probe 1 succeeds
+      await expect(dynamicBreaker.execute(() => Promise.resolve('probe-1'))).resolves.toBe('probe-1');
+      expect(dynamicBreaker.getState()).toBe('HALF_OPEN');
+
+      // Probe 2 fails
+      await dynamicBreaker
+        .execute(() => Promise.reject({ response: { status: 500 } }))
+        .catch(() => undefined);
+
+      expect(dynamicBreaker.getState()).toBe('OPEN');
+    });
+
+    it('emits comprehensive metrics for Prometheus and admin dashboard', async () => {
+      const initialMetrics = dynamicBreaker.getMetrics();
+      expect(initialMetrics.state).toBe('CLOSED');
+      expect(initialMetrics.stateCode).toBe(0);
+      expect(initialMetrics.tripsTotal).toBe(0);
+
+      // Perform 5 successes and 5 failures
+      for (let i = 0; i < 5; i++) {
+        await dynamicBreaker.execute(() => Promise.resolve('ok'));
+      }
+      for (let i = 0; i < 5; i++) {
+        await dynamicBreaker
+          .execute(() => Promise.reject({ response: { status: 502 } }))
+          .catch(() => undefined);
+      }
+
+      const openMetrics = dynamicBreaker.getMetrics();
+      expect(openMetrics.state).toBe('OPEN');
+      expect(openMetrics.stateCode).toBe(2);
+      expect(openMetrics.tripsTotal).toBe(1);
+      expect(openMetrics.requestsTotal).toBe(10);
+      expect(openMetrics.requestsSuccess).toBe(5);
+      expect(openMetrics.requestsFailed).toBe(5);
+      expect(openMetrics.slidingErrorRate).toBe(0.5);
+      expect(openMetrics.lastTripReason).toContain('Sliding window failure rate');
     });
   });
 });
