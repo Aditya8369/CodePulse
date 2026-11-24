@@ -1,6 +1,7 @@
 import { Module, Global } from '@nestjs/common';
 import { RedisService } from '../redis/redis.service';
 import { TokenBucketRateLimitGuard } from './token-bucket-rate-limit.guard';
+import { DistributedRateLimiterGuard } from './distributed-rate-limiter.guard';
 import { CustomThrottlerGuard } from './custom-throttler.guard';
 import { PowChallengeGuard } from './pow-challenge.guard';
 import { OpaEngineService } from './opa-engine.service';
@@ -19,6 +20,7 @@ import { AuthGuard } from './auth.guard';
   providers: [
     RedisService,
     TokenBucketRateLimitGuard,
+    DistributedRateLimiterGuard,
     CustomThrottlerGuard,
     PowChallengeGuard,
     OpaEngineService,
@@ -35,6 +37,7 @@ import { AuthGuard } from './auth.guard';
   exports: [
     RedisService,
     TokenBucketRateLimitGuard,
+    DistributedRateLimiterGuard,
     CustomThrottlerGuard,
     PowChallengeGuard,
     OpaEngineService,
