@@ -906,6 +906,20 @@ export default function SettingsPage() {
                       <ExternalLink className="w-3.5 h-3.5" />
                     </span>
                   </Link>
+                  <Link
+                    href="/settings/api-keys"
+                    data-testid="manage-api-keys-link"
+                    className="flex items-center justify-between w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-sm hover:bg-white/10 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Key className="w-4 h-4 text-indigo-400" />
+                      <span>Developer API Keys Management</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                      <span>Manage Keys</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </span>
+                  </Link>
                 </div>
               </div>
 
