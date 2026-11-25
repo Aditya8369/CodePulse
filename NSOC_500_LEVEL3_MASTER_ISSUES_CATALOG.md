@@ -31,7 +31,7 @@
 ## 🏷️ Standardized Labels & Governance Schema
 
 Every published issue strictly follows the CodePulse NSOC 2026 Enterprise Governance Standard:
-- **Difficulty & Tier:** `level-3`, `advanced`, `nsoc26`, `level3`
+- **Difficulty & Tier:** `advanced`, `nsoc26`, `level3`
 - **Domain Specialization:** `area: backend`, `area: frontend`, `area: database`, `area: api`, `area: security`, `area: devops`, `area: testing`, `area: architecture`, `area: performance`
 - **Type:** `feat` (New Architectural Capability) / `fix` (Critical Architectural / Concurrency Bug)
 - **Priority:** `priority: critical`, `priority: high`, `priority: medium`
