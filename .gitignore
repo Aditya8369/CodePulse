@@ -63,3 +63,7 @@ data/
 backend/data/
 
 deploy/certs/generated/
+
+# Code Intelligence & MCP Cache
+.gitnexus/
+.serena/
