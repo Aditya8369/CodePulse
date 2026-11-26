@@ -3,10 +3,16 @@ import { Injectable, Logger } from '@nestjs/common';
 export interface CollabSignalFrame {
   roomId: string;
   senderPeerId: string;
-  type: 'CURSOR_MOVE' | 'POINTER_CLICK' | 'BITRATE_ADAPT' | 'WEBRTC_SIGNAL';
+  type:
+    | 'CURSOR_MOVE'
+    | 'POINTER_CLICK'
+    | 'BITRATE_ADAPT'
+    | 'WEBRTC_SIGNAL'
+    | 'VECTOR_DELTA';
   xNormalized?: number;
   yNormalized?: number;
   timestampMs: number;
+  deltaBase64?: string;
   payload?: Record<string, unknown>;
 }
 
@@ -25,8 +31,9 @@ export class CollabGateway {
     list.push(frame);
     this.roomFrames.set(frame.roomId, list);
 
+    const maxAllowedMs = frame.type === 'VECTOR_DELTA' ? 30 : 40;
     return {
-      delivered: relayLatencyMs < 40,
+      delivered: relayLatencyMs < maxAllowedMs,
       relayLatencyMs,
       frame,
     };
