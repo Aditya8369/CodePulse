@@ -1,7 +1,3 @@
-/**
- * Site Reliability Engineering & Infrastructure Architecture Types
- */
-
 export interface IdempotencyRecord {
   key: string;
   hash: string;
@@ -88,11 +84,6 @@ export interface EphemeralEnvSpec {
   status: 'provisioning' | 'active' | 'expired';
 }
 
-// --- Additional SRE Types from Batch 2/3 ---
-
-/** Site Reliability Engineering & Infrastructure Architecture Types */
-
-// --- Batch 3 SRE Types ---
 export interface GcPauseEvent {
   kind: 'major' | 'minor' | 'incremental';
   durationMs: number;
