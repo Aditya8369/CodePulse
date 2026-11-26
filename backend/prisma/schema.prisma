@@ -1846,3 +1846,19 @@ model GuildSeasonRecord {
   @@index([seasonNumber, totalPoints])
   @@map("guild_season_records")
 }
+
+model MatchDisputeAudit {
+  id               String   @id @default(uuid())
+  disputeId        String   @unique
+  matchId          String
+  rulingAction     String   // INVALIDATE_MATCH, AWARD_WIN_PLAYER_A, AWARD_WIN_PLAYER_B, SCHEDULE_REMATCH
+  judgeId          String
+  judgeReason      String   @db.Text
+  digitalSignature String
+  notifiedPlayers  String
+  createdAt        DateTime @default(now())
+
+  @@index([matchId, createdAt])
+  @@map("match_dispute_audits")
+}
+}
