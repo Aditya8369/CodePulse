@@ -1861,4 +1861,45 @@ model MatchDisputeAudit {
   @@index([matchId, createdAt])
   @@map("match_dispute_audits")
 }
+
+enum ReportScope {
+  INDIVIDUAL
+  TEAM
+  SYSTEM
 }
+
+enum ReportFormat {
+  JSON
+  CSV
+  PDF
+}
+
+enum ReportJobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model ExecutiveReportJob {
+  id             String          @id @default(uuid())
+  requestedById  String
+  scope          ReportScope     @default(INDIVIDUAL)
+  targetId       String?
+  format         ReportFormat    @default(JSON)
+  status         ReportJobStatus @default(PENDING)
+  timeframeDays  Int             @default(30)
+  fileSizeBytes  Int?
+  sha256Checksum String?
+  storagePath    String?
+  downloadToken  String?         @unique
+  tokenExpiresAt DateTime?
+  errorMessage   String?
+  createdAt      DateTime        @default(now())
+  completedAt    DateTime?
+
+  @@index([requestedById, status])
+  @@index([downloadToken])
+  @@map("executive_report_jobs")
+}
+
