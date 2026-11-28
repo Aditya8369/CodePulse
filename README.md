@@ -17,50 +17,109 @@
 
 ## 🌟 Hall of Fame & Contributors Wall
 
-A heartfelt thank you to all the amazing developers contributing to **CodePulse** during **Nexus Spring of Code (NSoC'26)**! You are making developer analytics gamified and accessible to everyone. 🎉
-
-<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
-<!-- prettier-ignore-start -->
-<!-- markdownlint-disable -->
+> *"Great software is built by great communities. CodePulse thrives thanks to the relentless passion, clean code, and architectural excellence of our open-source contributors during Nexus Spring of Code 2026."*
 
 <p align="center">
   <a href="https://github.com/code-with-abhi-i5/CodePulse/graphs/contributors">
-    <img src="https://contrib.rocks/image?repo=code-with-abhi-i5/CodePulse" alt="CodePulse Contributors" />
+    <img src="https://contrib.rocks/image?repo=code-with-abhi-i5/CodePulse" alt="CodePulse Contributors" width="750" />
   </a>
 </p>
 
-### 👥 Contributors
+### 🏆 Hall of Fame — Top Contributors
 
-| # | Contributor | Full Name | GitHub Handle | Role & Contributions | Total Commits |
-| :---: | :---: | :--- | :--- | :--- | :---: |
-| 1 | <img src="https://avatars.githubusercontent.com/u/195516410?v=4" width="36px" style="border-radius: 50%;" alt="Abhijeet Ghosh" /> | **Abhijeet Ghosh** | [@code-with-abhi-i5](https://github.com/code-with-abhi-i5) | 👑 Project Admin & Maintainer | [1,360+](https://github.com/code-with-abhi-i5/CodePulse/commits?author=code-with-abhi-i5) |
-| 2 | <img src="https://avatars.githubusercontent.com/u/219174195?v=4" width="36px" style="border-radius: 50%;" alt="Dipak Kand" /> | **Dipak Kand** | [@code-with-dipak-777](https://github.com/code-with-dipak-777) | 🔥 Top Contributor & Core Architect | [2,420+](https://github.com/code-with-abhi-i5/CodePulse/commits?author=code-with-dipak-777) |
-| 3 | <img src="https://avatars.githubusercontent.com/u/309636889?v=4" width="36px" style="border-radius: 50%;" alt="Harshit Baghel" /> | **Harshit Baghel** | [@Harshit214713](https://github.com/Harshit214713) | 🛡️ Security & Core Contributor | [290+](https://github.com/code-with-abhi-i5/CodePulse/commits?author=Harshit214713) |
-| 4 | <img src="https://avatars.githubusercontent.com/u/265290994?v=4" width="36px" style="border-radius: 50%;" alt="Babin Bid" /> | **Babin Bid** | [@Babin123456](https://github.com/Babin123456) | ⭐ Core Contributor | [175+](https://github.com/code-with-abhi-i5/CodePulse/commits?author=Babin123456) |
-| 5 | <img src="https://avatars.githubusercontent.com/u/147491382?v=4" width="36px" style="border-radius: 50%;" alt="Pratik Giri" /> | **Pratik Giri** | [@pratikadamas](https://github.com/pratikadamas) | ⭐ Core Contributor | [151+](https://github.com/code-with-abhi-i5/CodePulse/commits?author=pratikadamas) |
-| 6 | <img src="https://avatars.githubusercontent.com/u/174490730?v=4" width="36px" style="border-radius: 50%;" alt="Sonia Nanwani" /> | **Sonia Nanwani** | [@Itssonia7](https://github.com/Itssonia7) | 💻 Contributor | [49+](https://github.com/code-with-abhi-i5/CodePulse/commits?author=Itssonia7) |
-| 7 | <img src="https://avatars.githubusercontent.com/u/85987665?v=4" width="36px" style="border-radius: 50%;" alt="Divyansh Agarwal" /> | **Divyansh Agarwal** | [@divyanshAgarwal123](https://github.com/divyanshAgarwal123) | 💻 Contributor | [32+](https://github.com/code-with-abhi-i5/CodePulse/commits?author=divyanshAgarwal123) |
-| 8 | <img src="https://avatars.githubusercontent.com/u/183263614?v=4" width="36px" style="border-radius: 50%;" alt="Trunal Patil" /> | **Trunal Patil** | [@Trunal2005](https://github.com/Trunal2005) | 💻 Contributor | [17+](https://github.com/code-with-abhi-i5/CodePulse/commits?author=Trunal2005) |
-| 9 | <img src="https://avatars.githubusercontent.com/u/73594751?v=4" width="36px" style="border-radius: 50%;" alt="Sarbajit Sengupta" /> | **Sarbajit Sengupta** | [@Sarbajit-Sengupta](https://github.com/Sarbajit-Sengupta) | 💻 Contributor | [11+](https://github.com/code-with-abhi-i5/CodePulse/commits?author=Sarbajit-Sengupta) |
-| 10 | <img src="https://avatars.githubusercontent.com/u/229103100?v=4" width="36px" style="border-radius: 50%;" alt="Ayush Garg" /> | **Ayush Garg** | [@aush5895](https://github.com/aush5895) | 💻 Contributor | [6+](https://github.com/code-with-abhi-i5/CodePulse/commits?author=aush5895) |
-| 11 | <img src="https://avatars.githubusercontent.com/u/178887069?v=4" width="36px" style="border-radius: 50%;" alt="Aditya Mahajan" /> | **Aditya Mahajan** | [@Aditya8369](https://github.com/Aditya8369) | 💻 Contributor | [6+](https://github.com/code-with-abhi-i5/CodePulse/commits?author=Aditya8369) |
-| 12 | <img src="https://avatars.githubusercontent.com/u/205056958?v=4" width="36px" style="border-radius: 50%;" alt="Nilesh Thipe" /> | **Nilesh Thipe** | [@nilesh0199](https://github.com/nilesh0199) | 💻 Contributor | [6+](https://github.com/code-with-abhi-i5/CodePulse/commits?author=nilesh0199) |
-| 13 | <img src="https://avatars.githubusercontent.com/u/111765525?v=4" width="36px" style="border-radius: 50%;" alt="Ankit Kumar" /> | **Ankit Kumar** | [@Ankit-Kum-ar](https://github.com/Ankit-Kum-ar) | 💻 Contributor | [5+](https://github.com/code-with-abhi-i5/CodePulse/commits?author=Ankit-Kum-ar) |
-| 14 | <img src="https://avatars.githubusercontent.com/u/176571887?v=4" width="36px" style="border-radius: 50%;" alt="Bhavya Singh" /> | **Bhavya Singh** | [@bhavyasingh-sa](https://github.com/bhavyasingh-sa) | 💻 Contributor | [5+](https://github.com/code-with-abhi-i5/CodePulse/commits?author=bhavyasingh-sa) |
-| 15 | <img src="https://avatars.githubusercontent.com/u/247197666?v=4" width="36px" style="border-radius: 50%;" alt="Khushi Shah" /> | **Khushi Shah** | [@shahkhushi0307](https://github.com/shahkhushi0307) | 💻 Contributor | [3+](https://github.com/code-with-abhi-i5/CodePulse/commits?author=shahkhushi0307) |
-| 16 | <img src="https://avatars.githubusercontent.com/u/251316528?v=4" width="36px" style="border-radius: 50%;" alt="Sumit Tiwari" /> | **Sumit Tiwari** | [@sumittiwari1302](https://github.com/sumittiwari1302) | 💻 Contributor | [2+](https://github.com/code-with-abhi-i5/CodePulse/commits?author=sumittiwari1302) |
-| 17 | <img src="https://avatars.githubusercontent.com/u/190047591?v=4" width="36px" style="border-radius: 50%;" alt="Chanchal Gupta" /> | **Chanchal Gupta** | [@chanchall26](https://github.com/chanchall26) | 💻 Contributor | [2+](https://github.com/code-with-abhi-i5/CodePulse/commits?author=chanchall26) |
-| 18 | <img src="https://avatars.githubusercontent.com/u/206191032?v=4" width="36px" style="border-radius: 50%;" alt="Dileep Reddy Lokasani" /> | **Dileep Reddy Lokasani** | [@Dileepreddy-13](https://github.com/Dileepreddy-13) | 💻 Contributor | [1+](https://github.com/code-with-abhi-i5/CodePulse/commits?author=Dileepreddy-13) |
-| 19 | <img src="https://avatars.githubusercontent.com/u/169386687?v=4" width="36px" style="border-radius: 50%;" alt="Anu Baghel" /> | **Anu Baghel** | [@anubaghel](https://github.com/anubaghel) | 💻 Contributor | [1+](https://github.com/code-with-abhi-i5/CodePulse/commits?author=anubaghel) |
-| 20 | <img src="https://avatars.githubusercontent.com/u/250967871?v=4" width="36px" style="border-radius: 50%;" alt="Prachi" /> | **Prachi** | [@forkprachii03](https://github.com/forkprachii03) | 💻 Contributor | [1+](https://github.com/code-with-abhi-i5/CodePulse/commits?author=forkprachii03) |
-| 21 | <img src="https://avatars.githubusercontent.com/u/120743554?v=4" width="36px" style="border-radius: 50%;" alt="Tesfalidet Markos" /> | **Tesfalidet Markos** | [@tesfa27](https://github.com/tesfa27) | 💻 Contributor | [1+](https://github.com/code-with-abhi-i5/CodePulse/commits?author=tesfa27) |
-| 22 | <img src="https://avatars.githubusercontent.com/u/191586321?v=4" width="36px" style="border-radius: 50%;" alt="Yash Kumawat" /> | **Yash Kumawat** | [@yash-kumawat-0](https://github.com/yash-kumawat-0) | 💻 Contributor | [1+](https://github.com/code-with-abhi-i5/CodePulse/commits?author=yash-kumawat-0) |
+<table>
+  <thead>
+    <tr>
+      <th align="center" width="34%">🥇 #1 &nbsp;·&nbsp; Gold Tier</th>
+      <th align="center" width="33%">🥈 #2 &nbsp;·&nbsp; Silver Tier</th>
+      <th align="center" width="33%">🥉 #3 &nbsp;·&nbsp; Bronze Tier</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td align="center" valign="top">
+        <a href="https://github.com/code-with-dipak-777">
+          <img src="https://avatars.githubusercontent.com/u/219174195?v=4" width="90" height="90" style="border-radius: 50%; border: 3px solid #f1e05a;" alt="Dipak Kand" />
+        </a>
+        <br />
+        <b><a href="https://github.com/code-with-dipak-777">Dipak Kand</a></b>
+        <br />
+        <sub><a href="https://github.com/code-with-dipak-777">@code-with-dipak-777</a></sub>
+        <br /><br />
+        <code>🏆 Grandmaster Architect</code>
+        <br />
+        <sub>AI Engines · SRE Resilience · DB Scalability</sub>
+        <br /><br />
+        <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=code-with-dipak-777">
+          <img src="https://img.shields.io/badge/Commits-2%2C420+-f1e05a?style=flat-square&logo=git&logoColor=black" alt="Dipak Kand Commits" />
+        </a>
+      </td>
+      <td align="center" valign="top">
+        <a href="https://github.com/code-with-abhi-i5">
+          <img src="https://avatars.githubusercontent.com/u/195516410?v=4" width="80" height="80" style="border-radius: 50%; border: 3px solid #c0c0c0;" alt="Abhijeet Ghosh" />
+        </a>
+        <br />
+        <b><a href="https://github.com/code-with-abhi-i5">Abhijeet Ghosh</a></b>
+        <br />
+        <sub><a href="https://github.com/code-with-abhi-i5">@code-with-abhi-i5</a></sub>
+        <br /><br />
+        <code>👑 Founder & Lead Maintainer</code>
+        <br />
+        <sub>Core Roadmap · Systems Architecture · Reviewer</sub>
+        <br /><br />
+        <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=code-with-abhi-i5">
+          <img src="https://img.shields.io/badge/Commits-1%2C360+-c0c0c0?style=flat-square&logo=git&logoColor=black" alt="Abhijeet Ghosh Commits" />
+        </a>
+      </td>
+      <td align="center" valign="top">
+        <a href="https://github.com/Harshit214713">
+          <img src="https://avatars.githubusercontent.com/u/309636889?v=4" width="80" height="80" style="border-radius: 50%; border: 3px solid #cd7f32;" alt="Harshit Baghel" />
+        </a>
+        <br />
+        <b><a href="https://github.com/Harshit214713">Harshit Baghel</a></b>
+        <br />
+        <sub><a href="https://github.com/Harshit214713">@Harshit214713</a></sub>
+        <br /><br />
+        <code>🛡️ Security & Arch Vanguard</code>
+        <br />
+        <sub>mTLS CRL · Rate Limiting · Cryptographic Auth</sub>
+        <br /><br />
+        <a href="https://github.com/code-with-abhi-i5/CodePulse/commits?author=Harshit214713">
+          <img src="https://img.shields.io/badge/Commits-290+-cd7f32?style=flat-square&logo=git&logoColor=white" alt="Harshit Baghel Commits" />
+        </a>
+      </td>
+    </tr>
+  </tbody>
+</table>
 
-<!-- markdownlint-restore -->
-<!-- prettier-ignore-end -->
-<!-- ALL-CONTRIBUTORS-LIST:END -->
+### 🎖️ Contributors Wall
 
-> 💡 **Want to see your face here?** Check out our [`CONTRIBUTING.md`](./CONTRIBUTING.md), pick an open [NSoC Issue](https://github.com/code-with-abhi-i5/CodePulse/issues), and submit your PR! 🚀
+| # | Contributor | GitHub Handle | Key Contributions | Commits | Recognition |
+| :-: | :-: | :-- | :-- | :-: | :-: |
+| 1 | <a href="https://github.com/code-with-dipak-777"><img src="https://avatars.githubusercontent.com/u/219174195?v=4" width="36" height="36" style="border-radius: 50%;" alt="@code-with-dipak-777" /></a> | [@code-with-dipak-777](https://github.com/code-with-dipak-777) | Grandmaster Architect · AI, SRE & DB Engines | [2,420+](https://github.com/code-with-abhi-i5/CodePulse/commits?author=code-with-dipak-777) | 🥇 Gold |
+| 2 | <a href="https://github.com/code-with-abhi-i5"><img src="https://avatars.githubusercontent.com/u/195516410?v=4" width="36" height="36" style="border-radius: 50%;" alt="@code-with-abhi-i5" /></a> | [@code-with-abhi-i5](https://github.com/code-with-abhi-i5) | Project Founder & Lead Maintainer | [1,360+](https://github.com/code-with-abhi-i5/CodePulse/commits?author=code-with-abhi-i5) | 🥈 Silver |
+| 3 | <a href="https://github.com/Harshit214713"><img src="https://avatars.githubusercontent.com/u/309636889?v=4" width="36" height="36" style="border-radius: 50%;" alt="@Harshit214713" /></a> | [@Harshit214713](https://github.com/Harshit214713) | Security Systems & Core Architecture | [290+](https://github.com/code-with-abhi-i5/CodePulse/commits?author=Harshit214713) | 🥉 Bronze |
+| 4 | <a href="https://github.com/Babin123456"><img src="https://avatars.githubusercontent.com/u/265290994?v=4" width="36" height="36" style="border-radius: 50%;" alt="@Babin123456" /></a> | [@Babin123456](https://github.com/Babin123456) | Senior Core Contributor · Platform Services | [175+](https://github.com/code-with-abhi-i5/CodePulse/commits?author=Babin123456) | 🌟 Core |
+| 5 | <a href="https://github.com/pratikadamas"><img src="https://avatars.githubusercontent.com/u/147491382?v=4" width="36" height="36" style="border-radius: 50%;" alt="@pratikadamas" /></a> | [@pratikadamas](https://github.com/pratikadamas) | Senior Core Contributor · API Services | [151+](https://github.com/code-with-abhi-i5/CodePulse/commits?author=pratikadamas) | 🌟 Core |
+| 6 | <a href="https://github.com/Itssonia7"><img src="https://avatars.githubusercontent.com/u/174490730?v=4" width="36" height="36" style="border-radius: 50%;" alt="@Itssonia7" /></a> | [@Itssonia7](https://github.com/Itssonia7) | Full-Stack Contributor · DB & Observability | [49+](https://github.com/code-with-abhi-i5/CodePulse/commits?author=Itssonia7) | 💻 Member |
+| 7 | <a href="https://github.com/divyanshAgarwal123"><img src="https://avatars.githubusercontent.com/u/85987665?v=4" width="36" height="36" style="border-radius: 50%;" alt="@divyanshAgarwal123" /></a> | [@divyanshAgarwal123](https://github.com/divyanshAgarwal123) | Frontend Components & UI Enhancements | [32+](https://github.com/code-with-abhi-i5/CodePulse/commits?author=divyanshAgarwal123) | 💻 Member |
+| 8 | <a href="https://github.com/Trunal2005"><img src="https://avatars.githubusercontent.com/u/183263614?v=4" width="36" height="36" style="border-radius: 50%;" alt="@Trunal2005" /></a> | [@Trunal2005](https://github.com/Trunal2005) | Backend Services & Unit Testing Suite | [17+](https://github.com/code-with-abhi-i5/CodePulse/commits?author=Trunal2005) | 💻 Member |
+| 9 | <a href="https://github.com/Sarbajit-Sengupta"><img src="https://avatars.githubusercontent.com/u/73594751?v=4" width="36" height="36" style="border-radius: 50%;" alt="@Sarbajit-Sengupta" /></a> | [@Sarbajit-Sengupta](https://github.com/Sarbajit-Sengupta) | UI/UX Features & Component Tests | [11+](https://github.com/code-with-abhi-i5/CodePulse/commits?author=Sarbajit-Sengupta) | 💻 Member |
+| 10 | <a href="https://github.com/aush5895"><img src="https://avatars.githubusercontent.com/u/229103100?v=4" width="36" height="36" style="border-radius: 50%;" alt="@aush5895" /></a> | [@aush5895](https://github.com/aush5895) | Feature Engineering & Code Quality | [6+](https://github.com/code-with-abhi-i5/CodePulse/commits?author=aush5895) | 💻 Member |
+| 11 | <a href="https://github.com/Aditya8369"><img src="https://avatars.githubusercontent.com/u/178887069?v=4" width="36" height="36" style="border-radius: 50%;" alt="@Aditya8369" /></a> | [@Aditya8369](https://github.com/Aditya8369) | Full-Stack Integration & Tooling | [6+](https://github.com/code-with-abhi-i5/CodePulse/commits?author=Aditya8369) | 💻 Member |
+| 12 | <a href="https://github.com/nilesh0199"><img src="https://avatars.githubusercontent.com/u/205056958?v=4" width="36" height="36" style="border-radius: 50%;" alt="@nilesh0199" /></a> | [@nilesh0199](https://github.com/nilesh0199) | Interface Layouts & Documentation | [6+](https://github.com/code-with-abhi-i5/CodePulse/commits?author=nilesh0199) | 💻 Member |
+| 13 | <a href="https://github.com/Ankit-Kum-ar"><img src="https://avatars.githubusercontent.com/u/111765525?v=4" width="36" height="36" style="border-radius: 50%;" alt="@Ankit-Kum-ar" /></a> | [@Ankit-Kum-ar](https://github.com/Ankit-Kum-ar) | Component Architecture & Styling | [5+](https://github.com/code-with-abhi-i5/CodePulse/commits?author=Ankit-Kum-ar) | 💻 Member |
+| 14 | <a href="https://github.com/bhavyasingh-sa"><img src="https://avatars.githubusercontent.com/u/176571887?v=4" width="36" height="36" style="border-radius: 50%;" alt="@bhavyasingh-sa" /></a> | [@bhavyasingh-sa](https://github.com/bhavyasingh-sa) | UI Fixes & Responsive Design | [5+](https://github.com/code-with-abhi-i5/CodePulse/commits?author=bhavyasingh-sa) | 💻 Member |
+| 15 | <a href="https://github.com/shahkhushi0307"><img src="https://avatars.githubusercontent.com/u/247197666?v=4" width="36" height="36" style="border-radius: 50%;" alt="@shahkhushi0307" /></a> | [@shahkhushi0307](https://github.com/shahkhushi0307) | Frontend Views & Testing | [3+](https://github.com/code-with-abhi-i5/CodePulse/commits?author=shahkhushi0307) | 💻 Member |
+| 16 | <a href="https://github.com/sumittiwari1302"><img src="https://avatars.githubusercontent.com/u/251316528?v=4" width="36" height="36" style="border-radius: 50%;" alt="@sumittiwari1302" /></a> | [@sumittiwari1302](https://github.com/sumittiwari1302) | Responsive UI Enhancements | [2+](https://github.com/code-with-abhi-i5/CodePulse/commits?author=sumittiwari1302) | 💻 Member |
+| 17 | <a href="https://github.com/chanchall26"><img src="https://avatars.githubusercontent.com/u/190047591?v=4" width="36" height="36" style="border-radius: 50%;" alt="@chanchall26" /></a> | [@chanchall26](https://github.com/chanchall26) | Documentation & Style Polish | [2+](https://github.com/code-with-abhi-i5/CodePulse/commits?author=chanchall26) | 💻 Member |
+| 18 | <a href="https://github.com/Dileepreddy-13"><img src="https://avatars.githubusercontent.com/u/206191032?v=4" width="36" height="36" style="border-radius: 50%;" alt="@Dileepreddy-13" /></a> | [@Dileepreddy-13](https://github.com/Dileepreddy-13) | Backend Services & Schemas | [1+](https://github.com/code-with-abhi-i5/CodePulse/commits?author=Dileepreddy-13) | 💻 Member |
+| 19 | <a href="https://github.com/anubaghel"><img src="https://avatars.githubusercontent.com/u/169386687?v=4" width="36" height="36" style="border-radius: 50%;" alt="@anubaghel" /></a> | [@anubaghel](https://github.com/anubaghel) | Documentation & Verification | [1+](https://github.com/code-with-abhi-i5/CodePulse/commits?author=anubaghel) | 💻 Member |
+| 20 | <a href="https://github.com/forkprachii03"><img src="https://avatars.githubusercontent.com/u/250967871?v=4" width="36" height="36" style="border-radius: 50%;" alt="@forkprachii03" /></a> | [@forkprachii03](https://github.com/forkprachii03) | Bug Fixes & Documentation | [1+](https://github.com/code-with-abhi-i5/CodePulse/commits?author=forkprachii03) | 💻 Member |
+| 21 | <a href="https://github.com/tesfa27"><img src="https://avatars.githubusercontent.com/u/120743554?v=4" width="36" height="36" style="border-radius: 50%;" alt="@tesfa27" /></a> | [@tesfa27](https://github.com/tesfa27) | Platform QA & Contributions | [1+](https://github.com/code-with-abhi-i5/CodePulse/commits?author=tesfa27) | 💻 Member |
+| 22 | <a href="https://github.com/yash-kumawat-0"><img src="https://avatars.githubusercontent.com/u/191586321?v=4" width="36" height="36" style="border-radius: 50%;" alt="@yash-kumawat-0" /></a> | [@yash-kumawat-0](https://github.com/yash-kumawat-0) | Open Source Improvements | [1+](https://github.com/code-with-abhi-i5/CodePulse/commits?author=yash-kumawat-0) | 💻 Member |
+
+> 💡 **Want to join the Hall of Fame?** Explore open [NSoC Issues](https://github.com/code-with-abhi-i5/CodePulse/issues), get assigned, and read our [`CONTRIBUTING.md`](./CONTRIBUTING.md) to start building! 🚀
 
 ---
 
