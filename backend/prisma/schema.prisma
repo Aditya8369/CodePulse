@@ -1968,3 +1968,18 @@ model PerformanceProfileRun {
 
   @@index([repositoryId, commitSha])
 }
+
+model AntiCheatLog {
+  id                String   @id @default(cuid())
+  battleId          String
+  playerId          String
+  flagged           Boolean  @default(false)
+  reasons           String[]
+  flightStdDevMs    Float
+  flightVarianceMs2 Float
+  eloPaused         Boolean  @default(false)
+  moderatorNotified Boolean  @default(false)
+  createdAt         DateTime @default(now())
+
+  @@index([battleId, playerId])
+}
